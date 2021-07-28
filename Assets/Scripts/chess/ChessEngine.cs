@@ -1,27 +1,24 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace chess {
+    public struct Position {
+        public int x;
+        public int y;
+    }
+
+    public struct Figure {
+        public Position position;
+        public char type;
+    }
+
+    public struct PossibleMove {
+        public Position movePosition;
+    }
+
     public static class ChessEngine {
-        
-        public struct Position {
-            public int x;
-            public int y;
-        }
-
-        public struct Figure {
-            public Position position;
-            public char type;
-        }
-
-        public struct PossibleMove {
-            public Position movePosition;
-        }
-
-        public static Figure GetFigure (Position pos) {
+        public static Figure GetFigure (Position pos, char[,] board) {
             Figure figure = new Figure();
-            char [, ] board = Board.GetBoardMap();
 
             figure.position = pos;
             figure.type = board[pos.x, pos.y];
@@ -42,10 +39,8 @@ namespace chess {
             return possibleMove;
         }
 
-        public static List<PossibleMove> GetPawnMoves(Position from, int direction) {
+        public static List<PossibleMove> GetPawnMoves(Position from, int direction, char[,] board) {
             List<PossibleMove> possibleMoves = new List<PossibleMove>(); 
-
-            char [, ] board = Board.GetBoardMap();
  
             char myElement = board[from.x, from.y];
             char nextElement = board[from.x + direction, from.y];
@@ -76,10 +71,9 @@ namespace chess {
             return possibleMoves;
         }
 
-        public static List<PossibleMove> GetOnePosMoves(Position from, int dirX, int dirY) {
+        public static List<PossibleMove> GetOnePosMoves(Position from, int dirX, int dirY, char [, ] board) {
             List<PossibleMove> possibleMoves = new List<PossibleMove>(); 
 
-            char [, ] board = Board.GetBoardMap();
             char myElement = board[from.x, from.y];
             char nextElement = board[from.x + dirX, from.y + dirY];
             Position nextElementPos = GetPosition(from.x + dirX, from.y + dirY);
@@ -95,15 +89,18 @@ namespace chess {
             return possibleMoves;
         }
 
-        public static List<PossibleMove> GetLineMoves(Position from, int dirX, int dirY) {
+        public static List<PossibleMove> GetLineMoves(Position from, int dirX, int dirY, char [, ] board) {
             List<PossibleMove> possibleMoves = new List<PossibleMove>(); 
-            
-            char [, ] board = Board.GetBoardMap();
 
             char myElement = board[from.x, from.y];
-            for (int i = 1; i < Board.GetBoardEdgeLen(); i++) {
+            for (int i = 1; i < 8; i++) {
+
                 int x = from.x + i * dirX;
                 int y = from.y + i * dirY;
+                
+                if (!OnBoard(GetPosition(x, y))) {
+                    break;
+                }
 
                 char nextElement = board[x, y];
                 Position nextElementPos = GetPosition(x, y);
@@ -132,79 +129,74 @@ namespace chess {
             return false;
         }
 
-        public static List<PossibleMove> GetPossibleMoves(Figure figure) {
+        public static bool OnBoard(Position pos) {
+
+            if (pos.x < 0 || pos.y < 0 || pos.x >= 7 || pos.y >= 7) {
+                return false;
+            }
+
+            return true;
+        }
+
+        public static List<PossibleMove> GetPossibleMoves(Figure figure, char [,] board) {
             List<PossibleMove> possibleMoves = new List<PossibleMove>();
             switch(figure.type) {
                 case 'B':
                 case 'b':
-                    possibleMoves.AddRange(GetLineMoves(figure.position, 1, 1));
-                    possibleMoves.AddRange(GetLineMoves(figure.position, 1, -1));
-                    possibleMoves.AddRange(GetLineMoves(figure.position, -1, 1));
-                    possibleMoves.AddRange(GetLineMoves(figure.position, -1, -1));
+                    possibleMoves.AddRange(GetLineMoves(figure.position, 1, 1, board));
+                    possibleMoves.AddRange(GetLineMoves(figure.position, 1, -1, board));
+                    possibleMoves.AddRange(GetLineMoves(figure.position, -1, 1, board));
+                    possibleMoves.AddRange(GetLineMoves(figure.position, -1, -1, board));
                     return possibleMoves;
                 case 'R':
                 case 'r':
-                    possibleMoves.AddRange(GetLineMoves(figure.position, 1, 0));
-                    possibleMoves.AddRange(GetLineMoves(figure.position, 0, 1));
-                    possibleMoves.AddRange(GetLineMoves(figure.position, -1, 0));
-                    possibleMoves.AddRange(GetLineMoves(figure.position, 0, -1));
+                    possibleMoves.AddRange(GetLineMoves(figure.position, 1, 0, board));
+                    possibleMoves.AddRange(GetLineMoves(figure.position, 0, 1, board));
+                    possibleMoves.AddRange(GetLineMoves(figure.position, -1, 0, board));
+                    possibleMoves.AddRange(GetLineMoves(figure.position, 0, -1, board));
                     return possibleMoves;
                 case 'N':
                 case 'n':
-                    possibleMoves.AddRange(GetOnePosMoves(figure.position, 2, 1));
-                    possibleMoves.AddRange(GetOnePosMoves(figure.position, 2, -1));
-                    possibleMoves.AddRange(GetOnePosMoves(figure.position, -2, 1));
-                    possibleMoves.AddRange(GetOnePosMoves(figure.position, -2, -1));
-                    possibleMoves.AddRange(GetOnePosMoves(figure.position, 1, 2));
-                    possibleMoves.AddRange(GetOnePosMoves(figure.position, -1, 2));
-                    possibleMoves.AddRange(GetOnePosMoves(figure.position, 1, -2));
-                    possibleMoves.AddRange(GetOnePosMoves(figure.position, -1, -2));
+                    possibleMoves.AddRange(GetOnePosMoves(figure.position, 2, 1, board));
+                    possibleMoves.AddRange(GetOnePosMoves(figure.position, 2, -1, board));
+                    possibleMoves.AddRange(GetOnePosMoves(figure.position, -2, 1, board));
+                    possibleMoves.AddRange(GetOnePosMoves(figure.position, -2, -1, board));
+                    possibleMoves.AddRange(GetOnePosMoves(figure.position, 1, 2, board));
+                    possibleMoves.AddRange(GetOnePosMoves(figure.position, -1, 2, board));
+                    possibleMoves.AddRange(GetOnePosMoves(figure.position, 1, -2, board));
+                    possibleMoves.AddRange(GetOnePosMoves(figure.position, -1, -2, board));
                     return possibleMoves;
                 case 'Q':
                 case 'q':
-                    possibleMoves.AddRange(GetLineMoves(figure.position, 1, 1));
-                    possibleMoves.AddRange(GetLineMoves(figure.position, 1, -1));
-                    possibleMoves.AddRange(GetLineMoves(figure.position, -1, 1));
-                    possibleMoves.AddRange(GetLineMoves(figure.position, -1, -1));
-                    possibleMoves.AddRange(GetLineMoves(figure.position, 1, 0));
-                    possibleMoves.AddRange(GetLineMoves(figure.position, 0, 1));
-                    possibleMoves.AddRange(GetLineMoves(figure.position, -1, 0));
-                    possibleMoves.AddRange(GetLineMoves(figure.position, 0, -1));
+                    possibleMoves.AddRange(GetLineMoves(figure.position, 1, 1, board));
+                    possibleMoves.AddRange(GetLineMoves(figure.position, 1, -1, board));
+                    possibleMoves.AddRange(GetLineMoves(figure.position, -1, 1, board));
+                    possibleMoves.AddRange(GetLineMoves(figure.position, -1, -1, board));
+                    possibleMoves.AddRange(GetLineMoves(figure.position, 1, 0, board));
+                    possibleMoves.AddRange(GetLineMoves(figure.position, 0, 1, board));
+                    possibleMoves.AddRange(GetLineMoves(figure.position, -1, 0, board));
+                    possibleMoves.AddRange(GetLineMoves(figure.position, 0, -1, board));
                     return possibleMoves;
                 case 'K':
                 case 'k':
-                    possibleMoves.AddRange(GetOnePosMoves(figure.position, 1, 0));
-                    possibleMoves.AddRange(GetOnePosMoves(figure.position, 0, 1));
-                    possibleMoves.AddRange(GetOnePosMoves(figure.position, 1, 1));
-                    possibleMoves.AddRange(GetOnePosMoves(figure.position, -1, -1));
-                    possibleMoves.AddRange(GetOnePosMoves(figure.position, 1, -1));
-                    possibleMoves.AddRange(GetOnePosMoves(figure.position, -1, 1));
-                    possibleMoves.AddRange(GetOnePosMoves(figure.position, -1, 0));
-                    possibleMoves.AddRange(GetOnePosMoves(figure.position, 0, -1));
+                    possibleMoves.AddRange(GetOnePosMoves(figure.position, 1, 0, board));
+                    possibleMoves.AddRange(GetOnePosMoves(figure.position, 0, 1, board));
+                    possibleMoves.AddRange(GetOnePosMoves(figure.position, 1, 1, board));
+                    possibleMoves.AddRange(GetOnePosMoves(figure.position, -1, -1, board));
+                    possibleMoves.AddRange(GetOnePosMoves(figure.position, 1, -1, board));
+                    possibleMoves.AddRange(GetOnePosMoves(figure.position, -1, 1, board));
+                    possibleMoves.AddRange(GetOnePosMoves(figure.position, -1, 0, board));
+                    possibleMoves.AddRange(GetOnePosMoves(figure.position, 0, -1, board));
                     return possibleMoves;
                 case 'P':
-                    possibleMoves.AddRange(GetPawnMoves(figure.position, -1));
+                    possibleMoves.AddRange(GetPawnMoves(figure.position, -1, board));
                     return possibleMoves;
                 case 'p':
-                    possibleMoves.AddRange(GetPawnMoves(figure.position, 1));
+                    possibleMoves.AddRange(GetPawnMoves(figure.position, 1, board));
                     return possibleMoves;   
             }
             return possibleMoves;
         }
-
-
-        // char [, ] boardMap;
-        
-        // void Start()
-        // {
-        //     Board board = new Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
-        //     boardMap = Board.GetBoardMap();
-
-        //     for (int i = 0; i < 8; i++) {
-        //         Debug.Log($"{boardMap[i, 0]} {boardMap[i, 1]} {boardMap[i, 2]} {boardMap[i, 3]} {boardMap[i, 4]} {boardMap[i, 5]} {boardMap[i, 6]} {boardMap[i, 7]}");
-        //     }
-            
-        // }
     }
 }
 

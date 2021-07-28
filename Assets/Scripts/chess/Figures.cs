@@ -1,9 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
 namespace chess {
-    public class Figure {
+    public class Figures {
         enum figures {
             whiteKing = 'K',
             whiteQueen = 'Q',

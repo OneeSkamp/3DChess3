@@ -1,10 +1,10 @@
 using System;
-using UnityEngine;
 
 namespace chess {
-    public class Board : MonoBehaviour{
+    public class Board {
+        
         public string fen;
-        public static char[,] boardMap;
+        public char[,] boardMap;
 
         public Board(string fen){
             this.fen = fen;
@@ -15,7 +15,7 @@ namespace chess {
                 for (int j = 0; j < boardMap.GetLength(1); j++) {
                     
                     if (fen[fenCount] == '/') {
-                        Debug.Log($"+ {fen[fenCount]}");
+                        //Debug.Log($"+ {fen[fenCount]}");
                         fenCount++;
                     } 
                     
@@ -37,23 +37,6 @@ namespace chess {
             }
         }
 
-        public static char[, ] GetBoardMap() {
-            return boardMap;
-        }
-
-        public static int GetBoardEdgeLen() {
-            return (int)Math.Sqrt(boardMap.Length);
-        }
-
-        public static bool OnBoard(ChessEngine.Position pos) {
-            int lenBoard = GetBoardEdgeLen();
-
-            if (pos.x < 0 || pos.y < 0 || pos.x >= lenBoard || pos.y >= lenBoard) {
-                return false;
-            }
-
-            return true;
-        }
     }
 }
 
