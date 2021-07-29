@@ -1,19 +1,17 @@
 namespace chess {
-    public class Figures {
-        enum figures {
-            whiteKing = 'K',
-            whiteQueen = 'Q',
-            whiteRook = 'R',
-            whiteKnight = 'N',
-            whiteBishop = 'B',
-            whitePawn = 'P',
-            blackKing = 'k',
-            blackQueen = 'q',
-            blackRook = 'r',
-            blackKnight = 'n',
-            blackBishop = 'b',
-            blackPawn = 'p',
-        }
+    public enum figureType {
+        None,
+        Pawn,
+        Knight,
+        Bishop,
+        Rook,
+        Queen,
+        King
+    }
+
+    public struct Fig {
+        public bool white;
+        public figureType type;
     }
 
 }

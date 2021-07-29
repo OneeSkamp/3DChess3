@@ -1,0 +1,16 @@
+{
+    "name": "visual",
+    "rootNamespace": "",
+    "references": [
+        "GUID:2fc023d9259645a41afe626b0fc9d077"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
