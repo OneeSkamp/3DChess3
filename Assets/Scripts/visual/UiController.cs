@@ -18,6 +18,9 @@ namespace visual {
         public GameObject whiteKnight; 
         public GameObject whiteBishop; 
         public GameObject whiteQueen;
+        public Position activeFigurePos;
+        public List<PossibleMove> possibleMovesList = new List<PossibleMove>();
+        public List<GameObject> activeCellObjList = new List<GameObject>();
         public Board board = new Board();
         //public Board board = new Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"); 
         public int x;
@@ -82,56 +85,7 @@ namespace visual {
                         figuresMap[i, j] = Instantiate(whiteRook,
                         new Vector3(xPos,0.5f,yPos),Quaternion.identity);
                     }
-                    // switch (board[i, j]) {
-                    //     case 'p':
-                    //         figuresMap[i, j] = Instantiate(blackPawn,
-                    //         new Vector3(xPos,0.5f,yPos),Quaternion.identity);
-                    //         break;
-                    //     case 'q':
-                    //         figuresMap[i, j] = Instantiate(blackQueen,
-                    //         new Vector3(xPos,0.5f,yPos),Quaternion.identity);
-                    //         break;
-                    //     case 'k':
-                    //         figuresMap[i, j] = Instantiate(blackKing,
-                    //         new Vector3(xPos,0.5f,yPos),Quaternion.identity);
-                    //         break;
-                    //     case 'n':
-                    //         figuresMap[i, j] = Instantiate(blackKnight,
-                    //         new Vector3(xPos,0.5f,yPos),Quaternion.identity);
-                    //         break;
-                    //     case 'r':
-                    //         figuresMap[i, j] = Instantiate(blackRook,
-                    //         new Vector3(xPos,0.5f,yPos),Quaternion.identity);
-                    //         break;
-                    //     case 'b':
-                    //         figuresMap[i, j] = Instantiate(blackBishop,
-                    //         new Vector3(xPos,0.5f,yPos),Quaternion.identity);
-                    //         break;
-                    //     case 'P':
-                    //         figuresMap[i, j] = Instantiate(whitePawn,
-                    //         new Vector3(xPos,0.5f,yPos),Quaternion.identity);
-                    //         break;
-                    //     case 'Q':
-                    //         figuresMap[i, j] = Instantiate(whiteQueen,
-                    //         new Vector3(xPos,0.5f,yPos),Quaternion.identity);
-                    //         break;
-                    //     case 'K':
-                    //         figuresMap[i, j] = Instantiate(whiteKing,
-                    //         new Vector3(xPos,0.5f,yPos),Quaternion.identity);
-                    //         break;
-                    //     case 'N':
-                    //         figuresMap[i, j] = Instantiate(whiteKnight,
-                    //         new Vector3(xPos,0.5f,yPos),Quaternion.identity);
-                    //         break;
-                    //     case 'R':
-                    //         figuresMap[i, j] = Instantiate(whiteRook,
-                    //         new Vector3(xPos,0.5f,yPos),Quaternion.identity);
-                    //         break;
-                    //     case 'B':
-                    //         figuresMap[i, j] = Instantiate(whiteBishop,
-                    //         new Vector3(xPos,0.5f,yPos),Quaternion.identity);
-                    //         break;
-                    // }
+
                     yPos-=1f;
                 }
                 yPos=3.5f;
@@ -139,16 +93,61 @@ namespace visual {
             }
         }
         private void Update() {
-            if (Input.GetMouseButtonDown(0))
-            Debug.Log("Pressed primary button.");
+            if (Input.GetMouseButtonDown(0)) {
+                CleaningActiveCellObjList();
+                possibleMovesList.Clear();
+                ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                if(Physics.Raycast(ray, out hit)) {
+                    x = Mathf.Abs((int)(hit.point.x - 4));
+                    y = Mathf.Abs((int)(hit.point.z - 4));
+
+                    if (figuresMap[x, y] != null) {
+                        activeFigurePos = SelectFigure(x, y);
+                        GetPossibleMoveList(activeFigurePos);
+                        CreatingPossibleMoves();
+                    } else {
+                        MoveFigure();
+                    }
+                }
+            }
         }
 
+        private void CreatingPossibleMoves() {
+            foreach (PossibleMove move in possibleMovesList) {
+                activeCellObjList.Add(Instantiate(blueBacklight,
+                        new Vector3(3.5f - move.movePosition.x,0.5f, 
+                                        3.5f - move.movePosition.y),Quaternion.identity));
+            }
+        } 
+
+        private Position SelectFigure(int x, int y) {
+            
+            return ChessEngine.GetPosition(x, y);
+        }
+
+        private List<PossibleMove> GetPossibleMoveList(Position position) {
+            possibleMovesList.AddRange(ChessEngine.GetPossibleMoves(position, 
+                                                                    board.boardMap));
+            return possibleMovesList;
+        }
+
+        private void CleaningActiveCellObjList() {
+            foreach(GameObject cell in activeCellObjList) {
+                Destroy(cell);
+            }
+        }
+
+        private void MoveFigure() {
+            
+            Debug.Log(activeCellObjList);
+            Debug.Log("move");
+        }
         private void Start() {
             CreatingFiguresOnBoard(board.boardMap);
-            Position start = ChessEngine.GetPosition(0, 1);
-            Position to = ChessEngine.GetPosition(2, 2);
+            // Position start = ChessEngine.GetPosition(0, 1);
+            // Position to = ChessEngine.GetPosition(2, 2);
             
-            Debug.Log(ChessEngine.MoveFigure(start, to, board.boardMap));       
+            // Debug.Log(ChessEngine.MoveFigure(start, to, board.boardMap));       
         }
     }
 }

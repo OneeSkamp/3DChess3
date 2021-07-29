@@ -1,4 +1,3 @@
-using System;
 
 namespace chess {
     public class Board {
