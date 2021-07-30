@@ -21,8 +21,8 @@ namespace visual {
         public Position activeFigurePos;
         public List<PossibleMove> possibleMovesList = new List<PossibleMove>();
         public List<GameObject> activeCellObjList = new List<GameObject>();
-        public Board board = new Board();
-        //public Board board = new Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"); 
+        public Board board = new Board(true);
+         
         public int x;
         public int y;
         private Ray ray;
@@ -101,12 +101,18 @@ namespace visual {
                     x = Mathf.Abs((int)(hit.point.x - 4));
                     y = Mathf.Abs((int)(hit.point.z - 4));
 
-                    if (figuresMap[x, y] != null) {
+                    if (figuresMap[x, y] != null 
+                        && board.boardMap[x, y].white == board.whiteMove) {
+                        
                         activeFigurePos = SelectFigure(x, y);
                         GetPossibleMoveList(activeFigurePos);
                         CreatingPossibleMoves();
                     } else {
-                        MoveFigure();
+                        Position from = activeFigurePos;
+                        x = Mathf.Abs((int)(hit.point.x - 4));
+                        y = Mathf.Abs((int)(hit.point.z - 4));
+                        Position to = SelectFigure(x, y);
+                        MoveFigure(from, to, board.boardMap);
                     }
                 }
             }
@@ -121,7 +127,7 @@ namespace visual {
         } 
 
         private Position SelectFigure(int x, int y) {
-            
+
             return ChessEngine.GetPosition(x, y);
         }
 
@@ -137,11 +143,34 @@ namespace visual {
             }
         }
 
-        private void MoveFigure() {
-            
-            Debug.Log(activeCellObjList);
-            Debug.Log("move");
+        private void MoveFigure(Position from, Position to, Fig[,] boardMap) {
+            if (ChessEngine.MoveFigure(from, to, boardMap)) {
+
+                GameObject figureForMove = figuresMap[from.x, from.y];
+                if (figuresMap[to.x, to.y] != null) {
+                    Destroy(figuresMap[to.x, to.y]);
+                } 
+                figuresMap[to.x, to.y] = figuresMap[from.x, from.y];
+                figuresMap[from.x, from.y] = null;
+
+                Vector3 newPos = new Vector3(3.5f - to.x, 0.5f, 3.5f - to.y);
+                figureForMove.transform.position = newPos;
+                board.whiteMove = !board.whiteMove;
+
+                if (ChessEngine.CheckKing(board.whiteMove, boardMap)) {
+                    for (int i = 0; i < 8; i++) {
+                        for (int j = 0; j < 8; j++) {
+                            if (boardMap[i, j].check) {
+                                Instantiate(redBacklight,
+                                new Vector3(3.5f - i, 0.5f, 3.5f - j),Quaternion.identity);
+                            }
+                        }
+                    }
+                    Debug.Log("check");
+                }
+            }
         }
+
         private void Start() {
             CreatingFiguresOnBoard(board.boardMap);
             // Position start = ChessEngine.GetPosition(0, 1);

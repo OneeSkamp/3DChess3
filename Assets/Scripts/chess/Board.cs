@@ -3,15 +3,18 @@ namespace chess {
     public class Board {
         
         public string fen;
+        public bool whiteMove;
         public Fig[,] boardMap;
 
         private Fig GetFig(bool white, figureType type) {
             Fig figure = new Fig();
             figure.white = white;
             figure.type = type;
+            figure.firstMove = true;
             return figure;
         }
-        public Board() {
+        public Board(bool whiteMove) {
+            this.whiteMove = whiteMove;
             boardMap = new Fig[8, 8];
 
             boardMap[0, 0] = GetFig(false, figureType.Rook);
@@ -45,50 +48,7 @@ namespace chess {
             for (int x = 0; x <= 7; x++) {
                 boardMap[6, x] = GetFig(true, figureType.Pawn);
             }
-            // initialFigurePlacement[7, 0] = whiteRook;
-            // initialFigurePlacement[7, 7] = whiteRook;
-
-            // initialFigurePlacement[7, 1] = whiteKnight;
-            // initialFigurePlacement[7, 6] = whiteKnight;
-
-            // initialFigurePlacement[7, 2] = whiteBishop;
-            // initialFigurePlacement[7, 5] = whiteBishop;
-
-            // initialFigurePlacement[7, 3] = whiteKing;
-            // initialFigurePlacement[7, 4] = whiteQueen;
         }
-
-        // public Board(string fen){
-        //     this.fen = fen;
-        //     boardMap = new char[8, 8];
-        //     int fenCount = 0;
-
-        //     for (int i = 0; i < boardMap.GetLength(0); i++) {
-        //         for (int j = 0; j < boardMap.GetLength(1); j++) {
-                    
-        //             if (fen[fenCount] == '/') {
-        //                 //Debug.Log($"+ {fen[fenCount]}");
-        //                 fenCount++;
-        //             } 
-                    
-        //             if (Char.IsDigit(fen[fenCount])) {
-                        
-        //                 for(int k = j; k < Int32.Parse(fen[fenCount].ToString()); k++) {
-        //                     boardMap[i, k] = '.';
-        //                     j = k;
-        //                 }
-        //                 fenCount++;
-        //             } 
-
-        //             if (!Char.IsDigit(fen[fenCount])&&fen[fenCount] != '/') {
-        //                 boardMap[i, j] = fen[fenCount];
-        //                 fenCount++;
-                        
-        //             }
-        //         }
-        //     }
-        // }
-
     }
 }
 

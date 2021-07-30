@@ -19,66 +19,121 @@ namespace chess {
             position.y = y;
             return position;
         }
-        public static PossibleMove GetPossibleMove(Position to) {
+        private static PossibleMove GetPossibleMove(Position to) {
             PossibleMove possibleMove = new PossibleMove();
             possibleMove.movePosition = GetPosition(to.x, to.y);
 
             return possibleMove;
         }
 
-        public static List<PossibleMove> GetPawnMoves(Position from, int direction, 
+        private static List<PossibleMove> GetPawnMoves(Position from, int direction, 
                                                                             Fig[,] board) {
             List<PossibleMove> possibleMoves = new List<PossibleMove>(); 
  
             Fig myElement = board[from.x, from.y];
-            Fig nextElement = board[from.x + direction, from.y];
-            Fig nextSecondElement = board[from.x + direction * 2, from.y];
-            Fig leftDiagonalElement = board[from.x + direction, from.y - direction];
-            Fig rightDiagonalElement = board[from.x + direction, from.y + direction];
 
-            Position leftDiagonalPos = GetPosition(from.x + direction, from.y - direction);
-            Position rightDiagonalPos = GetPosition(from.x + direction, from.y + direction);
-            Position nextElementPos = GetPosition(from.x + direction, from.y);
-            Position nextSecondElementPos = GetPosition(from.x + direction * 2, from.y);
+            if (OnBoard(GetPosition(from.x + direction, from.y))) {
+                Fig nextElement = board[from.x + direction, from.y];
+                Position nextElementPos = GetPosition(from.x + direction, from.y);
+                if (nextElement.type == figureType.None) {
+                    possibleMoves.Add(GetPossibleMove(nextElementPos)); 
+                }
+            }
 
-            if (nextElement.type == figureType.None) {
-                possibleMoves.Add(GetPossibleMove(nextElementPos)); 
-                if (board[from.x + direction * 2, from.y].type == figureType.None) {
+            if (OnBoard(GetPosition(from.x + direction * 2, from.y))) {
+                Fig nextSecondElement = board[from.x + direction * 2, from.y];
+                Position nextSecondElementPos = GetPosition(from.x + direction * 2, from.y);
+                if (board[from.x + direction * 2, from.y].type == figureType.None
+                    && board[from.x + direction, from.y].type == figureType.None
+                    && myElement.firstMove) {
+
                     possibleMoves.Add(GetPossibleMove(nextSecondElementPos));
                 }
             }
 
-            if (IsColorful(myElement, leftDiagonalElement)) {
-                possibleMoves.Add(GetPossibleMove(leftDiagonalPos));
+            if (OnBoard(GetPosition(from.x + direction, from.y - direction))) {
+                Fig leftDiagElement = board[from.x + direction, from.y - direction];
+                Position leftDiagPos = GetPosition(from.x + direction, from.y - direction);
+
+                if (leftDiagElement.type != figureType.None 
+                    && IsColorful(myElement, leftDiagElement)) {
+
+                    possibleMoves.Add(GetPossibleMove(leftDiagPos));
+                }
             }
 
-            if (IsColorful(myElement, rightDiagonalElement)) {
-                possibleMoves.Add(GetPossibleMove(rightDiagonalPos));
+            if (OnBoard(GetPosition(from.x + direction, from.y + direction))) {
+                Fig rightDiagElement = board[from.x + direction, from.y + direction];
+                Position rightDiagPos = GetPosition(from.x + direction, from.y + direction);
+
+                if (rightDiagElement.type != figureType.None 
+                    && IsColorful(myElement, rightDiagElement)) {
+
+                    possibleMoves.Add(GetPossibleMove(rightDiagPos));
+                } 
             }
 
             return possibleMoves;
         }
 
-        public static List<PossibleMove> GetOnePosMoves(Position from, int dirX, 
+        private static List<PossibleMove> GetOnePosMoves(Position from, int dirX, 
                                                             int dirY, Fig [,] board) {
             List<PossibleMove> possibleMoves = new List<PossibleMove>(); 
+            
+            if (OnBoard(GetPosition(from.x + dirX, from.y + dirY))) {
+                Fig myElement = board[from.x, from.y];
+                Fig nextElement = board[from.x + dirX, from.y + dirY];
+                Position nextElementPos = GetPosition(from.x + dirX, from.y + dirY);
 
-            Fig myElement = board[from.x, from.y];
-            Fig nextElement = board[from.x + dirX, from.y + dirY];
-            Position nextElementPos = GetPosition(from.x + dirX, from.y + dirY);
+                if (nextElement.type == figureType.None) {
+                    possibleMoves.Add(GetPossibleMove(nextElementPos));
+                }
 
-            if (nextElement.type == figureType.None) {
-                possibleMoves.Add(GetPossibleMove(nextElementPos));
-            }
-
-            if (IsColorful(myElement, nextElement)) {
-                possibleMoves.Add(GetPossibleMove(nextElementPos));
+                if (IsColorful(myElement, nextElement)) {
+                    possibleMoves.Add(GetPossibleMove(nextElementPos));
+                }
             }
 
             return possibleMoves;
         }
 
-        public static List<PossibleMove> GetLineMoves(Position from, int dirX, 
+        private static List<PossibleMove> GetCastlingMoves(Position from, Fig [,] board) {
+
+            List<PossibleMove> possibleMoves = new List<PossibleMove>();
+
+            Fig myElement = board[from.x, from.y];
+
+            for (int i = 1; i < 4; i++) {
+                if (board[from.x, from.y - i].type == figureType.None) {
+                    if (board[from.x, from.y - 4].type == figureType.Rook 
+                        && board[from.x, from.y - 4].firstMove) {
+
+                        board[from.x, from.y - 2].castling = true;
+                        possibleMoves.Add(GetPossibleMove(GetPosition(from.x, from.y - 2)));
+                    } else {
+                        board[from.x, from.y - 2].castling = false;
+                    }
+                }
+            }
+
+            for (int i = 1; i < 3; i++) {
+                if (board[from.x, from.y + i].type == figureType.None) {
+                    
+                    if (board[from.x, from.y + 3].type == figureType.Rook 
+                        && board[from.x, from.y + 3].firstMove) {
+                        
+                        board[from.x, from.y + 2].castling = true;
+                        possibleMoves.Add(GetPossibleMove(GetPosition(from.x, from.y + 2)));
+                    } else {
+                        board[from.x, from.y + 2].castling = false;
+                    }
+                }
+            }
+
+            return possibleMoves;
+        }
+
+        private static List<PossibleMove> GetLineMoves(Position from, int dirX, 
                                                         int dirY, Fig [,] board) {
             List<PossibleMove> possibleMoves = new List<PossibleMove>(); 
 
@@ -91,7 +146,6 @@ namespace chess {
                 if (!OnBoard(GetPosition(x, y))) {
                     break;
                 }
-
                 Fig nextElement = board[x, y];
                 Position nextElementPos = GetPosition(x, y);
 
@@ -104,7 +158,7 @@ namespace chess {
                     break;
                 }
 
-                if (IsColorful(myElement, nextElement)) {
+                if (nextElement.type != figureType.None && IsColorful(myElement, nextElement)) {
                     possibleMoves.Add(GetPossibleMove(nextElementPos));
                     break;
                 }
@@ -122,7 +176,7 @@ namespace chess {
 
         private static bool OnBoard(Position pos) {
 
-            if (pos.x < 0 || pos.y < 0 || pos.x >= 7 || pos.y >= 7) {
+            if (pos.x < 0 || pos.y < 0 || pos.x >= 8 || pos.y >= 8) {
                 return false;
             }
 
@@ -178,15 +232,8 @@ namespace chess {
                     possibleMoves.AddRange(GetOnePosMoves(startPos, -1, 1, board));
                     possibleMoves.AddRange(GetOnePosMoves(startPos, -1, 0, board));
                     possibleMoves.AddRange(GetOnePosMoves(startPos, 0, -1, board));
+                    possibleMoves.AddRange(GetCastlingMoves(startPos, board));
                     return possibleMoves;
-
-                // case (figure.type == figureType.Pawn && figure.white) :
-                //     possibleMoves.AddRange(GetPawnMoves(figure.position, -1, board));
-                //     return possibleMoves;
-
-                // case (figure.type == figureType.Pawn && !figure.white):
-                //     possibleMoves.AddRange(GetPawnMoves(figure.position, 1, board));
-                //     return possibleMoves;   
             }
 
             if (figure.type == figureType.Pawn && !figure.white) {
@@ -202,39 +249,86 @@ namespace chess {
             return possibleMoves;
         }
 
+        public static bool PromotionPawn(figureType figForChange, Fig [,] board) {
+            for (int i = 0; i < 8; i++) {
+
+                if (board[0, i].type == figureType.Pawn) {
+                    board[0, i].type = figForChange;
+                    return true;
+                }
+
+                if (board[7, i].type == figureType.Pawn) {
+                    board[7, i].type = figForChange;
+                    return true;
+                }
+            }
+            return false;
+        } 
+
+        public static List<PossibleMove> GetAttackedKingMoves(bool whiteMove, Fig[,] board) {
+            List<PossibleMove> attackedKingMoves = new List<PossibleMove>();
+
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j < 8; j++) {
+                    if (board[i, j].white != whiteMove) {
+                        attackedKingMoves.AddRange(GetPossibleMoves(GetPosition(i, j), board));
+                    }
+                }
+            }
+            return attackedKingMoves;
+        }
+
+        public static bool CheckKing(bool whiteMove, Fig[,] board) {
+            List<PossibleMove> attackedKingMoves = GetAttackedKingMoves(whiteMove, board);
+            foreach (PossibleMove attackMove in attackedKingMoves) {
+                if (board[attackMove.movePosition.x, attackMove.movePosition.y].
+                    type == figureType.King 
+                    && board[attackMove.movePosition.x, attackMove.movePosition.y].
+                    white == whiteMove) {
+
+                    board[attackMove.movePosition.x, attackMove.movePosition.y].check = true;
+                    return true;
+                }
+            }
+            return false;
+        }
+        public static bool Castling(Position from, Position to, Fig[,] board) {
+
+            if (board[to.x, to.y].castling) {
+                board[to.x, to.y] = board[from.x, from.y];
+                board[from.x, from.y].type = figureType.None;
+                if (to.y == 2) {
+                    board[to.x, to.y + 1] = board[to.x, to.y - 2];
+                    board[to.x, to.y - 2].type = figureType.None;
+                    return true;
+                }
+                if (to.y == 5) {
+                    board[to.x, to.y - 1] = board[to.x, to.y + 2];
+                    board[to.x, to.y + 2].type = figureType.None;
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public static bool MoveFigure(Position from, Position to, Fig[,] board) {
             List<PossibleMove> possibleMoves = new List<PossibleMove>();
             possibleMoves.AddRange(GetPossibleMoves(from, board));
 
             foreach (PossibleMove move in possibleMoves) {
                 if (to.x == move.movePosition.x && to.y == move.movePosition.y) {
-                    board[to.x, to.y] = board[from.x, from.y];
-                    
-                    return true;
+                    if (Castling(from, to, board)) {
+                        return true;
+                    } else {
+                        board[from.x, from.y].firstMove = false;
+                        board[to.x, to.y] = board[from.x, from.y];
+                        board[from.x, from.y].type = figureType.None;
+                        return true;
+                    }
                 }
             }
-
             return false;
         }
-        // public static bool ComparePosition(Position position1, Position position2) {
-        //     if (position1 == position2) {
-        //         return true;
-        //     }
-        //     return false;
-        // }
-
-        // public static bool MoveFigure(Figure figure, Position to, char [,] board) {
-        //     List<PossibleMove> possibleMoves = GetPossibleMoves(figure, board);
-        //     Position currentPos = figure.position; 
-            
-        //     foreach(PossibleMove move in possibleMoves) {
-        //         if (ComparePosition(move, to)) {
-        //             board[currentPos.x, currentPos.y] = board[to.x, to.y];
-        //             return true;
-        //         }
-        //     }
-        //     return false;
-        // }
     }
 }
 

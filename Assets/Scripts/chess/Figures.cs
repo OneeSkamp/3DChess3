@@ -11,6 +11,9 @@ namespace chess {
 
     public struct Fig {
         public bool white;
+        public bool firstMove;
+        public bool castling;
+        public bool check;
         public figureType type;
     }
 
