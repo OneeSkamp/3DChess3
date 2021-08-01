@@ -132,7 +132,7 @@ namespace visual {
         }
 
         private List<PossibleMove> GetPossibleMoveList(Position position) {
-            possibleMovesList.AddRange(ChessEngine.GetPossibleMoves(position, 
+            possibleMovesList.AddRange(ChessEngine.CheckingPossibleMoves(position, board.whiteMove, 
                                                                     board.boardMap));
             return possibleMovesList;
         }
@@ -144,7 +144,7 @@ namespace visual {
         }
 
         private void MoveFigure(Position from, Position to, Fig[,] boardMap) {
-            if (ChessEngine.MoveFigure(from, to, boardMap)) {
+            if (ChessEngine.MoveFigure(from, to, board.whiteMove, boardMap)) {
 
                 GameObject figureForMove = figuresMap[from.x, from.y];
                 if (figuresMap[to.x, to.y] != null) {

@@ -1,8 +1,6 @@
 
 namespace chess {
     public class Board {
-        
-        public string fen;
         public bool whiteMove;
         public Fig[,] boardMap;
 
