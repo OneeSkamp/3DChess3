@@ -1,7 +1,14 @@
+using System.Globalization;
+using System.Reflection;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace chess {
+    public struct Move {
+        public Position from;
+        public Position to;
+    }
     public struct Position {
         public int x;
         public int y;
@@ -361,6 +368,8 @@ namespace chess {
             return test;
         }
 
+        
+
         public static List<PossibleMove> GetAttackedKingMoves(bool whiteMove, Fig[,] board) {
             List<PossibleMove> attackedKingMoves = new List<PossibleMove>();
 
@@ -370,6 +379,30 @@ namespace chess {
                         attackedKingMoves.AddRange(GetPossibleMoves(GetPosition(i, j), board));
                     }
                 }
+            }
+            return attackedKingMoves;
+        }
+        public static List<PossibleMove> Сheckmate(bool whiteMove, Fig[,] board, int x, int y) {
+            List<PossibleMove> attackedKingMoves = new List<PossibleMove>();
+
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j < 8; j++) {
+                    if (board[i, j].white != whiteMove && i != x && j != y) {
+                        if (CheckingPossibleMoves(GetPosition(i, j), whiteMove, board).Count != 0) {
+                            Debug.Log($"{i}  {j}  {x} {y}" );
+                        }
+                        attackedKingMoves.AddRange(CheckingPossibleMoves(GetPosition(i, j), whiteMove, board));
+
+                    }
+                }
+            }
+            Debug.Log(attackedKingMoves.Count);
+
+            if (attackedKingMoves.Count == 0 && CheckKing(whiteMove, board)) {
+                Debug.Log("shahimat");
+            }
+            if (attackedKingMoves.Count == 0 && CheckKing(!whiteMove, board)) {
+                Debug.Log("shahimat + ");
             }
             return attackedKingMoves;
         }

@@ -155,6 +155,8 @@ namespace visual {
         private void MoveFigure(Position from, Position to, Fig[,] boardMap) {
             GameObject figureForMove = figuresMap[from.x, from.y];
 
+            
+
             if (ChessEngine.Castling(from, to, boardMap)) {
                 figuresMap[to.x, to.y] = figuresMap[from.x, from.y];
                 figuresMap[from.x, from.y] = null;
@@ -219,6 +221,14 @@ namespace visual {
                 board.whiteMove = !board.whiteMove;
 
                 if (ChessEngine.CheckKing(board.whiteMove, boardMap)) {
+                    
+                    List<PossibleMove> list = new List<PossibleMove>();
+                    list.AddRange(ChessEngine.Сheckmate(board.whiteMove, boardMap, to.x, to.y));
+                    
+                    foreach (PossibleMove move in list) {
+                        // Debug.Log($"x = {move.movePosition.x}  y = {move.movePosition.y}");
+                    } 
+
                     for (int i = 0; i < 8; i++) {
                         for (int j = 0; j < 8; j++) {
 
