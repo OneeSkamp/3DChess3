@@ -1,5 +1,5 @@
 namespace chess {
-    public enum figureType {
+    public enum FigureType {
         None,
         Pawn,
         Knight,
@@ -13,8 +13,17 @@ namespace chess {
         public bool white;
         public bool firstMove;
         public bool castling;
+        public bool enPassant;
         public bool check;
-        public figureType type;
+        public FigureType type;
+
+        public static Fig CreateFig(bool white, FigureType type) {
+            Fig figure = new Fig();
+            figure.white = white;
+            figure.type = type;
+            figure.firstMove = true;
+            return figure;
+        }
     }
 
 }
