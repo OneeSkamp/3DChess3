@@ -387,23 +387,20 @@ namespace chess {
 
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
-                    if (board[i, j].white != whiteMove && i != x && j != y) {
-                        if (CheckingPossibleMoves(GetPosition(i, j), whiteMove, board).Count != 0) {
-                            Debug.Log($"{i}  {j}  {x} {y}" );
-                        }
-                        attackedKingMoves.AddRange(CheckingPossibleMoves(GetPosition(i, j), whiteMove, board));
+                    if (board[i, j].type != FigureType.None 
+                        && board[i, j].white == whiteMove && i != x && j != y) {
 
+                        // if (CheckingPossibleMoves(GetPosition(i, j), whiteMove, board).Count != 0) {
+                        //     Debug.Log($"{i}  {j}  {x} {y}" );
+                        // }
+                        attackedKingMoves.AddRange(CheckingPossibleMoves(
+                            GetPosition(i, j), whiteMove, board
+                            ));
                     }
                 }
             }
             Debug.Log(attackedKingMoves.Count);
 
-            if (attackedKingMoves.Count == 0 && CheckKing(whiteMove, board)) {
-                Debug.Log("shahimat");
-            }
-            if (attackedKingMoves.Count == 0 && CheckKing(!whiteMove, board)) {
-                Debug.Log("shahimat + ");
-            }
             return attackedKingMoves;
         }
 
@@ -421,21 +418,6 @@ namespace chess {
                 }
             }
             return false;
-        }
-        public static bool CheckPromotionPawn(Position from, Position to, Fig[,] board) {
-
-            if (board[from.x, from.y].type == FigureType.Pawn) {
-                
-                if (to.x == 0 || to.x == 7) {
-
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public static void ChangePawn(Position to, FigureType newType, Fig[,] board) {
-            board[to.x, to.y].type = newType;
         }
 
         public static bool EnPassant(Position from, Position to, Fig[,] board) {

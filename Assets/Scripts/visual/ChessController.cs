@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using chess;
 
 namespace visual {
@@ -18,10 +19,22 @@ namespace visual {
         public GameObject whiteKnight; 
         public GameObject whiteBishop; 
         public GameObject whiteQueen;
+        public Text endGameText;
+        public string checkmate;
+        public string stalemate;
+        public Button queenBut;
+        public Button bishopBut;
+        public Button rookBut;
+        public Button knightBut;
+        public Button newGame;
+        public GameObject CheckMateUi;
+        public GameObject ChangePawnUi;
         public Position activeFigurePos;
         public List<PossibleMove> possibleMovesList = new List<PossibleMove>();
         public List<GameObject> activeCellObjList = new List<GameObject>();
         public Board board = new Board(true);
+        private Fig pawnForChange;
+        private GameObject pawnForChangeObj;
          
         public int x;
         public int y;
@@ -123,10 +136,15 @@ namespace visual {
         }
 
         private void CreatingPossibleMoves() {
+
             foreach (PossibleMove move in possibleMovesList) {
-                activeCellObjList.Add(Instantiate(blueBacklight,
-                        new Vector3(3.5f - move.movePosition.x,0.5f, 
-                                        3.5f - move.movePosition.y),Quaternion.identity));
+                activeCellObjList.Add(
+                    Instantiate(
+                        blueBacklight,
+                        new Vector3(3.5f - move.movePosition.x,0.515f, 3.5f - move.movePosition.y),
+                        Quaternion.Euler(90, 0, 0)
+                    )
+                );
             }
         } 
 
@@ -136,8 +154,9 @@ namespace visual {
         }
 
         private List<PossibleMove> GetPossibleMoveList(Position position) {
-            possibleMovesList.AddRange(ChessEngine.CheckingPossibleMoves(position, board.whiteMove, 
-                                                                    board.boardMap));
+            possibleMovesList.AddRange(
+                ChessEngine.CheckingPossibleMoves(position, board.whiteMove, board.boardMap)
+                );
             return possibleMovesList;
         }
         private void CleaningCheckCell() {
@@ -154,8 +173,6 @@ namespace visual {
 
         private void MoveFigure(Position from, Position to, Fig[,] boardMap) {
             GameObject figureForMove = figuresMap[from.x, from.y];
-
-            
 
             if (ChessEngine.Castling(from, to, boardMap)) {
                 figuresMap[to.x, to.y] = figuresMap[from.x, from.y];
@@ -221,20 +238,31 @@ namespace visual {
                 board.whiteMove = !board.whiteMove;
 
                 if (ChessEngine.CheckKing(board.whiteMove, boardMap)) {
-                    
+
                     List<PossibleMove> list = new List<PossibleMove>();
                     list.AddRange(ChessEngine.Сheckmate(board.whiteMove, boardMap, to.x, to.y));
-                    
-                    foreach (PossibleMove move in list) {
-                        // Debug.Log($"x = {move.movePosition.x}  y = {move.movePosition.y}");
-                    } 
+
+                    if (list.Count == 0 && ChessEngine.CheckKing(board.whiteMove, boardMap)) {
+                        endGameText.text = checkmate;
+                        CheckMateUi.SetActive(true);
+                        Debug.Log("shahimat");
+                    }
+
+                    if (list.Count == 0 && !ChessEngine.CheckKing(board.whiteMove, boardMap)) {
+                        endGameText.text = stalemate;
+                        CheckMateUi.SetActive(true);
+                        Debug.Log("pat");
+                    }
 
                     for (int i = 0; i < 8; i++) {
                         for (int j = 0; j < 8; j++) {
 
                             if (boardMap[i, j].check) {
-                                CheckCell = Instantiate(redBacklight,
-                                new Vector3(3.5f - i, 0.5f, 3.5f - j),Quaternion.identity);
+                                CheckCell = Instantiate(
+                                    redBacklight,
+                                    new Vector3(3.5f - i, 0.515f, 3.5f - j), 
+                                    Quaternion.Euler(90, 0, 0)
+                                );
                             }
                         }
                     }
