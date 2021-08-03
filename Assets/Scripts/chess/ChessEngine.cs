@@ -5,10 +5,6 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace chess {
-    public struct Move {
-        public Position from;
-        public Position to;
-    }
     public struct Position {
         public int x;
         public int y;
@@ -139,7 +135,7 @@ namespace chess {
             if (OnBoard(GetPosition(from.x, from.y + 3)) 
                 && board[from.x, from.y + 1].type == FigureType.None
                 && board[from.x, from.y + 2].type == FigureType.None) {
-                
+
                 if (board[from.x, from.y + 3].type == FigureType.Rook 
                     && board[from.x, from.y + 3].firstMove) {
                     
@@ -234,7 +230,7 @@ namespace chess {
 
                 int x = from.x + i * dirX;
                 int y = from.y + i * dirY;
-                
+
                 if (!OnBoard(GetPosition(x, y))) {
                     break;
                 }
@@ -368,8 +364,6 @@ namespace chess {
             return test;
         }
 
-        
-
         public static List<PossibleMove> GetAttackedKingMoves(bool whiteMove, Fig[,] board) {
             List<PossibleMove> attackedKingMoves = new List<PossibleMove>();
 
@@ -390,9 +384,6 @@ namespace chess {
                     if (board[i, j].type != FigureType.None 
                         && board[i, j].white == whiteMove && i != x && j != y) {
 
-                        // if (CheckingPossibleMoves(GetPosition(i, j), whiteMove, board).Count != 0) {
-                        //     Debug.Log($"{i}  {j}  {x} {y}" );
-                        // }
                         attackedKingMoves.AddRange(CheckingPossibleMoves(
                             GetPosition(i, j), whiteMove, board
                             ));
@@ -407,7 +398,7 @@ namespace chess {
         public static bool CheckKing(bool whiteMove, Fig[,] board) {
             List<PossibleMove> attackedKingMoves = GetAttackedKingMoves(whiteMove, board);
             foreach (PossibleMove attackMove in attackedKingMoves) {
-                
+
                 if (board[attackMove.movePosition.x, attackMove.movePosition.y].
                     type == FigureType.King 
                     && board[attackMove.movePosition.x, attackMove.movePosition.y].
@@ -420,47 +411,50 @@ namespace chess {
             return false;
         }
 
-        public static bool EnPassant(Position from, Position to, Fig[,] board) {
-            if (board[from.x, from.y].type == FigureType.Pawn && board[to.x, to.y].enPassant) {
-                board[to.x, to.y] = board[from.x, from.y];
+        public static bool EnPassant(Move move, Fig[,] board) {
+            var myFigType = board[move.from.x, move.from.y].type;
 
-                if (to.x == 5) {
-                    board[to.x - 1, to.y].type = FigureType.None;
+            if (myFigType == FigureType.Pawn && board[move.to.x, move.to.y].enPassant) {
+                board[move.to.x, move.to.y] = board[move.from.x, move.from.y];
+
+                if (move.to.x == 5) {
+                    board[move.to.x - 1, move.to.y].type = FigureType.None;
                     return true;
                 }
 
-                if (to.x == 2) {
-                    board[to.x + 1, to.y].type = FigureType.None;
-                    return true;
-                }
-            }
-            return false;
-        }
-        public static bool Castling(Position from, Position to, Fig[,] board) {
-
-            if (board[from.x, from.y].type == FigureType.King && board[to.x, to.y].castling) {
-
-                board[to.x, to.y] = board[from.x, from.y];
-                board[from.x, from.y].type = FigureType.None;
-
-                if (to.y == 2) {
-                    board[to.x, to.y + 1] = board[to.x, to.y - 2];
-                    board[to.x, to.y - 2].type = FigureType.None;
-                    return true;
-                }
-
-                if (to.y == 6) {
-                    board[to.x, to.y - 1] = board[to.x, to.y + 1];
-                    board[to.x, to.y + 1].type = FigureType.None;
+                if (move.to.x == 2) {
+                    board[move.to.x + 1, move.to.y].type = FigureType.None;
                     return true;
                 }
             }
             return false;
         }
+        public static bool Castling(Move move, Fig[,] board) {
+            var myFigType = board[move.from.x, move.from.y].type;
 
-        public static bool MoveFigure(Position from, Position to, bool whiteMove, Fig[,] board) {
+            if (myFigType == FigureType.King && board[move.to.x, move.to.y].castling) {
+
+                board[move.to.x, move.to.y] = board[move.from.x, move.from.y];
+                board[move.from.x, move.from.y].type = FigureType.None;
+
+                if (move.to.y == 2) {
+                    board[move.to.x, move.to.y + 1] = board[move.to.x, move.to.y - 2];
+                    board[move.to.x, move.to.y - 2].type = FigureType.None;
+                    return true;
+                }
+
+                if (move.to.y == 6) {
+                    board[move.to.x, move.to.y - 1] = board[move.to.x, move.to.y + 1];
+                    board[move.to.x, move.to.y + 1].type = FigureType.None;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static bool MoveFigure(Move move, bool whiteMove, Fig[,] board) {
             List<PossibleMove> possibleMoves = new List<PossibleMove>();
-            possibleMoves.AddRange(CheckingPossibleMoves(from, whiteMove, board));
+            possibleMoves.AddRange(CheckingPossibleMoves(move.from, whiteMove, board));
 
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
@@ -469,26 +463,26 @@ namespace chess {
                 }
             }
 
-            foreach (PossibleMove move in possibleMoves) {
-                if (to.x == move.movePosition.x && to.y == move.movePosition.y) {
+            foreach (PossibleMove posMove in possibleMoves) {
+                if (move.to.x == posMove.movePosition.x && move.to.y == posMove.movePosition.y) {
 
-                    if (board[from.x, from.y].type == FigureType.Pawn) {
+                    if (board[move.from.x, move.from.y].type == FigureType.Pawn) {
 
-                        if (board[from.x, from.y].firstMove) {
+                        if (board[move.from.x, move.from.y].firstMove) {
 
-                            if (to.x == from.x + 2) {
-                                board[from.x + 1, from.y].enPassant = true;
+                            if (move.to.x == move.from.x + 2) {
+                                board[move.from.x + 1, move.from.y].enPassant = true;
                             }
 
-                            if (to.x == from.x - 2) {
-                                board[from.x - 1, from.y].enPassant = true;
+                            if (move.to.x == move.from.x - 2) {
+                                board[move.from.x - 1, move.from.y].enPassant = true;
                             }
                         }
                     }
 
-                    board[from.x, from.y].firstMove = false;
-                    board[to.x, to.y] = board[from.x, from.y];
-                    board[from.x, from.y].type = FigureType.None;
+                    board[move.from.x, move.from.y].firstMove = false;
+                    board[move.to.x, move.to.y] = board[move.from.x, move.from.y];
+                    board[move.from.x, move.from.y].type = FigureType.None;
                     return true;
                 }
             }

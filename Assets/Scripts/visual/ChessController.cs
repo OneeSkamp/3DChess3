@@ -124,12 +124,13 @@ namespace visual {
                         CreatingPossibleMoves();
 
                     } else {
-
-                        Position from = activeFigurePos;
+                        Move move = new Move();
+                        move.from = activeFigurePos;
                         x = Mathf.Abs((int)(hit.point.x - 4));
                         y = Mathf.Abs((int)(hit.point.z - 4));
-                        Position to = SelectFigure(x, y);
-                        MoveFigure(from, to, board.boardMap);
+                        move.to = SelectFigure(x, y);
+
+                        MoveFigure(move, board.boardMap);
                     }
                 }
             }
@@ -171,66 +172,66 @@ namespace visual {
             }
         }
 
-        private void MoveFigure(Position from, Position to, Fig[,] boardMap) {
-            GameObject figureForMove = figuresMap[from.x, from.y];
+        private void MoveFigure(Move move, Fig[,] boardMap) {
+            GameObject figureForMove = figuresMap[move.from.x, move.from.y];
 
-            if (ChessEngine.Castling(from, to, boardMap)) {
-                figuresMap[to.x, to.y] = figuresMap[from.x, from.y];
-                figuresMap[from.x, from.y] = null;
-                Vector3 newPos = new Vector3(3.5f - to.x, 0.5f, 3.5f - to.y);
+            if (ChessEngine.Castling(move, boardMap)) {
+                figuresMap[move.to.x, move.to.y] = figuresMap[move.from.x, move.from.y];
+                figuresMap[move.from.x, move.from.y] = null;
+                Vector3 newPos = new Vector3(3.5f - move.to.x, 0.5f, 3.5f - move.to.y);
 
                 if (figureForMove != null) {
                 figureForMove.transform.position = newPos;
                 }
 
-                if (to.y == 2) {
-                    var newPookPos = new Vector3(3.5f - to.x, 0.5f, 3.5f - to.y -1);
-                    figuresMap[to.x, to.y + 1] = figuresMap[to.x, to.y - 2];
-                    figuresMap[to.x, to.y + 1].transform.position = newPookPos;
-                    figuresMap[to.x, to.y - 2] = null;
+                if (move.to.y == 2) {
+                    var newRookPos = new Vector3(3.5f - move.to.x, 0.5f, 3.5f - move.to.y -1);
+                    figuresMap[move.to.x, move.to.y + 1] = figuresMap[move.to.x, move.to.y - 2];
+                    figuresMap[move.to.x, move.to.y + 1].transform.position = newRookPos;
+                    figuresMap[move.to.x, move.to.y - 2] = null;
                 }
 
-                if (to.y == 6) {
-                    var newPookPos = new Vector3(3.5f - to.x, 0.5f, 3.5f - to.y + 1);
-                    figuresMap[to.x, to.y - 1] = figuresMap[to.x, to.y + 1];
-                    figuresMap[to.x, to.y - 1].transform.position = newPookPos;
-                    figuresMap[to.x, to.y + 1] = null;
+                if (move.to.y == 6) {
+                    var newRookPos = new Vector3(3.5f - move.to.x, 0.5f, 3.5f - move.to.y + 1);
+                    figuresMap[move.to.x, move.to.y - 1] = figuresMap[move.to.x, move.to.y + 1];
+                    figuresMap[move.to.x, move.to.y - 1].transform.position = newRookPos;
+                    figuresMap[move.to.x, move.to.y + 1] = null;
                 }
                 board.whiteMove = !board.whiteMove;
                 Debug.Log("castling");
             }
 
-            if (ChessEngine.EnPassant(from, to, boardMap)) {
-                figuresMap[to.x, to.y] = figuresMap[from.x, from.y];
-                figuresMap[from.x, from.y] = null;
-                Vector3 newPos = new Vector3(3.5f - to.x, 0.5f, 3.5f - to.y);
+            if (ChessEngine.EnPassant(move, boardMap)) {
+                figuresMap[move.to.x, move.to.y] = figuresMap[move.from.x, move.from.y];
+                figuresMap[move.from.x, move.from.y] = null;
+                Vector3 newPos = new Vector3(3.5f - move.to.x, 0.5f, 3.5f - move.to.y);
 
                 if (figureForMove != null) {
                     figureForMove.transform.position = newPos;
                 }
 
-                if (to.x == 5) {
-                    Destroy(figuresMap[to.x - 1, to.y]);
+                if (move.to.x == 5) {
+                    Destroy(figuresMap[move.to.x - 1, move.to.y]);
                 }
 
-                if (to.x == 2) {
-                    Destroy(figuresMap[to.x + 1, to.y]);
+                if (move.to.x == 2) {
+                    Destroy(figuresMap[move.to.x + 1, move.to.y]);
                 }
                 board.whiteMove = !board.whiteMove;
                 Debug.Log("enPassant");
             }
 
-            if (ChessEngine.MoveFigure(from, to, board.whiteMove, boardMap)) {
+            if (ChessEngine.MoveFigure(move, board.whiteMove, boardMap)) {
                 CleaningCheckCell();
 
-                if (figuresMap[to.x, to.y] != null) {
-                    Destroy(figuresMap[to.x, to.y]);
+                if (figuresMap[move.to.x, move.to.y] != null) {
+                    Destroy(figuresMap[move.to.x, move.to.y]);
                 }
 
-                figuresMap[to.x, to.y] = figuresMap[from.x, from.y];
-                figuresMap[from.x, from.y] = null;
+                figuresMap[move.to.x, move.to.y] = figuresMap[move.from.x, move.from.y];
+                figuresMap[move.from.x, move.from.y] = null;
 
-                Vector3 newPos = new Vector3(3.5f - to.x, 0.5f, 3.5f - to.y);
+                Vector3 newPos = new Vector3(3.5f - move.to.x, 0.5f, 3.5f - move.to.y);
                 if (figureForMove != null) {
                     figureForMove.transform.position = newPos;
                 }
@@ -240,7 +241,12 @@ namespace visual {
                 if (ChessEngine.CheckKing(board.whiteMove, boardMap)) {
 
                     List<PossibleMove> list = new List<PossibleMove>();
-                    list.AddRange(ChessEngine.Сheckmate(board.whiteMove, boardMap, to.x, to.y));
+                    list.AddRange(ChessEngine.Сheckmate(
+                            board.whiteMove, 
+                            boardMap, 
+                            move.to.x, 
+                            move.to.y)
+                        );
 
                     if (list.Count == 0 && ChessEngine.CheckKing(board.whiteMove, boardMap)) {
                         endGameText.text = checkmate;
