@@ -1,5 +1,3 @@
-using System.Globalization;
-using System.Reflection;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -322,6 +320,7 @@ namespace chess {
                     possibleMoves.AddRange(GetOnePosMoves(startPos, -1, 0, board));
                     possibleMoves.AddRange(GetOnePosMoves(startPos, 0, -1, board));
                     possibleMoves.AddRange(GetCastlingMoves(startPos, board));
+                    
                     return possibleMoves;
             }
 
@@ -450,6 +449,34 @@ namespace chess {
                 }
             }
             return false;
+        }
+
+        public static Nullable<Position> checkChangePawn(Fig[,] board) {
+            
+            Nullable<Position> pos = new Nullable<Position>();
+            pos = null;
+            
+            for (int i = 0; i < 8; i++) {
+                if (board[0, i].type == FigureType.Pawn) {
+                    pos = GetPosition(0, i);
+                }
+            }
+
+            for (int i = 0; i < 8; i++) {
+                if (board[7, i].type == FigureType.Pawn) {
+                    pos = GetPosition(7, i);
+                }
+            }
+
+            return pos;
+        }
+
+        public static void ChangePawn(FigureType type, Position pawnPos, Fig[,] board) {
+            switch(type) {
+                case FigureType.Queen:
+                    board[pawnPos.x, pawnPos.y].type = FigureType.Queen;
+                    break;
+            }
         }
 
         public static bool MoveFigure(Move move, bool whiteMove, Fig[,] board) {

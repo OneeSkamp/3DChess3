@@ -5,6 +5,7 @@ using chess;
 
 namespace visual {
     public class ChessController : MonoBehaviour {
+        FigureContainer figureContainer;
         public GameObject blueBacklight;
         public GameObject redBacklight;
         public GameObject blackPawn; 
@@ -13,7 +14,6 @@ namespace visual {
         public GameObject blackKnight; 
         public GameObject blackBishop; 
         public GameObject blackQueen; 
-        public GameObject whitePawn; 
         public GameObject whiteKing;
         public GameObject whiteRook; 
         public GameObject whiteKnight; 
@@ -33,8 +33,6 @@ namespace visual {
         public List<PossibleMove> possibleMovesList = new List<PossibleMove>();
         public List<GameObject> activeCellObjList = new List<GameObject>();
         public Board board = new Board(true);
-        private Fig pawnForChange;
-        private GameObject pawnForChangeObj;
          
         public int x;
         public int y;
@@ -78,7 +76,7 @@ namespace visual {
                     }
 
                     if (board[i, j].type == FigureType.Pawn && board[i, j].white) {
-                        figuresMap[i, j] = Instantiate(whitePawn, pos, Quaternion.identity);
+                        figuresMap[i, j] = Instantiate(figureContainer.whitePawn, pos, Quaternion.identity);
                     }
 
                     if (board[i, j].type == FigureType.Queen && board[i, j].white) {
@@ -174,6 +172,7 @@ namespace visual {
 
         private void MoveFigure(Move move, Fig[,] boardMap) {
             GameObject figureForMove = figuresMap[move.from.x, move.from.y];
+            FigureType figureType = boardMap[move.from.x, move.from.y].type;
 
             if (ChessEngine.Castling(move, boardMap)) {
                 figuresMap[move.to.x, move.to.y] = figuresMap[move.from.x, move.from.y];
@@ -181,7 +180,7 @@ namespace visual {
                 Vector3 newPos = new Vector3(3.5f - move.to.x, 0.5f, 3.5f - move.to.y);
 
                 if (figureForMove != null) {
-                figureForMove.transform.position = newPos;
+                    figureForMove.transform.position = newPos;
                 }
 
                 if (move.to.y == 2) {
@@ -223,6 +222,10 @@ namespace visual {
 
             if (ChessEngine.MoveFigure(move, board.whiteMove, boardMap)) {
                 CleaningCheckCell();
+                
+                if (ChessEngine.checkChangePawn(boardMap) != null) {
+                    ChangePawnUi.SetActive(true);
+                }
 
                 if (figuresMap[move.to.x, move.to.y] != null) {
                     Destroy(figuresMap[move.to.x, move.to.y]);
@@ -260,24 +263,49 @@ namespace visual {
                         Debug.Log("pat");
                     }
 
-                    for (int i = 0; i < 8; i++) {
-                        for (int j = 0; j < 8; j++) {
+                    InstantiateCheckKingCell();
 
-                            if (boardMap[i, j].check) {
-                                CheckCell = Instantiate(
-                                    redBacklight,
-                                    new Vector3(3.5f - i, 0.515f, 3.5f - j), 
-                                    Quaternion.Euler(90, 0, 0)
-                                );
-                            }
-                        }
-                    }
                 }
             }
         }
 
+        private void InstantiateCheckKingCell() {
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j < 8; j++) {
+
+                    if (board.boardMap[i, j].check) {
+                        CheckCell = Instantiate(
+                            redBacklight,
+                            new Vector3(3.5f - i, 0.515f, 3.5f - j), 
+                            Quaternion.Euler(90, 0, 0)
+                        );
+                    }
+                }
+            }
+        }
+        
+        private void ChangePawnToQueen() {
+            //Position pawnPos = new Position();
+            var pawnPos = (Position)ChessEngine.checkChangePawn(board.boardMap);
+            Destroy(figuresMap[pawnPos.x, pawnPos.y]);
+            if (pawnPos.x == 0) {
+                var newPos = new Vector3 (3.5f - pawnPos.x, 0.5f, 3.5f - pawnPos.y);
+                figuresMap[pawnPos.x, pawnPos.y] = Instantiate(whiteQueen, newPos, Quaternion.identity);
+            }
+            ChessEngine.ChangePawn(FigureType.Queen, pawnPos, board.boardMap);
+            ChangePawnUi.SetActive(false);
+            
+            ChessEngine.CheckKing(board.whiteMove, board.boardMap);
+            InstantiateCheckKingCell();
+        }
+
         private void Start() {
+            figureContainer = gameObject.GetComponent<FigureContainer>();
+
+            Position position = new Position();
+            Debug.Log(position.x);
             CreatingFiguresOnBoard(board.boardMap);
+            queenBut.onClick.AddListener(() => ChangePawnToQueen());
         }
     }
 }
