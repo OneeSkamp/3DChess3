@@ -5,20 +5,8 @@ using chess;
 
 namespace visual {
     public class ChessController : MonoBehaviour {
-        FigureContainer figureContainer;
-        public GameObject blueBacklight;
-        public GameObject redBacklight;
-        public GameObject blackPawn; 
-        public GameObject blackKing; 
-        public GameObject blackRook; 
-        public GameObject blackKnight; 
-        public GameObject blackBishop; 
-        public GameObject blackQueen; 
-        public GameObject whiteKing;
-        public GameObject whiteRook; 
-        public GameObject whiteKnight; 
-        public GameObject whiteBishop; 
-        public GameObject whiteQueen;
+        FigureContainer figCont;
+        public Transform boardTransform;
         public Text endGameText;
         public string checkmate;
         public string stalemate;
@@ -26,14 +14,13 @@ namespace visual {
         public Button bishopBut;
         public Button rookBut;
         public Button knightBut;
-        public Button newGame;
         public GameObject CheckMateUi;
         public GameObject ChangePawnUi;
         public Position activeFigurePos;
         public List<PossibleMove> possibleMovesList = new List<PossibleMove>();
         public List<GameObject> activeCellObjList = new List<GameObject>();
         public Board board = new Board(true);
-         
+        const float CONST = 3.5f;
         public int x;
         public int y;
 
@@ -41,94 +28,100 @@ namespace visual {
         private Ray ray;
         private RaycastHit hit;
 
-        public GameObject [,]  figuresMap = new GameObject[8,8];
+        public GameObject[,]  figuresMap = new GameObject[8,8];
 
-        private void CreatingFiguresOnBoard(Fig [,] board) {
-                float xPos=3.5f;
-                float yPos=3.5f;
+        private void CreatingFiguresOnBoard(Fig[,] board) {
+                float xPos = CONST;
+                float yPos = CONST;
             for (int i = 0; i < board.GetLength(0); i++) {
 
                 for (int j = 0; j < board.GetLength(1); j++) {
                     var pos = new Vector3(xPos, 0.5f, yPos);
 
                     if (board[i, j].type == FigureType.Pawn && !board[i, j].white) {
-                        figuresMap[i, j] = Instantiate(blackPawn, pos, Quaternion.identity);
+                        figuresMap[i, j] = Instantiate(figCont.bPawn, pos, Quaternion.identity);
                     }
 
                     if (board[i, j].type == FigureType.Queen && !board[i, j].white) {
-                        figuresMap[i, j] = Instantiate(blackQueen, pos, Quaternion.identity);
+                        figuresMap[i, j] = Instantiate(figCont.bQueen, pos, Quaternion.identity);
                     }
 
                     if (board[i, j].type == FigureType.King && !board[i, j].white) {
-                        figuresMap[i, j] = Instantiate(blackKing, pos, Quaternion.identity);
+                        figuresMap[i, j] = Instantiate(figCont.bKing, pos, Quaternion.identity);
                     }
 
                     if (board[i, j].type == FigureType.Knight && !board[i, j].white) {
-                        figuresMap[i, j] = Instantiate(blackKnight, pos, Quaternion.identity);
+                        figuresMap[i, j] = Instantiate(figCont.bKnight, pos, Quaternion.identity);
                     }
 
                     if (board[i, j].type == FigureType.Bishop && !board[i, j].white) {
-                        figuresMap[i, j] = Instantiate(blackBishop, pos, Quaternion.identity);
+                        figuresMap[i, j] = Instantiate(figCont.bBishop, pos, Quaternion.identity);
                     }
 
                     if (board[i, j].type == FigureType.Rook && !board[i, j].white) {
-                        figuresMap[i, j] = Instantiate(blackRook, pos, Quaternion.identity);
+                        figuresMap[i, j] = Instantiate(figCont.bRook, pos, Quaternion.identity);
                     }
 
                     if (board[i, j].type == FigureType.Pawn && board[i, j].white) {
-                        figuresMap[i, j] = Instantiate(figureContainer.whitePawn, pos, Quaternion.identity);
+                        figuresMap[i, j] = Instantiate(figCont.wPawn, pos, Quaternion.identity);
                     }
 
                     if (board[i, j].type == FigureType.Queen && board[i, j].white) {
-                        figuresMap[i, j] = Instantiate(whiteQueen, pos, Quaternion.identity);
+                        figuresMap[i, j] = Instantiate(figCont.wQueen, pos, Quaternion.identity);
                     }
 
                     if (board[i, j].type == FigureType.King && board[i, j].white) {
-                        figuresMap[i, j] = Instantiate(whiteKing, pos, Quaternion.identity);
+                        figuresMap[i, j] = Instantiate(figCont.wKing, pos, Quaternion.identity);
                     }
 
                     if (board[i, j].type == FigureType.Knight && board[i, j].white) {
-                        figuresMap[i, j] = Instantiate(whiteKnight, pos, Quaternion.identity);
+                        figuresMap[i, j] = Instantiate(figCont.wKnight, pos, Quaternion.identity);
                     }
 
                     if (board[i, j].type == FigureType.Bishop && board[i, j].white) {
-                        figuresMap[i, j] = Instantiate(whiteBishop, pos, Quaternion.identity);
+                        figuresMap[i, j] = Instantiate(figCont.wBishop, pos, Quaternion.identity);
                     }
 
                     if (board[i, j].type == FigureType.Rook && board[i, j].white) {
-                        figuresMap[i, j] = Instantiate(whiteRook, pos, Quaternion.identity);
+                        figuresMap[i, j] = Instantiate(figCont.wRook, pos, Quaternion.identity);
                     }
 
-                    yPos-=1f;
+                    yPos -= 1f;
                 }
-                yPos=3.5f;
-                xPos-=1f;
+                yPos = CONST;
+                xPos -= 1f;
             }
         }
         private void Update() {
-            if (Input.GetMouseButtonDown(0)) {
-                CleaningActiveCellObjList();
-                possibleMovesList.Clear();
-                ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-                
-                if (Physics.Raycast(ray, out hit)) {
-                    x = Mathf.Abs((int)(hit.point.x - 4));
-                    y = Mathf.Abs((int)(hit.point.z - 4));
+            if (!ChangePawnUi.activeSelf) {
+                if (Input.GetMouseButtonDown(0)) {
 
-                    if (figuresMap[x, y] != null 
-                        && board.boardMap[x, y].white == board.whiteMove) {
-                        activeFigurePos = SelectFigure(x, y);
-                        GetPossibleMoveList(activeFigurePos);
-                        CreatingPossibleMoves();
+                    foreach(GameObject cell in activeCellObjList) {
+                        Destroy(cell);
+                    }
 
-                    } else {
-                        Move move = new Move();
-                        move.from = activeFigurePos;
+                    possibleMovesList.Clear();
+                    ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+                    if (Physics.Raycast(ray, out hit)) {
                         x = Mathf.Abs((int)(hit.point.x - 4));
                         y = Mathf.Abs((int)(hit.point.z - 4));
-                        move.to = SelectFigure(x, y);
 
-                        MoveFigure(move, board.boardMap);
+                        if (figuresMap[x, y] != null 
+                            && board.boardMap[x, y].white == board.whiteMove) {
+                            activeFigurePos = SelectFigure(x, y);
+                            GetPossibleMoveList(activeFigurePos);
+                            CreatingPossibleMoves();
+
+                        } else {
+                            Move move = new Move();
+                            move.from = activeFigurePos;
+                            x = Mathf.Abs((int)(hit.point.x - 4));
+                            y = Mathf.Abs((int)(hit.point.z - 4));
+                            move.to = SelectFigure(x, y);
+
+                            MoveFigure(move, board.boardMap);
+                        }
                     }
                 }
             }
@@ -139,91 +132,75 @@ namespace visual {
             foreach (PossibleMove move in possibleMovesList) {
                 activeCellObjList.Add(
                     Instantiate(
-                        blueBacklight,
-                        new Vector3(3.5f - move.movePosition.x,0.515f, 3.5f - move.movePosition.y),
+                        figCont.blueBacklight,
+                        new Vector3(CONST - move.movePos.x, 0.515f, CONST - move.movePos.y),
                         Quaternion.Euler(90, 0, 0)
                     )
                 );
             }
-        } 
+        }
 
         private Position SelectFigure(int x, int y) {
-
-            return ChessEngine.GetPosition(x, y);
+            Position figPos = new Position();
+            figPos.x = x;
+            figPos.y = y;
+            return figPos;
         }
 
         private List<PossibleMove> GetPossibleMoveList(Position position) {
             possibleMovesList.AddRange(
-                ChessEngine.CheckingPossibleMoves(position, board.whiteMove, board.boardMap)
+                ChessEngine.GetPossibleMoves(position, board.whiteMove, board.boardMap)
                 );
             return possibleMovesList;
         }
-        private void CleaningCheckCell() {
-            if (CheckCell != null) {
-                Destroy(CheckCell);
-            }
-        }
 
-        private void CleaningActiveCellObjList() {
-            foreach(GameObject cell in activeCellObjList) {
-                Destroy(cell);
+        private void Relocation (Move move) {
+            GameObject figureForMove = figuresMap[move.from.x, move.from.y];
+            figuresMap[move.to.x, move.to.y] = figuresMap[move.from.x, move.from.y];
+            figuresMap[move.from.x, move.from.y] = null;
+            Vector3 newPos = new Vector3(CONST - move.to.x, 0.5f, CONST - move.to.y);
+
+            if (figureForMove != null) {
+                figureForMove.transform.position = newPos;
             }
         }
 
         private void MoveFigure(Move move, Fig[,] boardMap) {
-            GameObject figureForMove = figuresMap[move.from.x, move.from.y];
             FigureType figureType = boardMap[move.from.x, move.from.y].type;
 
-            if (ChessEngine.Castling(move, boardMap)) {
-                figuresMap[move.to.x, move.to.y] = figuresMap[move.from.x, move.from.y];
-                figuresMap[move.from.x, move.from.y] = null;
-                Vector3 newPos = new Vector3(3.5f - move.to.x, 0.5f, 3.5f - move.to.y);
+            if (ChessEngine.IsCastling(move, boardMap)) {
+                var castlingMove = ChessEngine.CastlingMove(move, boardMap);
+                var oldPos = castlingMove.oldRookPos;
+                var newPos = castlingMove.newRookPos;
 
-                if (figureForMove != null) {
-                    figureForMove.transform.position = newPos;
-                }
+                Relocation(move);
 
-                if (move.to.y == 2) {
-                    var newRookPos = new Vector3(3.5f - move.to.x, 0.5f, 3.5f - move.to.y -1);
-                    figuresMap[move.to.x, move.to.y + 1] = figuresMap[move.to.x, move.to.y - 2];
-                    figuresMap[move.to.x, move.to.y + 1].transform.position = newRookPos;
-                    figuresMap[move.to.x, move.to.y - 2] = null;
-                }
+                var newRookPos = new Vector3(CONST - newPos.x, 0.5f, CONST - newPos.y);
+                figuresMap[newPos.x, newPos.y] = figuresMap[oldPos.x, oldPos.y];
+                figuresMap[newPos.x, newPos.y].transform.position = newRookPos;
+                figuresMap[oldPos.x, oldPos.y] = null;
 
-                if (move.to.y == 6) {
-                    var newRookPos = new Vector3(3.5f - move.to.x, 0.5f, 3.5f - move.to.y + 1);
-                    figuresMap[move.to.x, move.to.y - 1] = figuresMap[move.to.x, move.to.y + 1];
-                    figuresMap[move.to.x, move.to.y - 1].transform.position = newRookPos;
-                    figuresMap[move.to.x, move.to.y + 1] = null;
-                }
                 board.whiteMove = !board.whiteMove;
-                Debug.Log("castling");
             }
 
-            if (ChessEngine.EnPassant(move, boardMap)) {
-                figuresMap[move.to.x, move.to.y] = figuresMap[move.from.x, move.from.y];
-                figuresMap[move.from.x, move.from.y] = null;
-                Vector3 newPos = new Vector3(3.5f - move.to.x, 0.5f, 3.5f - move.to.y);
+            if (ChessEngine.IsEnPassant(move, boardMap)) {
+                var enPassantMove = ChessEngine.EnPassantMove(move, boardMap);
+                var pawnForDesroyPos = enPassantMove.pawnPos;
 
-                if (figureForMove != null) {
-                    figureForMove.transform.position = newPos;
-                }
+                Relocation(move);
 
-                if (move.to.x == 5) {
-                    Destroy(figuresMap[move.to.x - 1, move.to.y]);
-                }
+                Destroy(figuresMap[pawnForDesroyPos.x, pawnForDesroyPos.y]);
 
-                if (move.to.x == 2) {
-                    Destroy(figuresMap[move.to.x + 1, move.to.y]);
-                }
                 board.whiteMove = !board.whiteMove;
-                Debug.Log("enPassant");
             }
 
             if (ChessEngine.MoveFigure(move, board.whiteMove, boardMap)) {
-                CleaningCheckCell();
-                
-                if (ChessEngine.checkChangePawn(boardMap) != null) {
+
+                if (CheckCell != null) {
+                    Destroy(CheckCell);
+                }
+
+                if (ChessEngine.FindChangePawn(boardMap) != null) {
                     ChangePawnUi.SetActive(true);
                 }
 
@@ -231,36 +208,26 @@ namespace visual {
                     Destroy(figuresMap[move.to.x, move.to.y]);
                 }
 
-                figuresMap[move.to.x, move.to.y] = figuresMap[move.from.x, move.from.y];
-                figuresMap[move.from.x, move.from.y] = null;
-
-                Vector3 newPos = new Vector3(3.5f - move.to.x, 0.5f, 3.5f - move.to.y);
-                if (figureForMove != null) {
-                    figureForMove.transform.position = newPos;
-                }
+                Relocation(move);
 
                 board.whiteMove = !board.whiteMove;
 
-                if (ChessEngine.CheckKing(board.whiteMove, boardMap)) {
+                if (ChessEngine.IsCheckKing(board.whiteMove, boardMap)) {
+                    var defenceKingMoves = new List<PossibleMove>();
+                    var dir = Dir.NewDir(move.to.x, move.to.y);
+                    var defenceList = ChessEngine.GetDefenceMoves(board.whiteMove, boardMap, dir);
+                    var checkKing = ChessEngine.IsCheckKing(board.whiteMove, boardMap);
 
-                    List<PossibleMove> list = new List<PossibleMove>();
-                    list.AddRange(ChessEngine.Сheckmate(
-                            board.whiteMove, 
-                            boardMap, 
-                            move.to.x, 
-                            move.to.y)
-                        );
+                    defenceKingMoves.AddRange(defenceList);
 
-                    if (list.Count == 0 && ChessEngine.CheckKing(board.whiteMove, boardMap)) {
+                    if (defenceKingMoves.Count == 0 && checkKing) {
                         endGameText.text = checkmate;
                         CheckMateUi.SetActive(true);
-                        Debug.Log("shahimat");
                     }
 
-                    if (list.Count == 0 && !ChessEngine.CheckKing(board.whiteMove, boardMap)) {
+                    if (defenceKingMoves.Count == 0 && !checkKing) {
                         endGameText.text = stalemate;
                         CheckMateUi.SetActive(true);
-                        Debug.Log("pat");
                     }
 
                     InstantiateCheckKingCell();
@@ -275,37 +242,60 @@ namespace visual {
 
                     if (board.boardMap[i, j].check) {
                         CheckCell = Instantiate(
-                            redBacklight,
-                            new Vector3(3.5f - i, 0.515f, 3.5f - j), 
+                            figCont.redBacklight,
+                            new Vector3(CONST - i, 0.515f, CONST - j), 
                             Quaternion.Euler(90, 0, 0)
                         );
                     }
                 }
             }
         }
-        
-        private void ChangePawnToQueen() {
-            //Position pawnPos = new Position();
-            var pawnPos = (Position)ChessEngine.checkChangePawn(board.boardMap);
+
+        private void ChangePawn(GameObject wFig, GameObject bFig, FigureType type) {
+            var pawnPos = (Position)ChessEngine.FindChangePawn(board.boardMap);
+
             Destroy(figuresMap[pawnPos.x, pawnPos.y]);
+
             if (pawnPos.x == 0) {
-                var newPos = new Vector3 (3.5f - pawnPos.x, 0.5f, 3.5f - pawnPos.y);
-                figuresMap[pawnPos.x, pawnPos.y] = Instantiate(whiteQueen, newPos, Quaternion.identity);
+                var newPos = new Vector3 (CONST - pawnPos.x, 0.5f, CONST - pawnPos.y);
+                figuresMap[pawnPos.x, pawnPos.y] = Instantiate(wFig, newPos, Quaternion.identity);
             }
-            ChessEngine.ChangePawn(FigureType.Queen, pawnPos, board.boardMap);
+
+            if (pawnPos.x == 7) {
+                var newPos = new Vector3 (CONST - pawnPos.x, 0.5f, CONST - pawnPos.y);
+                figuresMap[pawnPos.x, pawnPos.y] = Instantiate(bFig, newPos, Quaternion.identity);
+            }
+
+            ChessEngine.ChangePawn(type, pawnPos, board.boardMap);
             ChangePawnUi.SetActive(false);
-            
-            ChessEngine.CheckKing(board.whiteMove, board.boardMap);
+
+            ChessEngine.IsCheckKing(board.whiteMove, board.boardMap);
             InstantiateCheckKingCell();
         }
 
         private void Start() {
-            figureContainer = gameObject.GetComponent<FigureContainer>();
+            figCont = gameObject.GetComponent<FigureContainer>();
+            var queen = FigureType.Queen;
+            var bishop = FigureType.Bishop;
+            var rook = FigureType.Rook;
+            var knight = FigureType.Knight;
 
-            Position position = new Position();
-            Debug.Log(position.x);
             CreatingFiguresOnBoard(board.boardMap);
-            queenBut.onClick.AddListener(() => ChangePawnToQueen());
+            queenBut.onClick.AddListener(() => ChangePawn(figCont.wQueen, figCont.bQueen, queen));
+
+            bishopBut.onClick.AddListener(() => ChangePawn(
+                    figCont.wBishop, 
+                    figCont.bBishop, 
+                    bishop)
+                );
+
+            rookBut.onClick.AddListener(() => ChangePawn(figCont.wRook, figCont.bRook, rook));
+
+            knightBut.onClick.AddListener(() => ChangePawn(
+                    figCont.wKnight, 
+                    figCont.bKnight, 
+                    knight)
+                );
         }
     }
 }

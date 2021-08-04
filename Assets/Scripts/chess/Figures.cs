@@ -5,9 +5,30 @@ namespace chess {
         public Position to;
     }
 
+    public struct CastlingMove {
+        public Position oldRookPos;
+        public Position newRookPos;
+    }
+
+    public struct EnPassantMove {
+        public Position pawnPos;
+    }
+
     public struct MoveFigureRes {
         MoveError error;
         Position position;
+    }
+
+    public struct Dir {
+        public int x;
+        public int y;
+
+        public static Dir NewDir(int x, int y) {
+            Dir dir = new Dir();
+            dir.x = x;
+            dir.y = y;
+            return dir;
+        }
     }
 
     public enum MoveError {
@@ -15,6 +36,7 @@ namespace chess {
         ImpossibleMove,
         MoveOnFigure
     }
+
     public enum FigureType {
         None,
         Pawn,
