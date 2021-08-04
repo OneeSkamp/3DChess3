@@ -15,8 +15,8 @@ namespace chess {
     }
 
     public struct MoveFigureRes {
-        MoveError error;
-        Position position;
+        public MoveError error;
+        public Position position;
     }
 
     public struct Dir {

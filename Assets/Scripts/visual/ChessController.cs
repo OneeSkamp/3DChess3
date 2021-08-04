@@ -194,7 +194,9 @@ namespace visual {
                 board.whiteMove = !board.whiteMove;
             }
 
-            if (ChessEngine.MoveFigure(move, board.whiteMove, boardMap)) {
+            var moveRes = ChessEngine.MoveFigure(move, board.whiteMove, boardMap);
+
+            if (moveRes.error != MoveError.ImpossibleMove) {
 
                 if (CheckCell != null) {
                     Destroy(CheckCell);
@@ -204,8 +206,8 @@ namespace visual {
                     ChangePawnUi.SetActive(true);
                 }
 
-                if (figuresMap[move.to.x, move.to.y] != null) {
-                    Destroy(figuresMap[move.to.x, move.to.y]);
+                if (figuresMap[moveRes.position.x, moveRes.position.y] != null) {
+                    Destroy(figuresMap[moveRes.position.x, moveRes.position.y]);
                 }
 
                 Relocation(move);
@@ -214,7 +216,7 @@ namespace visual {
 
                 if (ChessEngine.IsCheckKing(board.whiteMove, boardMap)) {
                     var defenceKingMoves = new List<PossibleMove>();
-                    var dir = Dir.NewDir(move.to.x, move.to.y);
+                    var dir = Dir.NewDir(moveRes.position.x, moveRes.position.y);
                     var defenceList = ChessEngine.GetDefenceMoves(board.whiteMove, boardMap, dir);
                     var checkKing = ChessEngine.IsCheckKing(board.whiteMove, boardMap);
 
