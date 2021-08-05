@@ -1,9 +1,10 @@
-
+using System;
 namespace chess {
+
+    [Serializable]
     public class Board {
         public bool whiteMove;
         public Fig[,] boardMap;
-
 
         public Board(bool whiteMove) {
             this.whiteMove = whiteMove;

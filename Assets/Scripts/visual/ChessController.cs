@@ -6,16 +6,20 @@ using chess;
 namespace visual {
     public class ChessController : MonoBehaviour {
         FigureContainer figCont;
-        public Transform boardTransform;
         public Text endGameText;
         public string checkmate;
         public string stalemate;
+        public Button menuBut;
+        public Button newGameBut;
+        public Button saveGameBut;
+        public Button loadGameBut;
         public Button queenBut;
         public Button bishopBut;
         public Button rookBut;
         public Button knightBut;
         public GameObject CheckMateUi;
         public GameObject ChangePawnUi;
+        public GameObject MenuUi;
         public Position activeFigurePos;
         public List<PossibleMove> possibleMovesList = new List<PossibleMove>();
         public List<GameObject> activeCellObjList = new List<GameObject>();
@@ -23,6 +27,9 @@ namespace visual {
         const float CONST = 3.5f;
         public int x;
         public int y;
+
+        public string[,] jsonBoardMap;
+        public string jsonBoard;
 
         private GameObject CheckCell;
         private Ray ray;
@@ -93,7 +100,7 @@ namespace visual {
             }
         }
         private void Update() {
-            if (!ChangePawnUi.activeSelf) {
+            if (!ChangePawnUi.activeSelf && !MenuUi.activeSelf) {
                 if (Input.GetMouseButtonDown(0)) {
 
                     foreach(GameObject cell in activeCellObjList) {
@@ -275,7 +282,60 @@ namespace visual {
             InstantiateCheckKingCell();
         }
 
+        private void ToJson(Fig[,] boardmap) {
+            jsonBoardMap = new string[8,8];
+            jsonBoard = JsonUtility.ToJson(board);
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j < 8; j++) {
+                    string jsonFig = JsonUtility.ToJson(boardmap[i, j]);
+                    jsonBoardMap[i, j] = jsonFig;
+                }
+            }
+        }
+
+        private void FromJson(Fig[,] boardmap) {
+            if (jsonBoardMap != null) {
+                board.whiteMove = JsonUtility.FromJson<Board>(jsonBoard).whiteMove;
+                for (int i = 0; i < 8; i++) {
+                    for (int j = 0; j < 8; j++) {
+                        boardmap[i, j] = JsonUtility.FromJson<Fig>(jsonBoardMap[i, j]);
+                    }
+                }
+            }
+
+        }
+
+        private void OpenMenu() {
+            MenuUi.SetActive(!MenuUi.activeSelf);
+        }
+
+        private void SaveGame() {
+            ToJson(board.boardMap);
+            OpenMenu();
+        }
+
+        private void LoadGame() {
+            FromJson(board.boardMap);
+            foreach (GameObject figure in figuresMap) {
+                Destroy(figure);
+            }
+            CreatingFiguresOnBoard(board.boardMap);
+            OpenMenu();
+        }
+
+        private void NewGame() {
+            board = new Board(true);
+            foreach (GameObject figure in figuresMap) {
+                Destroy(figure);
+            }
+
+            Destroy(CheckCell);
+            CreatingFiguresOnBoard(board.boardMap);
+            CheckMateUi.SetActive(false);
+        }
+
         private void Start() {
+
             figCont = gameObject.GetComponent<FigureContainer>();
             var queen = FigureType.Queen;
             var bishop = FigureType.Bishop;
@@ -298,6 +358,15 @@ namespace visual {
                     figCont.bKnight, 
                     knight)
                 );
+
+            menuBut.onClick.AddListener(() => OpenMenu());
+
+            saveGameBut.onClick.AddListener(() => SaveGame());
+
+            loadGameBut.onClick.AddListener(() => LoadGame());
+
+            newGameBut.onClick.AddListener(() => NewGame());
+
         }
     }
 }

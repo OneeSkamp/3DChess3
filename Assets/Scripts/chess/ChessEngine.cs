@@ -419,6 +419,7 @@ namespace chess {
 
             if (IsEnPassant(move, board)) {
                 board[move.to.x, move.to.y] = board[move.from.x, move.from.y];
+                board[move.from.x, move.from.y].type = FigureType.None;
 
                 if (move.to.x == 5) {
                     enPassantMove.pawnPos = new Position(move.to.x - 1, move.to.y);
