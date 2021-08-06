@@ -1687,6 +1687,7 @@ GameObject:
   - component: {fileID: 1564542932}
   - component: {fileID: 1564542933}
   - component: {fileID: 1564542934}
+  - component: {fileID: 1564542935}
   m_Layer: 0
   m_Name: init
   m_TagString: Untagged
@@ -1720,17 +1721,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a4ffc895af5d5246a21e075666f7bad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  endGameText: {fileID: 1518301337}
-  checkmate: CHECKMATE
-  stalemate: STALEMATE
-  menuBut: {fileID: 310482973}
-  newGameBut: {fileID: 1672406728}
-  saveGameBut: {fileID: 589025462}
-  loadGameBut: {fileID: 1515810956}
-  queenBut: {fileID: 1809672785}
-  bishopBut: {fileID: 131805436}
-  rookBut: {fileID: 2124405229}
-  knightBut: {fileID: 2114652965}
   CheckMateUi: {fileID: 1221478575}
   ChangePawnUi: {fileID: 1881648331}
   MenuUi: {fileID: 464284370}
@@ -1739,7 +1729,6 @@ MonoBehaviour:
     whiteMove: 1
   x: 0
   y: 0
-  jsonWhiteMove: 
   jsonBoard: 
 --- !u!114 &1564542934
 MonoBehaviour:
@@ -1767,6 +1756,29 @@ MonoBehaviour:
   wKnight: {fileID: 1943414466066380, guid: 45e10aea18beb495d9489aed31b95270, type: 3}
   wBishop: {fileID: 1223592777669084, guid: 3698dddfe4c0a4a8dadcdf81c3255943, type: 3}
   wQueen: {fileID: 1097155551969228, guid: 55516a6c49a924127a8b226bfbb3cf46, type: 3}
+--- !u!114 &1564542935
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1564542931}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 063e989748770d54da1a08a9ae9d5d22, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  endGameText: {fileID: 1518301337}
+  checkmate: CHECKMATE
+  stalemate: STALEMATE
+  menuBut: {fileID: 310482973}
+  newGameBut: {fileID: 1672406728}
+  saveGameBut: {fileID: 589025462}
+  loadGameBut: {fileID: 1515810956}
+  queenBut: {fileID: 1809672785}
+  bishopBut: {fileID: 131805436}
+  rookBut: {fileID: 2124405229}
+  knightBut: {fileID: 2114652965}
 --- !u!1 &1600271598
 GameObject:
   m_ObjectHideFlags: 0

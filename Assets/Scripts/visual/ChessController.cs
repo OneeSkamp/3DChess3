@@ -5,23 +5,13 @@ using chess;
 
 namespace visual {
     public class ChessController : MonoBehaviour {
-        FigureContainer figCont;
-        public Text endGameText;
-        public string checkmate;
-        public string stalemate;
-        public Button menuBut;
-        public Button newGameBut;
-        public Button saveGameBut;
-        public Button loadGameBut;
-        public Button queenBut;
-        public Button bishopBut;
-        public Button rookBut;
-        public Button knightBut;
+        private FigureContainer figCont;
+        private UiController uiController;
         public GameObject CheckMateUi;
         public GameObject ChangePawnUi;
         public GameObject MenuUi;
         public Position activeFigurePos;
-        public List<PossibleMove> possibleMovesList = new List<PossibleMove>();
+        public List<Position> possibleMovesList = new List<Position>();
         public List<GameObject> activeCellObjList = new List<GameObject>();
         public Board board = new Board(true);
         const float CONST = 3.5f;
@@ -38,8 +28,9 @@ namespace visual {
         public GameObject[,]  figuresMap = new GameObject[8,8];
 
         private void CreatingFiguresOnBoard(Fig[,] board) {
-                float xPos = CONST;
-                float yPos = CONST;
+            float xPos = CONST;
+            float yPos = CONST;
+
             for (int i = 0; i < board.GetLength(0); i++) {
 
                 for (int j = 0; j < board.GetLength(1); j++) {
@@ -136,11 +127,11 @@ namespace visual {
 
         private void CreatingPossibleMoves() {
 
-            foreach (PossibleMove move in possibleMovesList) {
+            foreach (Position move in possibleMovesList) {
                 activeCellObjList.Add(
                     Instantiate(
                         figCont.blueBacklight,
-                        new Vector3(CONST - move.movePos.x, 0.515f, CONST - move.movePos.y),
+                        new Vector3(CONST - move.x, 0.515f, CONST - move.y),
                         Quaternion.Euler(90, 0, 0)
                     )
                 );
@@ -154,7 +145,7 @@ namespace visual {
             return figPos;
         }
 
-        private List<PossibleMove> GetPossibleMoveList(Position position) {
+        private List<Position> GetPossibleMoveList(Position position) {
             possibleMovesList.AddRange(
                 ChessEngine.GetPossibleMoves(position, board.whiteMove, board.boardMap)
                 );
@@ -222,7 +213,7 @@ namespace visual {
                 board.whiteMove = !board.whiteMove;
 
                 if (ChessEngine.IsCheckKing(board.whiteMove, boardMap)) {
-                    var defenceKingMoves = new List<PossibleMove>();
+                    var defenceKingMoves = new List<Position>();
                     var dir = Dir.NewDir(moveRes.position.x, moveRes.position.y);
                     var defenceList = ChessEngine.GetDefenceMoves(board.whiteMove, boardMap, dir);
                     var checkKing = ChessEngine.IsCheckKing(board.whiteMove, boardMap);
@@ -230,12 +221,12 @@ namespace visual {
                     defenceKingMoves.AddRange(defenceList);
 
                     if (defenceKingMoves.Count == 0 && checkKing) {
-                        endGameText.text = checkmate;
+                        uiController.endGameText.text = uiController.checkmate;
                         CheckMateUi.SetActive(true);
                     }
 
                     if (defenceKingMoves.Count == 0 && !checkKing) {
-                        endGameText.text = stalemate;
+                        uiController.endGameText.text = uiController.stalemate;
                         CheckMateUi.SetActive(true);
                     }
 
@@ -260,7 +251,7 @@ namespace visual {
             }
         }
 
-        private void ChangePawn(GameObject wFig, GameObject bFig, FigureType type) {
+        public void ChangePawn(GameObject wFig, GameObject bFig, FigureType type) {
             var pawnPos = (Position)ChessEngine.FindChangePawn(board.boardMap);
 
             Destroy(figuresMap[pawnPos.x, pawnPos.y]);
@@ -305,16 +296,16 @@ namespace visual {
 
         }
 
-        private void OpenMenu() {
+        public void OpenMenu() {
             MenuUi.SetActive(!MenuUi.activeSelf);
         }
 
-        private void SaveGame() {
+        public void SaveGame() {
             ToJson(board.boardMap);
             OpenMenu();
         }
 
-        private void LoadGame() {
+        public void LoadGame() {
             FromJson(board.boardMap);
             foreach (GameObject figure in figuresMap) {
                 Destroy(figure);
@@ -323,7 +314,7 @@ namespace visual {
             OpenMenu();
         }
 
-        private void NewGame() {
+        public void NewGame() {
             board = new Board(true);
             foreach (GameObject figure in figuresMap) {
                 Destroy(figure);
@@ -337,35 +328,9 @@ namespace visual {
         private void Start() {
 
             figCont = gameObject.GetComponent<FigureContainer>();
-            var queen = FigureType.Queen;
-            var bishop = FigureType.Bishop;
-            var rook = FigureType.Rook;
-            var knight = FigureType.Knight;
+            uiController = gameObject.GetComponent<UiController>();
 
             CreatingFiguresOnBoard(board.boardMap);
-            queenBut.onClick.AddListener(() => ChangePawn(figCont.wQueen, figCont.bQueen, queen));
-
-            bishopBut.onClick.AddListener(() => ChangePawn(
-                    figCont.wBishop, 
-                    figCont.bBishop, 
-                    bishop)
-                );
-
-            rookBut.onClick.AddListener(() => ChangePawn(figCont.wRook, figCont.bRook, rook));
-
-            knightBut.onClick.AddListener(() => ChangePawn(
-                    figCont.wKnight, 
-                    figCont.bKnight, 
-                    knight)
-                );
-
-            menuBut.onClick.AddListener(() => OpenMenu());
-
-            saveGameBut.onClick.AddListener(() => SaveGame());
-
-            loadGameBut.onClick.AddListener(() => LoadGame());
-
-            newGameBut.onClick.AddListener(() => NewGame());
 
         }
     }
