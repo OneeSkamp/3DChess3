@@ -13,18 +13,7 @@ namespace chess {
         }
     }
 
-    // public struct PossibleMove {
-    //     public Position movePos;
-    // }
-
     public static class ChessEngine {
-
-        // private static PossibleMove GetPossibleMove(Position to) {
-        //     PossibleMove possibleMove = new PossibleMove();
-        //     possibleMove.movePos = new Position(to.x, to.y);
-
-        //     return possibleMove;
-        // }
 
         private static List<Position> GetPawnMoves(
                 Position from, 
@@ -39,7 +28,7 @@ namespace chess {
             if (OnBoard(new Position(from.x + direction, from.y))) {
                 Fig nextElement = board[from.x + direction, from.y];
                 Position nextElementPos = new Position(from.x + direction, from.y);
-                
+
                 if (nextElement.type == FigureType.None) {
                     possibleMoves.Add(nextElementPos); 
                 }
@@ -243,7 +232,7 @@ namespace chess {
             return false;
         }
 
-        private static bool OnBoard(Position pos) {
+        public static bool OnBoard(Position pos) {
 
             if (pos.x < 0 || pos.y < 0 || pos.x >= 8 || pos.y >= 8) {
                 return false;
@@ -344,7 +333,6 @@ namespace chess {
                     if (!IsCheckKing(whiteMove, boardForCheck)) {
                         possibleMoves.Add(move);
                     }
-
                 }
             return possibleMoves;
         }
@@ -403,28 +391,29 @@ namespace chess {
 
         public static bool IsEnPassant(Move move, Fig[,] board) {
             var myFigType = board[move.from.x, move.from.y].type;
+            var onBoard = OnBoard(new Position(move.from.x, move.from.y));
 
-            if (myFigType == FigureType.Pawn && board[move.to.x, move.to.y].enPassant) {
+            if (myFigType == FigureType.Pawn && board[move.to.x, move.to.y].enPassant && onBoard) {
                 return true;
             }
 
             return false;
         }
 
-        public static EnPassantMove EnPassantMove(Move move, Fig[,] board) {
-            var enPassantMove = new EnPassantMove();
+        public static Position EnPassantMove(Move move, Fig[,] board) {
+            var enPassantMove = new Position();
 
             if (IsEnPassant(move, board)) {
                 board[move.to.x, move.to.y] = board[move.from.x, move.from.y];
                 board[move.from.x, move.from.y].type = FigureType.None;
 
                 if (move.to.x == 5) {
-                    enPassantMove.pawnPos = new Position(move.to.x - 1, move.to.y);
+                    enPassantMove = new Position(move.to.x - 1, move.to.y);
                     board[move.to.x - 1, move.to.y].type = FigureType.None;
                 }
 
                 if (move.to.x == 2) {
-                    enPassantMove.pawnPos = new Position(move.to.x + 1, move.to.y);
+                    enPassantMove = new Position(move.to.x + 1, move.to.y);
                     board[move.to.x + 1, move.to.y].type = FigureType.None;
                 }
             }

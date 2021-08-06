@@ -7,6 +7,9 @@ using chess;
 
 namespace visual {
     public class UiController : MonoBehaviour {
+        public GameObject CheckMateUi;
+        public GameObject ChangePawnUi;
+        public GameObject MenuUi;
         private Action openMenu;
         private Action newGame;
         private Action saveGame;
@@ -20,6 +23,7 @@ namespace visual {
         public string stalemate;
         public Button menuBut;
         public Button newGameBut;
+        public Button newGameMenuBut;
         public Button saveGameBut;
         public Button loadGameBut;
         public Button queenBut;
@@ -42,7 +46,7 @@ namespace visual {
             newGame += chessController.NewGame;
             saveGame += chessController.SaveGame;
             loadGame += chessController.LoadGame;
-            
+
             changeOnQueen += () => chessController.ChangePawn(
                     figCont.wQueen, 
                     figCont.bQueen, 
@@ -67,6 +71,7 @@ namespace visual {
             menuBut.onClick.AddListener(() => openMenu());
             saveGameBut.onClick.AddListener(() => saveGame());
             newGameBut.onClick.AddListener(() => newGame());
+            newGameMenuBut.onClick.AddListener(() => newGame());
             loadGameBut.onClick.AddListener(() => loadGame());
 
             queenBut.onClick.AddListener(() => changeOnQueen());
