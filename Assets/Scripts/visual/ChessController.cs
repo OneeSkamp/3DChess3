@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
 using chess;
@@ -12,16 +13,17 @@ namespace visual {
         public List<Position> possibleMovesList = new List<Position>();
         private List<GameObject> activeCellObjList = new List<GameObject>();
         public Board board = new Board(true);
-
         private const float CONST = 3.5f;
         private float changedX;
         private float changedY;
         private float changedZ;
         private int x;
         private int y;
-
+        string filepathBoard = @"Assets/Scripts/Saving/Board.txt";
+        string filepathBoardMap = @"Assets/Scripts/Saving/BoardMap.txt";
         private string[,] jsonBoardMap;
         private string jsonBoard;
+        private string jsonAll;
 
         private GameObject CheckCell;
         private Ray ray;
@@ -303,26 +305,42 @@ namespace visual {
         private void ToJson(Fig[,] boardmap) {
             jsonBoardMap = new string[8,8];
             jsonBoard = JsonUtility.ToJson(board);
+            jsonAll = null;
 
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
                     string jsonFig = JsonUtility.ToJson(boardmap[i, j]);
-                    jsonBoardMap[i, j] = jsonFig;
+
+                    jsonAll += jsonFig;
                 }
             }
-
         }
 
         private void FromJson(Fig[,] boardmap) {
-            if (jsonBoardMap != null) {
-                board.whiteMove = JsonUtility.FromJson<Board>(jsonBoard).whiteMove;
+            jsonBoardMap = new string[8,8];
+            jsonAll = File.ReadAllText(filepathBoardMap);
+            jsonBoard = File.ReadAllText(filepathBoard);
 
+            if (jsonAll != null) {
+                Debug.Log('d');
+                board.whiteMove = JsonUtility.FromJson<Board>(jsonBoard).whiteMove;
+                int count = 0;
                 for (int i = 0; i < 8; i++) {
                     for (int j = 0; j < 8; j++) {
+
+                        for (int x = count; x < jsonAll.Length; x++) {
+                            jsonBoardMap[i, j] += jsonAll[x];
+
+                            if (jsonAll[x] == '}') {
+                                count = x + 1;
+                                break; 
+                            }
+                        }
+
+                        Debug.Log(jsonBoardMap[i, j]);
                         boardmap[i, j] = JsonUtility.FromJson<Fig>(jsonBoardMap[i, j]);
                     }
                 }
-
             }
         }
 
@@ -333,6 +351,10 @@ namespace visual {
         public void SaveGame() {
             ToJson(board.boardMap);
             OpenMenu();
+
+            File.WriteAllText(filepathBoardMap, jsonAll);
+            File.WriteAllText(filepathBoard, jsonBoard);
+
         }
 
         public void LoadGame() {
