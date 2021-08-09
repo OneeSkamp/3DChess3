@@ -96,6 +96,7 @@ namespace visual {
         }
 
         private void Update() {
+
             if (!uiController.ChangePawnUi.activeSelf && !uiController.MenuUi.activeSelf) {
                 if (Input.GetMouseButtonDown(0)) {
 
@@ -119,7 +120,7 @@ namespace visual {
                             CreatingPossibleMoves();
 
                         } else {
-                            Move move = new Move();
+                            var move = new Move();
                             move.from = activeFigurePos;
                             x = Mathf.Abs((int)(hit.point.x - changedX - 4));
                             y = Mathf.Abs((int)(hit.point.z - changedZ - 4));
@@ -148,7 +149,7 @@ namespace visual {
         }
 
         private Position SelectFigure(int x, int y) {
-            Position figPos = new Position();
+            var figPos = new Position();
             figPos.x = x;
             figPos.y = y;
             return figPos;
@@ -162,10 +163,10 @@ namespace visual {
         }
 
         private void Relocation (Move move) {
-            GameObject figureForMove = figuresMap[move.from.x, move.from.y];
+            var figureForMove = figuresMap[move.from.x, move.from.y];
             figuresMap[move.to.x, move.to.y] = figuresMap[move.from.x, move.from.y];
             figuresMap[move.from.x, move.from.y] = null;
-            Vector3 newPos = new Vector3(
+            var newPos = new Vector3(
                     CONST - move.to.x + changedX, 
                     0.5f + changedY, 
                     CONST - move.to.y + changedZ
@@ -177,7 +178,7 @@ namespace visual {
         }
 
         private void MoveFigure(Move move, Fig[,] boardMap) {
-            FigureType figureType = boardMap[move.from.x, move.from.y].type;
+            var figureType = boardMap[move.from.x, move.from.y].type;
 
             if (ChessEngine.IsCastling(move, boardMap)) {
                 var castlingMove = ChessEngine.CastlingMove(move, boardMap);
@@ -322,7 +323,6 @@ namespace visual {
             jsonBoard = File.ReadAllText(filepathBoard);
 
             if (jsonAll != null) {
-                Debug.Log('d');
                 board.whiteMove = JsonUtility.FromJson<Board>(jsonBoard).whiteMove;
                 int count = 0;
                 for (int i = 0; i < 8; i++) {
@@ -337,7 +337,6 @@ namespace visual {
                             }
                         }
 
-                        Debug.Log(jsonBoardMap[i, j]);
                         boardmap[i, j] = JsonUtility.FromJson<Fig>(jsonBoardMap[i, j]);
                     }
                 }
