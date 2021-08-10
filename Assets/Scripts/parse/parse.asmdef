@@ -1,0 +1,17 @@
+{
+    "name": "parse",
+    "rootNamespace": "",
+    "references": [
+        "GUID:2fc023d9259645a41afe626b0fc9d077",
+        "GUID:50d32a52a6e27b44b8fcba4685ca4704"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

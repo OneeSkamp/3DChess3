@@ -1,6 +1,6 @@
 using System;
-namespace chess {
 
+namespace chess {
     [Serializable]
     public class Board {
         public bool whiteMove;
