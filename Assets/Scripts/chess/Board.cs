@@ -23,7 +23,7 @@ namespace chess {
             boardMap[0, 4] = Fig.CreateFig(false, FigureType.King);
 
             for (int x = 0; x <= 7; x++) {
-                boardMap[1, x] = Fig.CreateFig(false, FigureType.Pawn);
+                boardMap[1, x] = Fig.CreateFig(false, FigureType.Bishop);
             }
 
             boardMap[7, 0] = Fig.CreateFig(true, FigureType.Rook);
@@ -39,7 +39,7 @@ namespace chess {
             boardMap[7, 4] = Fig.CreateFig(true, FigureType.King);
 
             for (int x = 0; x <= 7; x++) {
-                boardMap[6, x] = Fig.CreateFig(true, FigureType.Pawn);
+                boardMap[6, x] = Fig.CreateFig(true, FigureType.Bishop);
             }
         }
     }

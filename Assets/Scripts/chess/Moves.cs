@@ -1,7 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
 namespace chess {
     public struct MoveTypes {
         public bool LineMove;
@@ -12,6 +8,7 @@ namespace chess {
     }
 
     public struct MovePath {
+        public Position pos;
         public Dir dir;
         public int Lenght;
     }

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -34,7 +33,7 @@ namespace chess {
             return moveType;
         }
 
-        public static List<MovePath> CalcMovePath(
+        public static List<MovePath> CalcMovePaths(
             Position pos,
             MoveTypes moveType, 
             Fig[,] board, 
@@ -49,7 +48,7 @@ namespace chess {
                 movePaths.Add(CalcMovePath(pos, Dir.NewDir(-1, -1), board, whiteMove));
             }
 
-            if (moveType.DiagonalMove) {
+            if (moveType.LineMove) {
                 movePaths.Add(CalcMovePath(pos, Dir.NewDir(1, 0), board, whiteMove));
                 movePaths.Add(CalcMovePath(pos, Dir.NewDir(0, 1), board, whiteMove));
                 movePaths.Add(CalcMovePath(pos, Dir.NewDir(0, -1), board, whiteMove));
@@ -59,10 +58,19 @@ namespace chess {
             return movePaths;
         }
 
-        public static List<Position> GetPossibleMoves(MovePath MovePath) {
-            var posssibleMoves = new List<Position>();
+        public static List<Position> CalcPossibleMoves(List<MovePath> movePaths) {
+            List<Position> possibleMoves = new List<Position>();
 
-            return posssibleMoves;
+            foreach (MovePath path in movePaths) {
+                for (int i = 1; i <= path.Lenght; i++) {
+                    var posX = path.pos.x + i * path.dir.x;
+                    var posY = path.pos.y + i * path.dir.y;
+
+                    possibleMoves.Add(new Position(posX, posY));
+                }
+            }
+
+            return possibleMoves;
         }
 
         private static MovePath CalcMovePath(Position pos, Dir dir, Fig[,] board, bool whiteMove) {
@@ -70,6 +78,8 @@ namespace chess {
             var movePath = new MovePath();
             int lenght = 0;
             movePath.dir = dir;
+            movePath.pos = pos;
+            movePath.Lenght = 0;
 
             switch (board[pos.x, pos.y].type) {
                 case FigureType.King:
@@ -83,24 +93,35 @@ namespace chess {
                     break;
             }
 
-            for (int i = 0; i < lenght; i++) {
-                for(int j = 0; j < lenght; j++) {
-                    Fig fig = board[pos.x + i * dir.x, pos.y + j * dir.y];
+            for (int i = 1; i < lenght; i++) {
 
-                    if (fig.type != FigureType.None && fig.white == whiteMove) {
-                        break;
-                        
-                    } else if (fig.type == FigureType.None) {
-                        movePath.Lenght++;
+                if (!OnBoard(new Position(pos.x + i * dir.x, pos.y + i * dir.y))) {
+                    break;
+                }
 
-                    } else if (fig.type != FigureType.None && fig.white != whiteMove) {
+                Fig fig = board[pos.x + i * dir.x, pos.y + i * dir.y];
 
-                        movePath.Lenght++;
-                        break;
-                    }
+                if (fig.type != FigureType.None && fig.white == whiteMove) {
+                    break;
+                    
+                } else if (fig.type == FigureType.None) {
+                    movePath.Lenght++;
+
+                } else if (fig.type != FigureType.None && fig.white != whiteMove) {
+                    movePath.Lenght++;
+                    break;
                 }
             }
             return movePath;
+        }
+
+        private static bool OnBoard(Position pos) {
+
+            if (pos.x < 0 || pos.y < 0 || pos.x >= 8 || pos.y >= 8) {
+                return false;
+            }
+
+            return true;
         }
     }
 }
