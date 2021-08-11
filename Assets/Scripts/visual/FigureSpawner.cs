@@ -14,7 +14,7 @@ namespace visual {
         private float changedY;
         private float changedZ;
 
-        private const float CONST = 5.3f;
+        private const float CONST = 3.5f;
 
         private void Awake() {
             changedX = boardTransform.position.x;
@@ -147,10 +147,10 @@ namespace visual {
                         );
                     }
 
-                    yPos -= 1.5f;
+                    yPos -= 1f;
                 }
                 yPos = CONST;
-                xPos -= 1.5f;
+                xPos -= 1f;
             }
         }
     }

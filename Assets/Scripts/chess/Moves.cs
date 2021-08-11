@@ -3,9 +3,17 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace chess {
-    public struct Move {
-        public Position from;
-        public Position to;
+    public struct MoveTypes {
+        public bool LineMove;
+        public bool KnightMove;
+        public bool EnPassant;
+        public bool Castling;
+        public bool DiagonalMove;
+    }
+
+    public struct MovePath {
+        public Dir dir;
+        public int Lenght;
     }
 
     public struct Dir {
@@ -20,19 +28,10 @@ namespace chess {
         }
     }
 
-    public struct CastlingMove {
-        public Position oldRookPos;
-        public Position newRookPos;
-    }
-
-    public struct MoveFigureRes {
-        public MoveError error;
-        public Position position;
-    }
-
-    public enum MoveError {
-        None,
-        ImpossibleMove,
-        MoveOnFigure
+    enum Move {
+        LineMove,
+        KnightMove,
+        EnPassant,
+        Castling
     }
 }

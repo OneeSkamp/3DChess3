@@ -25,8 +25,8 @@ namespace visual {
                     // float a = hit.point.x;
                     // float b = hit.point.z;
 
-                    x = Mathf.Abs((int)(hit.point.x));
-                    y = Mathf.Abs((int)(hit.point.z));
+                    x = Mathf.Abs((int)(hit.point.x - 4f));
+                    y = Mathf.Abs((int)(hit.point.z - 4f));
                     Debug.Log(x + "//" + y);
                     //Debug.Log(a + "//" + b);
 
