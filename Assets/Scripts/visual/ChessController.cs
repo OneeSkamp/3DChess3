@@ -6,10 +6,15 @@ namespace visual {
     public class ChessController : MonoBehaviour {
         public Board board = new Board(true);
 
+        public FigureSpawner figureSpawner;
         private FigureResurses figCont;
 
         private int x;
         private int y;
+
+        private float changedX;
+        private float changedY;
+        private float changedZ;
 
         private const float CONST = 3.5f;
 
@@ -20,6 +25,10 @@ namespace visual {
 
         private void Awake() {
             figCont = GetComponent<FigureResurses>();
+            figureSpawner = GetComponent<FigureSpawner>();
+            changedX = figureSpawner.boardTransform.position.x;
+            changedY = figureSpawner.boardTransform.position.y;
+            changedZ = figureSpawner.boardTransform.position.z;
         }
 
         private void Update() {
@@ -30,8 +39,8 @@ namespace visual {
 
                 if (Physics.Raycast(ray, out hit)) {
 
-                    x = Mathf.Abs((int)(hit.point.x - 4f));
-                    y = Mathf.Abs((int)(hit.point.z - 4f));
+                    x = Mathf.Abs((int)(hit.point.x - changedX - 4f));
+                    y = Mathf.Abs((int)(hit.point.z - changedZ - 4f));
 
                     Debug.Log(x + ",,," + y);
 
@@ -58,7 +67,7 @@ namespace visual {
             var possibleMoveList = new List<GameObject>();
 
             foreach (Position pos in possibleMoves) {
-                var objPos = new Vector3(CONST - pos.x, 0.01f, CONST - pos.y);
+                var objPos = new Vector3(CONST - pos.x + changedX, 0.01f, CONST - pos.y + changedZ);
                 var obj = Instantiate(figCont.blueBacklight, objPos, Quaternion.Euler(90, 0, 0));
                 possibleMoveList.Add(obj);
             }

@@ -34,8 +34,8 @@ namespace visual {
             for (int i = 0; i < board.GetLength(0); i++) {
 
                 for (int j = 0; j < board.GetLength(1); j++) {
-                    var pos = new Vector3(xPos, 0.172f , yPos);
-                    var pawnPos = new Vector3(xPos, 0f , yPos);
+                    var pos = new Vector3(xPos + changedX, 0.172f , yPos + changedZ);
+                    var pawnPos = new Vector3(xPos + changedX, 0f , yPos + changedZ);
 
                     if (board[i, j].type == FigureType.Pawn && !board[i, j].white) {
                         chessController.figuresMap[i, j] = Instantiate(
