@@ -1,16 +1,14 @@
-namespace chess {
-    public struct MoveTypes {
-        public bool LineMove;
-        public bool KnightMove;
-        public bool EnPassant;
-        public bool Castling;
-        public bool DiagonalMove;
+namespace board {
+    public struct MoveType {
+        public bool lineMove;
+        public bool circularMove;
+        public bool diagonalMove;
     }
 
     public struct MovePath {
         public Position pos;
         public Dir dir;
-        public int Lenght;
+        public int Length;
     }
 
     public struct Dir {
@@ -23,12 +21,5 @@ namespace chess {
             dir.y = y;
             return dir;
         }
-    }
-
-    enum Move {
-        LineMove,
-        KnightMove,
-        EnPassant,
-        Castling
     }
 }

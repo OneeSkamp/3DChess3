@@ -1,58 +1,47 @@
 using System.Collections.Generic;
 using UnityEngine;
+using board;
+using option;
 
 namespace chess {
     public static class ChessEngine {
-        public static MoveTypes CalcMoveType(Fig fig) {
-            var moveType = new MoveTypes();
 
-            switch(fig.type) {
-                case FigureType.Pawn:
-                    break;
-
-                case FigureType.Bishop:
-                    moveType.DiagonalMove = true;
-                    break;
-
-                case FigureType.Knight:
-                    break;
-
-                case FigureType.Rook:
-                    moveType.LineMove = true;
-                    break;
-
-                case FigureType.Queen:
-                    moveType.DiagonalMove = true;
-                    moveType.LineMove = true;
-                    break;
-
-                case FigureType.King:
-                    break;
-            }
-
+        public static MoveType GetMoveType(Fig fig) {
+            var moveTypes = MoveTypes.MakeFigMoveTypes();
+            var moveType = moveTypes[fig.type];
             return moveType;
         }
 
         public static List<MovePath> CalcMovePaths(
-            Position pos,
-            MoveTypes moveType, 
-            Fig[,] board, 
-            bool whiteMove
+            Position pos, 
+            MoveType moveType, 
+            Option<Fig>[,] board
         ) {
             var movePaths = new List<MovePath>();
 
-            if (moveType.DiagonalMove) {
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(1, 1), board, whiteMove));
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(1, -1), board, whiteMove));
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(-1, 1), board, whiteMove));
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(-1, -1), board, whiteMove));
+            if (moveType.diagonalMove) {
+                movePaths.Add(CalcMovePath(pos, Dir.NewDir(1, 1), board));
+                movePaths.Add(CalcMovePath(pos, Dir.NewDir(1, -1), board));
+                movePaths.Add(CalcMovePath(pos, Dir.NewDir(-1, 1), board));
+                movePaths.Add(CalcMovePath(pos, Dir.NewDir(-1, -1), board));
             }
 
-            if (moveType.LineMove) {
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(1, 0), board, whiteMove));
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(0, 1), board, whiteMove));
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(0, -1), board, whiteMove));
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(-1, 0), board, whiteMove));
+            if (moveType.lineMove) {
+                movePaths.Add(CalcMovePath(pos, Dir.NewDir(1, 0), board));
+                movePaths.Add(CalcMovePath(pos, Dir.NewDir(0, 1), board));
+                movePaths.Add(CalcMovePath(pos, Dir.NewDir(0, -1), board));
+                movePaths.Add(CalcMovePath(pos, Dir.NewDir(-1, 0), board));
+            }
+
+            if (moveType.circularMove) {
+                movePaths.Add(CalcMovePath(pos, Dir.NewDir(2, 1), board));
+                movePaths.Add(CalcMovePath(pos, Dir.NewDir(2, -1), board));
+                movePaths.Add(CalcMovePath(pos, Dir.NewDir(-2, 1), board));
+                movePaths.Add(CalcMovePath(pos, Dir.NewDir(-2, -1), board));
+                movePaths.Add(CalcMovePath(pos, Dir.NewDir(1, 2), board));
+                movePaths.Add(CalcMovePath(pos, Dir.NewDir(-1, 2), board));
+                movePaths.Add(CalcMovePath(pos, Dir.NewDir(1, -2), board));
+                movePaths.Add(CalcMovePath(pos, Dir.NewDir(-1, -2), board));
             }
 
             return movePaths;
@@ -62,7 +51,7 @@ namespace chess {
             List<Position> possibleMoves = new List<Position>();
 
             foreach (MovePath path in movePaths) {
-                for (int i = 1; i <= path.Lenght; i++) {
+                for (int i = 1; i <= path.Length; i++) {
                     var posX = path.pos.x + i * path.dir.x;
                     var posY = path.pos.y + i * path.dir.y;
 
@@ -73,42 +62,46 @@ namespace chess {
             return possibleMoves;
         }
 
-        private static MovePath CalcMovePath(Position pos, Dir dir, Fig[,] board, bool whiteMove) {
-            var myFig = board[pos.x, pos.y];
+        private static MovePath CalcMovePath(Position pos, Dir dir, Option<Fig>[,] board) {
+            var myFig = board[pos.x, pos.y].Peel();
             var movePath = new MovePath();
-            int lenght = 0;
+            int length = 0;
+
             movePath.dir = dir;
             movePath.pos = pos;
-            movePath.Lenght = 0;
+            movePath.Length = 0;
 
-            switch (board[pos.x, pos.y].type) {
+            switch (board[pos.x, pos.y].Peel().type) {
                 case FigureType.King:
-                    lenght = 1;
+                    length = 1;
+                    break;
+                case FigureType.Knight:
+                    length = 1;
                     break;
                 case FigureType.Bishop:
-                    lenght = 8;
+                    length = 8;
                     break;
                 case FigureType.Rook:
-                    lenght = 8;
+                    length = 8;
                     break;
             }
 
-            for (int i = 1; i < lenght; i++) {
+            for (int i = 1; i <= length; i++) {
 
                 if (!OnBoard(new Position(pos.x + i * dir.x, pos.y + i * dir.y))) {
                     break;
                 }
 
-                Fig fig = board[pos.x + i * dir.x, pos.y + i * dir.y];
+                var fig = board[pos.x + i * dir.x, pos.y + i * dir.y].Peel();
 
-                if (fig.type != FigureType.None && fig.white == whiteMove) {
+                if (fig.type != FigureType.None && fig.white == myFig.white) {
                     break;
-                    
-                } else if (fig.type == FigureType.None) {
-                    movePath.Lenght++;
 
-                } else if (fig.type != FigureType.None && fig.white != whiteMove) {
-                    movePath.Lenght++;
+                } else if (fig.type == FigureType.None) {
+                    movePath.Length++;
+
+                } else if (fig.type != FigureType.None && fig.white != myFig.white) {
+                    movePath.Length++;
                     break;
                 }
             }

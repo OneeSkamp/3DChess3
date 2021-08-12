@@ -1,4 +1,4 @@
-namespace chess {
+namespace board {
     public enum FigureType {
         None,
         Pawn,
@@ -12,8 +12,6 @@ namespace chess {
     public struct Fig {
         public bool white;
         public bool firstMove;
-        public bool castling;
-        public bool enPassant;
         public bool check;
         public FigureType type;
 

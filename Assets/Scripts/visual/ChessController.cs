@@ -1,10 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 using chess;
+using board;
+using option;
 
 namespace visual {
     public class ChessController : MonoBehaviour {
         public Board board = new Board(true);
+        public GameObject[,] figuresMap = new GameObject[8,8];
 
         public FigureSpawner figureSpawner;
         private FigureResurses figCont;
@@ -16,16 +19,17 @@ namespace visual {
         private float changedY;
         private float changedZ;
 
-        private const float CONST = 3.5f;
+        private const float CONST = 5.3f;
 
         private Ray ray;
         private RaycastHit hit;
 
-        public GameObject[,] figuresMap = new GameObject[8,8];
+        private List<GameObject> possibleMoveList;
 
         private void Awake() {
             figCont = GetComponent<FigureResurses>();
             figureSpawner = GetComponent<FigureSpawner>();
+
             changedX = figureSpawner.boardTransform.position.x;
             changedY = figureSpawner.boardTransform.position.y;
             changedZ = figureSpawner.boardTransform.position.z;
@@ -39,24 +43,32 @@ namespace visual {
 
                 if (Physics.Raycast(ray, out hit)) {
 
-                    x = Mathf.Abs((int)(hit.point.x - changedX - 4f));
-                    y = Mathf.Abs((int)(hit.point.z - changedZ - 4f));
+                    x = Mathf.Abs((int)((hit.point.x - changedX - 6f) / 1.5f));
+                    y = Mathf.Abs((int)((hit.point.z - changedZ - 6f) / 1.5f));
 
                     Debug.Log(x + ",,," + y);
 
-                    var fig = board.boardMap[x, y];
+                    var fig = board.boardMap[x, y].Peel();
+
+                    Debug.Log(fig.type);
+
                     if (fig.type != FigureType.None) {
-                        var moveType = ChessEngine.CalcMoveType(fig);
+                        var moveType = ChessEngine.GetMoveType(fig);
                         var movePaths = ChessEngine.CalcMovePaths(
-                            new Position(x, y), 
-                            moveType, 
-                            board.boardMap, 
-                            board.whiteMove
+                            new Position(x, y),
+                            moveType,
+                            board.boardMap
                         );
+
+                        if (possibleMoveList != null) {
+                            foreach (GameObject cell in possibleMoveList) {
+                                Destroy(cell);
+                            }
+                        }
 
                         var possibleMoves = ChessEngine.CalcPossibleMoves(movePaths);
 
-                        CreatingPossibleMoves(possibleMoves);
+                        possibleMoveList = CreatingPossibleMoves(possibleMoves);
 
                     }
                 }
@@ -64,15 +76,19 @@ namespace visual {
         }
 
         private List<GameObject> CreatingPossibleMoves(List<Position> possibleMoves) {
-            var possibleMoveList = new List<GameObject>();
+            var possibleMovesObj = new List<GameObject>();
 
             foreach (Position pos in possibleMoves) {
-                var objPos = new Vector3(CONST - pos.x + changedX, 0.01f, CONST - pos.y + changedZ);
+                var objPos = new Vector3(
+                    (CONST - pos.x + changedX) - 1.5f, 
+                    0.01f, 
+                    (CONST - pos.y + changedZ) - 1.5f
+                );
                 var obj = Instantiate(figCont.blueBacklight, objPos, Quaternion.Euler(90, 0, 0));
-                possibleMoveList.Add(obj);
+                possibleMovesObj.Add(obj);
             }
 
-            return possibleMoveList;
+            return possibleMovesObj;
         }
     }
 }

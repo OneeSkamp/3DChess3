@@ -1,18 +1,20 @@
 using UnityEngine;
+using option;
 using chess;
+using board;
 
 namespace visual {
     public class FigureSpawner : MonoBehaviour {
         public Transform boardTransform;
+
+        public const float CONST = 5.3f;
 
         private FigureResurses figCont;
         private ChessController chessController;
 
         private float changedX;
         private float changedY;
-        private float changedZ;
-
-        private const float CONST = 3.5f;
+        private float changedZ; 
 
         private void Awake() {
             changedX = boardTransform.position.x;
@@ -27,7 +29,7 @@ namespace visual {
             CreatingFiguresOnBoard(chessController.board.boardMap);
         }
 
-        private void CreatingFiguresOnBoard(Fig[,] board) {
+        private void CreatingFiguresOnBoard(Option<Fig>[,] board) {
             float xPos = CONST;
             float yPos = CONST;
 
@@ -36,8 +38,9 @@ namespace visual {
                 for (int j = 0; j < board.GetLength(1); j++) {
                     var pos = new Vector3(xPos + changedX, 0.172f , yPos + changedZ);
                     var pawnPos = new Vector3(xPos + changedX, 0f , yPos + changedZ);
+                    var fig = board[i, j].Peel();
 
-                    if (board[i, j].type == FigureType.Pawn && !board[i, j].white) {
+                    if (fig.type == FigureType.Pawn && !fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
                             figCont.bPawn, 
                             pawnPos, 
@@ -46,7 +49,7 @@ namespace visual {
                         );
                     }
 
-                    if (board[i, j].type == FigureType.Queen && !board[i, j].white) {
+                    if (fig.type == FigureType.Queen && !fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
                             figCont.bQueen, 
                             pos, 
@@ -55,7 +58,7 @@ namespace visual {
                         );
                     }
 
-                    if (board[i, j].type == FigureType.King && !board[i, j].white) {
+                    if (fig.type == FigureType.King && !fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
                             figCont.bKing, 
                             pos, 
@@ -64,7 +67,7 @@ namespace visual {
                         );
                     }
 
-                    if (board[i, j].type == FigureType.Knight && !board[i, j].white) {
+                    if (fig.type == FigureType.Knight && !fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
                             figCont.bKnight, 
                             pos, 
@@ -73,7 +76,7 @@ namespace visual {
                         );
                     }
 
-                    if (board[i, j].type == FigureType.Bishop && !board[i, j].white) {
+                    if (fig.type == FigureType.Bishop && !fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
                             figCont.bBishop, 
                             pos, 
@@ -82,7 +85,7 @@ namespace visual {
                         );
                     }
 
-                    if (board[i, j].type == FigureType.Rook && !board[i, j].white) {
+                    if (fig.type == FigureType.Rook && !fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
                             figCont.bRook, 
                             pos, 
@@ -91,7 +94,7 @@ namespace visual {
                         );
                     }
 
-                    if (board[i, j].type == FigureType.Pawn && board[i, j].white) {
+                    if (fig.type == FigureType.Pawn && fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
                             figCont.wPawn, 
                             pawnPos, 
@@ -100,7 +103,7 @@ namespace visual {
                         );
                     }
 
-                    if (board[i, j].type == FigureType.Queen && board[i, j].white) {
+                    if (fig.type == FigureType.Queen && fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
                             figCont.wQueen, 
                             pos, 
@@ -109,7 +112,7 @@ namespace visual {
                         );
                     }
 
-                    if (board[i, j].type == FigureType.King && board[i, j].white) {
+                    if (fig.type == FigureType.King && fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
                             figCont.wKing, 
                             pos, 
@@ -118,7 +121,7 @@ namespace visual {
                         );
                     }
 
-                    if (board[i, j].type == FigureType.Knight && board[i, j].white) {
+                    if (fig.type == FigureType.Knight && fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
                             figCont.wKnight, 
                             pos, 
@@ -127,7 +130,7 @@ namespace visual {
                         );
                     }
 
-                    if (board[i, j].type == FigureType.Bishop && board[i, j].white) {
+                    if (fig.type == FigureType.Bishop && fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
                             figCont.wBishop, 
                             pos, 
@@ -136,7 +139,7 @@ namespace visual {
                         );
                     }
 
-                    if (board[i, j].type == FigureType.Rook && board[i, j].white) {
+                    if (fig.type == FigureType.Rook && fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
                             figCont.wRook, 
                             pos, 
@@ -145,10 +148,14 @@ namespace visual {
                         );
                     }
 
-                    yPos -= 1f;
+                    if (chessController.figuresMap[i, j] != null) {
+                        chessController.figuresMap[i, j].transform.position = pos;
+                    }
+
+                    yPos -= 1.5f;
                 }
                 yPos = CONST;
-                xPos -= 1f;
+                xPos -= 1.5f;
             }
         }
     }

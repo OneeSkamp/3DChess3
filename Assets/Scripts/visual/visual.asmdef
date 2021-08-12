@@ -2,7 +2,9 @@
     "name": "visual",
     "rootNamespace": "",
     "references": [
-        "GUID:2fc023d9259645a41afe626b0fc9d077"
+        "GUID:2fc023d9259645a41afe626b0fc9d077",
+        "GUID:39bbb50003675f040aece25cf843d7c5",
+        "GUID:2082608e637271ce183980079a785a90"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
