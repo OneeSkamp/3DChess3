@@ -9,6 +9,7 @@ namespace board {
             var knightMoveType = new MoveType();
             var queenMoveType = new MoveType();
             var kingMoveType = new MoveType();
+            var pawnMoveType = new MoveType();
 
             bishopMoveType.diagonalMove = true;
 
@@ -28,6 +29,9 @@ namespace board {
             kingMoveType.lineMove = true;
             figMoveTypes.Add(FigureType.King, kingMoveType);
 
+            pawnMoveType.lineMove = true;
+            pawnMoveType.diagonalMove = true;
+            figMoveTypes.Add(FigureType.Pawn, pawnMoveType);
             return figMoveTypes;
         }
     }

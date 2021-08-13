@@ -4,16 +4,11 @@ using System.Collections.Generic;
 using UnityEngine.UI;
 using UnityEngine;
 using visual;
+using parse;
 
 namespace ui {
     public class UiController : MonoBehaviour {
-        public GameObject CheckMateUi;
-        public GameObject ChangePawnUi;
         public GameObject MenuUi;
-
-        public Text endGameText;
-        public string checkmate;
-        public string stalemate;
 
         public Button menuBut;
         public Button newGameBut;
@@ -25,8 +20,9 @@ namespace ui {
         public Button rookBut;
         public Button knightBut;
 
-        private ChessController chessController;
-        private FigureResurses figCont;
+        public ChessController chessController;
+        public FigureSpawner figureSpawner;
+        public ParseJson parseJson;
 
         private Action openMenu;
         private Action newGame;
@@ -38,9 +34,6 @@ namespace ui {
         private Action changeOnKnight;
 
         private void Awake() {
-
-            chessController = gameObject.GetComponent<ChessController>();
-            figCont = gameObject.GetComponent<FigureResurses>();
 
             openMenu += OpenMenu;
 
@@ -56,9 +49,13 @@ namespace ui {
             knightBut.onClick.AddListener(() => changeOnKnight());
         }
 
-        public void OpenMenu() {
+        private void OpenMenu() {
             MenuUi.SetActive(!MenuUi.activeSelf);
             chessController.enabled = !chessController.enabled;
+        }
+
+        public void SaveGame() {
+            OpenMenu();
         }
     }
 }

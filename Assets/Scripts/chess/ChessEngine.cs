@@ -47,22 +47,7 @@ namespace chess {
             return movePaths;
         }
 
-        public static List<Position> CalcPossibleMoves(List<MovePath> movePaths) {
-            List<Position> possibleMoves = new List<Position>();
-
-            foreach (MovePath path in movePaths) {
-                for (int i = 1; i <= path.Length; i++) {
-                    var posX = path.pos.x + i * path.dir.x;
-                    var posY = path.pos.y + i * path.dir.y;
-
-                    possibleMoves.Add(new Position(posX, posY));
-                }
-            }
-
-            return possibleMoves;
-        }
-
-        private static MovePath CalcMovePath(Position pos, Dir dir, Option<Fig>[,] board) {
+        public static MovePath CalcMovePath(Position pos, Dir dir, Option<Fig>[,] board) {
             var myFig = board[pos.x, pos.y].Peel();
             var movePath = new MovePath();
             int length = 0;
@@ -71,7 +56,7 @@ namespace chess {
             movePath.pos = pos;
             movePath.Length = 0;
 
-            switch (board[pos.x, pos.y].Peel().type) {
+            switch (myFig.type) {
                 case FigureType.King:
                     length = 1;
                     break;
@@ -84,6 +69,17 @@ namespace chess {
                 case FigureType.Rook:
                     length = 8;
                     break;
+                case FigureType.Queen:
+                    length = 8;
+                    break;
+            }
+
+            if (myFig.type == FigureType.Pawn) {
+                if (myFig.firstMove) {
+                    length = 2;
+                } else {
+                    length = 1;
+                }
             }
 
             for (int i = 1; i <= length; i++) {
@@ -106,6 +102,21 @@ namespace chess {
                 }
             }
             return movePath;
+        }
+
+        public static List<Position> CalcPossibleMoves(List<MovePath> movePaths) {
+            List<Position> possibleMoves = new List<Position>();
+
+            foreach (MovePath path in movePaths) {
+                for (int i = 1; i <= path.Length; i++) {
+                    var posX = path.pos.x + i * path.dir.x;
+                    var posY = path.pos.y + i * path.dir.y;
+
+                    possibleMoves.Add(new Position(posX, posY));
+                }
+            }
+
+            return possibleMoves;
         }
 
         private static bool OnBoard(Position pos) {

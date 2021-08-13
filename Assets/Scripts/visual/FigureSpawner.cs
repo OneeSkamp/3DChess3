@@ -7,37 +7,21 @@ namespace visual {
     public class FigureSpawner : MonoBehaviour {
         public Transform boardTransform;
 
-        public const float CONST = 5.3f;
+        private const float CONST = 5.25f;
 
-        private FigureResurses figCont;
-        private ChessController chessController;
+        public FigureResurses figCont;
+        public ChessController chessController;
 
-        private float changedX;
-        private float changedY;
-        private float changedZ; 
 
-        private void Awake() {
-            changedX = boardTransform.position.x;
-            changedY = boardTransform.position.y;
-            changedZ = boardTransform.position.z;
-
-            figCont = gameObject.GetComponent<FigureResurses>();
-            chessController = gameObject.GetComponent<ChessController>();
-        }
-
-        private void Start() {
-            CreatingFiguresOnBoard(chessController.board.boardMap);
-        }
-
-        private void CreatingFiguresOnBoard(Option<Fig>[,] board) {
+        public void CreatingFiguresOnBoard(Option<Fig>[,] board) {
             float xPos = CONST;
             float yPos = CONST;
 
             for (int i = 0; i < board.GetLength(0); i++) {
 
                 for (int j = 0; j < board.GetLength(1); j++) {
-                    var pos = new Vector3(xPos + changedX, 0.172f , yPos + changedZ);
-                    var pawnPos = new Vector3(xPos + changedX, 0f , yPos + changedZ);
+                    var pos = new Vector3(xPos, 0.172f , yPos);
+                    var pawnPos = new Vector3(xPos, 0f , yPos);
                     var fig = board[i, j].Peel();
 
                     if (fig.type == FigureType.Pawn && !fig.white) {
@@ -149,7 +133,7 @@ namespace visual {
                     }
 
                     if (chessController.figuresMap[i, j] != null) {
-                        chessController.figuresMap[i, j].transform.position = pos;
+                        chessController.figuresMap[i, j].transform.localPosition = pos;
                     }
 
                     yPos -= 1.5f;
@@ -157,6 +141,10 @@ namespace visual {
                 yPos = CONST;
                 xPos -= 1.5f;
             }
+        }
+
+        private void Start() {
+            CreatingFiguresOnBoard(chessController.board.boardMap);
         }
     }
 }

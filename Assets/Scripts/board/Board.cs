@@ -24,7 +24,7 @@ namespace board {
             boardMap[0, 4] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.King));
 
             for (int x = 0; x <= 7; x++) {
-                boardMap[1, x] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.King));
+                boardMap[1, x] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Pawn));
             }
 
             boardMap[7, 0] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Rook));
@@ -40,7 +40,7 @@ namespace board {
             boardMap[7, 4] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.King));
 
             for (int x = 0; x <= 7; x++) {
-                boardMap[6, x] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.King));
+                boardMap[6, x] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Pawn));
             }
         }
     }

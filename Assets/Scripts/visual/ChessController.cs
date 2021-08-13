@@ -10,30 +10,20 @@ namespace visual {
         public GameObject[,] figuresMap = new GameObject[8,8];
 
         public FigureSpawner figureSpawner;
-        private FigureResurses figCont;
+        public FigureResurses figCont;
 
         private int x;
         private int y;
 
-        private float changedX;
-        private float changedY;
-        private float changedZ;
+        private Position figPos;
+        private List<Position> possibleMoves;
 
-        private const float CONST = 5.3f;
+        private const float CONST = 5.25f;
 
         private Ray ray;
         private RaycastHit hit;
 
         private List<GameObject> possibleMoveList;
-
-        private void Awake() {
-            figCont = GetComponent<FigureResurses>();
-            figureSpawner = GetComponent<FigureSpawner>();
-
-            changedX = figureSpawner.boardTransform.position.x;
-            changedY = figureSpawner.boardTransform.position.y;
-            changedZ = figureSpawner.boardTransform.position.z;
-        }
 
         private void Update() {
 
@@ -42,34 +32,43 @@ namespace visual {
                 ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
                 if (Physics.Raycast(ray, out hit)) {
+                    var localHit = figureSpawner.boardTransform.InverseTransformPoint(hit.point);
 
-                    x = Mathf.Abs((int)((hit.point.x - changedX - 6f) / 1.5f));
-                    y = Mathf.Abs((int)((hit.point.z - changedZ - 6f) / 1.5f));
-
-                    Debug.Log(x + ",,," + y);
+                    x = Mathf.Abs((int)((localHit.x - 6f) / 1.5f));
+                    y = Mathf.Abs((int)((localHit.z - 6f) / 1.5f));
 
                     var fig = board.boardMap[x, y].Peel();
 
-                    Debug.Log(fig.type);
+                    if (possibleMoveList != null) {
+                        foreach (GameObject cell in possibleMoveList) {
+                            Destroy(cell);
+                        }
+                    }
 
-                    if (fig.type != FigureType.None) {
+                    if (figuresMap[x, y] != null && fig.white == board.whiteMove) {
                         var moveType = ChessEngine.GetMoveType(fig);
                         var movePaths = ChessEngine.CalcMovePaths(
                             new Position(x, y),
                             moveType,
                             board.boardMap
                         );
-
-                        if (possibleMoveList != null) {
-                            foreach (GameObject cell in possibleMoveList) {
-                                Destroy(cell);
-                            }
-                        }
-
-                        var possibleMoves = ChessEngine.CalcPossibleMoves(movePaths);
-
+                        possibleMoves = ChessEngine.CalcPossibleMoves(movePaths);
+                        figPos = new Position(x, y);
                         possibleMoveList = CreatingPossibleMoves(possibleMoves);
 
+                    } else {
+                        var from = figPos;
+                        var to = new Position(x, y);
+
+                        foreach (Position pos in possibleMoves) {
+                            if (pos.x == to.x && pos.y == to.y) {
+                                MoveFigure(from, to);
+                                var figure = board.boardMap[to.x, to.y].Peel();
+                                figure.firstMove = false;
+                                board.boardMap[to.x, to.y] = Option<Fig>.Some(figure);
+                            }
+                        }
+                        possibleMoves.Clear();
                     }
                 }
             }
@@ -79,16 +78,40 @@ namespace visual {
             var possibleMovesObj = new List<GameObject>();
 
             foreach (Position pos in possibleMoves) {
-                var objPos = new Vector3(
-                    (CONST - pos.x + changedX) - 1.5f, 
-                    0.01f, 
-                    (CONST - pos.y + changedZ) - 1.5f
+                var objPos = new Vector3(CONST - pos.x * 1.5f, 0.01f, CONST - pos.y * 1.5f);
+
+                var obj = Instantiate(
+                    figCont.blueBacklight,
+                    objPos, 
+                    Quaternion.Euler(90, 0, 0),
+                    figureSpawner.boardTransform
                 );
-                var obj = Instantiate(figCont.blueBacklight, objPos, Quaternion.Euler(90, 0, 0));
+
+                obj.transform.localPosition = objPos;
                 possibleMovesObj.Add(obj);
             }
 
             return possibleMovesObj;
+        }
+
+        private void MoveFigure(Position from, Position to) {
+            board.boardMap[to.x, to.y] = board.boardMap[from.x, from.y];
+            board.boardMap[from.x, from.y] = Option<Fig>.None();
+
+            var figForMove = figuresMap[from.x, from.y];
+
+            Destroy(figuresMap[to.x, to.y]);
+
+            figuresMap[to.x, to.y] = figuresMap[from.x, from.y];
+            figuresMap[from.x, from.y] = null;
+
+            var newPos = new Vector3(CONST - to.x * 1.5f, 0.0f, CONST - to.y * 1.5f);
+
+            if (figForMove != null) {
+                figForMove.transform.localPosition = newPos;
+            }
+
+            board.whiteMove = !board.whiteMove;
         }
     }
 }

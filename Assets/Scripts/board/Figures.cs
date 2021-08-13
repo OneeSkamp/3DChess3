@@ -12,7 +12,6 @@ namespace board {
     public struct Fig {
         public bool white;
         public bool firstMove;
-        public bool check;
         public FigureType type;
 
         public static Fig CreateFig(bool white, FigureType type) {
