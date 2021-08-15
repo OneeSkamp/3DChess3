@@ -14,12 +14,9 @@ namespace board {
     public struct Dir {
         public int x;
         public int y;
-
-        public static Dir NewDir(int x, int y) {
-            Dir dir = new Dir();
-            dir.x = x;
-            dir.y = y;
-            return dir;
+        public Dir (int x, int y) {
+            this.x = x;
+            this.y = y;
         }
     }
 }

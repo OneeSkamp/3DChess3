@@ -32,6 +32,7 @@ namespace board {
             pawnMoveType.lineMove = true;
             pawnMoveType.diagonalMove = true;
             figMoveTypes.Add(FigureType.Pawn, pawnMoveType);
+
             return figMoveTypes;
         }
     }

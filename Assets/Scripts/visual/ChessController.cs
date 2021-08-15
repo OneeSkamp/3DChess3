@@ -46,17 +46,19 @@ namespace visual {
                     }
 
                     if (figuresMap[x, y] != null && fig.white == board.whiteMove) {
-                        var moveType = ChessEngine.GetMoveType(fig);
                         var movePaths = ChessEngine.CalcMovePaths(
                             new Position(x, y),
-                            moveType,
+                            ChessEngine.GetMoveType(fig),
                             board.boardMap
                         );
+                        if (fig.type == FigureType.Pawn) {
+                            movePaths = CalcPawnPath(movePaths, fig);
+                        }
                         possibleMoves = ChessEngine.CalcPossibleMoves(movePaths);
                         figPos = new Position(x, y);
                         possibleMoveList = CreatingPossibleMoves(possibleMoves);
 
-                    } else {
+                    } else if (possibleMoves != null) {
                         var from = figPos;
                         var to = new Position(x, y);
 
@@ -112,6 +114,56 @@ namespace visual {
             }
 
             board.whiteMove = !board.whiteMove;
+        }
+
+        private List<MovePath> CalcPawnPath(List<MovePath> movePaths, Fig figure) {
+            var PawnPath = new List<MovePath>();
+            int colorDir = 0;
+
+            if (figure.white) {
+                colorDir = -1;
+            } else {
+                colorDir = 1;
+            }
+
+            foreach (MovePath path in movePaths) {
+                var myFig = board.boardMap[path.pos.x, path.pos.y];
+                var nextFig = board.boardMap[path.pos.x + path.dir.x, path.pos.y + path.dir.y];
+
+                if (path.dir.x  == colorDir && path.dir.y == 0 && nextFig.IsNone()) {
+                    PawnPath.Add(path);
+                    continue;
+                }
+
+                if (path.dir.x == colorDir && path.dir.y == -1 && !nextFig.IsNone() 
+                    && myFig.Peel().white != nextFig.Peel().white) {
+
+                    PawnPath.Add(path);
+                    continue;
+                }
+
+                if (path.dir.x == colorDir && path.dir.y == 1 && !nextFig.IsNone() 
+                    && myFig.Peel().white != nextFig.Peel().white) {
+
+                    PawnPath.Add(path);
+                    continue;
+                }
+            }
+
+            return PawnPath;
+        }
+
+        private bool CheckKing() {
+            Option<Fig> king;
+            var moveTypes = MoveTypes.MakeFigMoveTypes();
+
+            foreach (Option<Fig> fig in board.boardMap) {
+                if (fig.Peel().type == FigureType.King) {
+                    king = fig;
+                }
+            }
+
+            return false;
         }
     }
 }

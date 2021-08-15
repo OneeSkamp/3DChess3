@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnityEngine;
 using board;
 using option;
 
@@ -20,28 +19,28 @@ namespace chess {
             var movePaths = new List<MovePath>();
 
             if (moveType.diagonalMove) {
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(1, 1), board));
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(1, -1), board));
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(-1, 1), board));
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(-1, -1), board));
+                movePaths.Add(CalcMovePath(pos, new Dir(1, 1), board));
+                movePaths.Add(CalcMovePath(pos, new Dir(1, -1), board));
+                movePaths.Add(CalcMovePath(pos, new Dir(-1, 1), board));
+                movePaths.Add(CalcMovePath(pos, new Dir(-1, -1), board));
             }
 
             if (moveType.lineMove) {
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(1, 0), board));
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(0, 1), board));
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(0, -1), board));
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(-1, 0), board));
+                movePaths.Add(CalcMovePath(pos, new Dir(1, 0), board));
+                movePaths.Add(CalcMovePath(pos, new Dir(0, 1), board));
+                movePaths.Add(CalcMovePath(pos, new Dir(0, -1), board));
+                movePaths.Add(CalcMovePath(pos, new Dir(-1, 0), board));
             }
 
             if (moveType.circularMove) {
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(2, 1), board));
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(2, -1), board));
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(-2, 1), board));
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(-2, -1), board));
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(1, 2), board));
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(-1, 2), board));
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(1, -2), board));
-                movePaths.Add(CalcMovePath(pos, Dir.NewDir(-1, -2), board));
+                movePaths.Add(CalcMovePath(pos, new Dir(2, 1), board));
+                movePaths.Add(CalcMovePath(pos, new Dir(2, -1), board));
+                movePaths.Add(CalcMovePath(pos, new Dir(-2, 1), board));
+                movePaths.Add(CalcMovePath(pos, new Dir(-2, -1), board));
+                movePaths.Add(CalcMovePath(pos, new Dir(1, 2), board));
+                movePaths.Add(CalcMovePath(pos, new Dir(-1, 2), board));
+                movePaths.Add(CalcMovePath(pos, new Dir(1, -2), board));
+                movePaths.Add(CalcMovePath(pos, new Dir(-1, -2), board));
             }
 
             return movePaths;
