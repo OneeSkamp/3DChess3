@@ -8,9 +8,10 @@ namespace visual {
     public class ChessController : MonoBehaviour {
 
         public static Option<Fig>[,] boardMap; 
-      
-        public Board<Fig> board = new Board<Fig>(true, CreateBoard());
+
         public GameObject[,] figuresMap = new GameObject[8,8];
+
+        public Board<Fig> board = new Board<Fig>(true, CreateBoard());
 
         public FigureSpawner figureSpawner;
         public FigureResurses figCont;
@@ -49,19 +50,29 @@ namespace visual {
                     }
 
                     if (figuresMap[x, y] != null && fig.white == board.whiteMove) {
-                        var movePaths = ChessEngine.CalcMovePaths(
-                            new Position(x, y),
-                            ChessEngine.GetMoveType(fig),
-                            board.boardMap
-                        );
-                        if (fig.type == FigureType.Pawn) {
-                            movePaths = CalcPawnPath(movePaths, fig);
-                        }
-                        possibleMoves = ChessEngine.CalcPossibleMoves(movePaths);
+
                         figPos = new Position(x, y);
+
+                        var figPaths = ChessEngine.CalcFigurePaths(figPos, boardMap, board);
+                        possibleMoves = null;
+                        possibleMoves = ChessEngine.CalcPossibleMoves(figPaths);
+
+                        foreach (MovePath path in figPaths) {
+                            var onWay = board.boardMap[path.onWay.x, path.onWay.y].Peel();
+                            //Debug.Log(path.onWay.x + "sdad" + path.onWay.y);
+                            if (onWay.white != board.whiteMove) {
+
+                                possibleMoves.Add(new Position(path.onWay.x, path.onWay.y));
+                            }
+                        }
+                        foreach (Position pos in possibleMoves) {
+                           // Debug.Log(pos.x + "s" + pos.y);
+                        }
+
                         possibleMoveList = CreatingPossibleMoves(possibleMoves);
 
                     } else if (possibleMoves != null) {
+
                         var from = figPos;
                         var to = new Position(x, y);
 
@@ -73,6 +84,7 @@ namespace visual {
                                 board.boardMap[to.x, to.y] = Option<Fig>.Some(figure);
                             }
                         }
+
                         possibleMoves.Clear();
                     }
                 }
@@ -83,6 +95,7 @@ namespace visual {
             var possibleMovesObj = new List<GameObject>();
 
             foreach (Position pos in possibleMoves) {
+               // Debug.Log(pos.x + "ss" + pos.y);
                 var objPos = new Vector3(CONST - pos.x * 1.5f, 0.01f, CONST - pos.y * 1.5f);
 
                 var obj = Instantiate(
@@ -119,47 +132,9 @@ namespace visual {
             board.whiteMove = !board.whiteMove;
         }
 
-        private List<MovePath> CalcPawnPath(List<MovePath> movePaths, Fig figure) {
-            var PawnPath = new List<MovePath>();
-            int colorDir = 0;
-
-            if (figure.white) {
-                colorDir = -1;
-            } else {
-                colorDir = 1;
-            }
-
-            foreach (MovePath path in movePaths) {
-                var myFig = board.boardMap[path.pos.x, path.pos.y];
-                var nextFig = board.boardMap[path.pos.x + path.dir.x, path.pos.y + path.dir.y];
-
-                if (path.dir.x  == colorDir && path.dir.y == 0 && nextFig.IsNone()) {
-                    PawnPath.Add(path);
-                    continue;
-                }
-
-                if (path.dir.x == colorDir && path.dir.y == -1 && !nextFig.IsNone() 
-                    && myFig.Peel().white != nextFig.Peel().white) {
-
-                    PawnPath.Add(path);
-                    continue;
-                }
-
-                if (path.dir.x == colorDir && path.dir.y == 1 && !nextFig.IsNone() 
-                    && myFig.Peel().white != nextFig.Peel().white) {
-
-                    PawnPath.Add(path);
-                    continue;
-                }
-            }
-
-            return PawnPath;
-        }
-
         private bool CheckKing() {
             Option<Fig> king = Option<Fig>.None();
             var kingPos = new Position();
-            var moveTypes = MoveTypes.MakeFigMoveTypes();
 
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j <8; j++) {
@@ -172,38 +147,6 @@ namespace visual {
 
             var figure = king.Peel();
             figure.type = FigureType.Bishop;
-
-            var moveType = ChessEngine.GetMoveType(figure);
-            var movePaths = ChessEngine.CalcMovePaths(kingPos, moveType, board.boardMap);
-
-            // foreach (MovePath path in movePaths) {
-            //     var posX = path.pos.x + path.length * path.dir.x;
-            //     var posY = path.pos.y + path.length * path.dir.y;
-            //     var active = board.boardMap[posX, posY].Peel();
-
-            //     // if (active.type == FigureType.Bishop)
-            // }
-
-            figure.type = FigureType.Knight;
-
-            moveType = ChessEngine.GetMoveType(figure);
-            movePaths.AddRange(ChessEngine.CalcMovePaths(kingPos, moveType, board.boardMap));
-
-            var posMoves = ChessEngine.CalcPossibleMoves(movePaths);
-
-            // foreach (Position pos in posMoves) {
-            //     if (!board.boardMap[pos.x, pos.y].IsNone()) {
-            //         var active = board.boardMap[pos.x, pos.y];
-            //     }
-            // }
-
-            // for (int i = 0; i < 8; i++) {
-            //     for (int j = 0; j <8; j++) {
-            //         if (!board.boardMap[i, j].IsNone()) {
-            //             return true;
-            //         }
-            //     }
-            // }
 
             return false;
         }
@@ -222,8 +165,7 @@ namespace visual {
             boardMap[0, 3] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Queen));
             boardMap[0, 4] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.King));
 
-            for (int x = 0; x <= 7; x++)
-            {
+            for (int x = 0; x <= 7; x++) {
                 boardMap[1, x] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Pawn));
             }
 
@@ -239,8 +181,7 @@ namespace visual {
             boardMap[7, 3] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Queen));
             boardMap[7, 4] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.King));
 
-            for (int x = 0; x <= 7; x++)
-            {
+            for (int x = 0; x <= 7; x++) {
                 boardMap[6, x] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Pawn));
             }
 
