@@ -6,7 +6,10 @@ using option;
 
 namespace visual {
     public class ChessController : MonoBehaviour {
-        public Board board = new Board(true);
+
+        public static Option<Fig>[,] boardMap; 
+      
+        public Board<Fig> board = new Board<Fig>(true, CreateBoard());
         public GameObject[,] figuresMap = new GameObject[8,8];
 
         public FigureSpawner figureSpawner;
@@ -154,16 +157,94 @@ namespace visual {
         }
 
         private bool CheckKing() {
-            Option<Fig> king;
+            Option<Fig> king = Option<Fig>.None();
+            var kingPos = new Position();
             var moveTypes = MoveTypes.MakeFigMoveTypes();
 
-            foreach (Option<Fig> fig in board.boardMap) {
-                if (fig.Peel().type == FigureType.King) {
-                    king = fig;
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j <8; j++) {
+                    if (board.boardMap[i, j].Peel().type == FigureType.King) {
+                        king = board.boardMap[i, j];
+                        kingPos = new Position(i, j);
+                    }
                 }
             }
 
+            var figure = king.Peel();
+            figure.type = FigureType.Bishop;
+
+            var moveType = ChessEngine.GetMoveType(figure);
+            var movePaths = ChessEngine.CalcMovePaths(kingPos, moveType, board.boardMap);
+
+            // foreach (MovePath path in movePaths) {
+            //     var posX = path.pos.x + path.length * path.dir.x;
+            //     var posY = path.pos.y + path.length * path.dir.y;
+            //     var active = board.boardMap[posX, posY].Peel();
+
+            //     // if (active.type == FigureType.Bishop)
+            // }
+
+            figure.type = FigureType.Knight;
+
+            moveType = ChessEngine.GetMoveType(figure);
+            movePaths.AddRange(ChessEngine.CalcMovePaths(kingPos, moveType, board.boardMap));
+
+            var posMoves = ChessEngine.CalcPossibleMoves(movePaths);
+
+            // foreach (Position pos in posMoves) {
+            //     if (!board.boardMap[pos.x, pos.y].IsNone()) {
+            //         var active = board.boardMap[pos.x, pos.y];
+            //     }
+            // }
+
+            // for (int i = 0; i < 8; i++) {
+            //     for (int j = 0; j <8; j++) {
+            //         if (!board.boardMap[i, j].IsNone()) {
+            //             return true;
+            //         }
+            //     }
+            // }
+
             return false;
+        }
+
+        private static Option<Fig>[,] CreateBoard() {
+            boardMap = new Option<Fig>[8, 8];
+            boardMap[0, 0] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Rook));
+            boardMap[0, 7] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Rook));
+
+            boardMap[0, 1] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Knight));
+            boardMap[0, 6] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Knight));
+
+            boardMap[0, 2] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Bishop));
+            boardMap[0, 5] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Bishop));
+
+            boardMap[0, 3] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Queen));
+            boardMap[0, 4] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.King));
+
+            for (int x = 0; x <= 7; x++)
+            {
+                boardMap[1, x] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Pawn));
+            }
+
+            boardMap[7, 0] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Rook));
+            boardMap[7, 7] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Rook));
+
+            boardMap[7, 1] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Knight));
+            boardMap[7, 6] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Knight));
+
+            boardMap[7, 2] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Bishop));
+            boardMap[7, 5] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Bishop));
+
+            boardMap[7, 3] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Queen));
+            boardMap[7, 4] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.King));
+
+            for (int x = 0; x <= 7; x++)
+            {
+                boardMap[6, x] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Pawn));
+            }
+
+            return boardMap;
         }
     }
 }

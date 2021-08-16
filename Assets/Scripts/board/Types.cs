@@ -1,6 +1,9 @@
 using System.Collections.Generic;
+using option;
+using chess;
 
 namespace board {
+
     public static class MoveTypes {
         public static Dictionary<FigureType, MoveType> MakeFigMoveTypes() {
             var figMoveTypes = new Dictionary<FigureType, MoveType>();
@@ -34,6 +37,55 @@ namespace board {
             figMoveTypes.Add(FigureType.Pawn, pawnMoveType);
 
             return figMoveTypes;
+        }
+
+        public static MovePath CalcPath(Position pos, Dir dir, Option<Fig>[,] board) {
+            var movePath = new MovePath();
+            var length = 0;
+            movePath.pos = pos;
+
+            for (int i = 1; i < board.GetLength(0); i++) {
+                var posX = pos.x + i * dir.x;
+                var posY = pos.y + i * dir.y;
+
+                if (!IsOnBoard(new Position(posX, posY), board.GetLength(0), board.GetLength(1))) {
+                    break;
+                }
+
+                if (board[posX, posY].IsNone()) {
+                    length++;
+                }
+
+                if (!board[posX, posY].IsNone()) {
+                    movePath.onWay = new Position(posX, posY);
+                }
+            }
+
+            return movePath;
+        }
+
+        public static List<MovePath> CalcMovePaths(
+            Position pos, 
+            List<Dir> directions, 
+            Option<Fig>[,] board
+        ) {
+            List<MovePath> movePaths = new List<MovePath>();
+
+            foreach (Dir dir in directions) {
+                var path = CalcPath(pos, dir, board);
+                movePaths.Add(path);
+            }
+
+            return movePaths;
+        }
+
+        private static bool IsOnBoard(Position pos, int width, int height) {
+
+            if (pos.x < height || pos.y < width || pos.x >= height || pos.y >= width) {
+                return false;
+            }
+
+            return true;
         }
     }
 }

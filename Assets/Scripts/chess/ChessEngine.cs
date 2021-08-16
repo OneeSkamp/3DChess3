@@ -4,7 +4,6 @@ using option;
 
 namespace chess {
     public static class ChessEngine {
-
         public static MoveType GetMoveType(Fig fig) {
             var moveTypes = MoveTypes.MakeFigMoveTypes();
             var moveType = moveTypes[fig.type];
@@ -48,12 +47,12 @@ namespace chess {
 
         public static MovePath CalcMovePath(Position pos, Dir dir, Option<Fig>[,] board) {
             var myFig = board[pos.x, pos.y].Peel();
-            var movePath = new MovePath();
+            var movePathw = new MovePath();
             int length = 0;
 
-            movePath.dir = dir;
-            movePath.pos = pos;
-            movePath.Length = 0;
+            movePathw.dir = dir;
+            movePathw.pos = pos;
+            movePathw.Length = 0;
 
             switch (myFig.type) {
                 case FigureType.King:
@@ -93,14 +92,14 @@ namespace chess {
                     break;
 
                 } else if (fig.type == FigureType.None) {
-                    movePath.Length++;
+                    movePathw.Length++;
 
                 } else if (fig.type != FigureType.None && fig.white != myFig.white) {
-                    movePath.Length++;
+                    movePathw.Length++;
                     break;
                 }
             }
-            return movePath;
+            return movePathw;
         }
 
         public static List<Position> CalcPossibleMoves(List<MovePath> movePaths) {

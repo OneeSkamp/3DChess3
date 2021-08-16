@@ -4,14 +4,22 @@ using option;
 
 namespace board {
     [Serializable]
-    public class Board {
+    public class Board<T> {
         public bool whiteMove;
-        public Option<Fig>[,] boardMap;
-        public Board(bool whiteMove) {
-            this.whiteMove = whiteMove;
-            boardMap = new Option<Fig>[8, 8];
+        public int height = 8;
+        public int width = 8;
+        public Option<T>[,] boardMap;
 
-            boardMap[0, 0] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Rook));
+        public readonly List<Dir> lineDir = new List<Dir>();
+        public readonly List<Dir> diagonalDir = new List<Dir>();
+        public readonly List<Dir> circularDir = new List<Dir>();
+
+        public Board(bool whiteMove, Option<T>[,] figs) {
+            this.whiteMove = whiteMove;
+            boardMap = new Option<T>[height, width];
+            this.boardMap = figs;
+
+            /*boardMap[0, 0] = Option<>.Some(Fig.CreateFig(false, FigureType.Rook));
             boardMap[0, 7] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Rook));
 
             boardMap[0, 1] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Knight));
@@ -41,7 +49,26 @@ namespace board {
 
             for (int x = 0; x <= 7; x++) {
                 boardMap[6, x] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Pawn));
-            }
+            }*/
+
+            lineDir.Add(new Dir(1, 0));
+            lineDir.Add(new Dir(0, 1));
+            lineDir.Add(new Dir(-1, 0));
+            lineDir.Add(new Dir(0, -1));
+
+            diagonalDir.Add(new Dir(1, 1));
+            diagonalDir.Add(new Dir(1, -1));
+            diagonalDir.Add(new Dir(-1, 1));
+            diagonalDir.Add(new Dir(-1, -1));
+
+            circularDir.Add(new Dir(2, 1));
+            circularDir.Add(new Dir(2, -1));
+            circularDir.Add(new Dir(-2, 1));
+            circularDir.Add(new Dir(-2, -1));
+            circularDir.Add(new Dir(1, 2));
+            circularDir.Add(new Dir(-1, 2));
+            circularDir.Add(new Dir(1, -2));
+            circularDir.Add(new Dir(-1, -2));
         }
     }
 }

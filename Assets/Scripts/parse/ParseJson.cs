@@ -33,7 +33,7 @@ namespace parse {
             }
         }
 
-        public void FromJson(Option<Fig>[,] boardmap) {
+/*        public void FromJson(Option<Fig>[,] boardmap) {
             jsonBoardMap = new string[8,8];
             jsonAll = File.ReadAllText(filepathBoardMap);
             jsonBoard = File.ReadAllText(filepathBoard);
@@ -57,7 +57,7 @@ namespace parse {
                     }
                 }
             }
-        }
+        }*/
     }
 }
 

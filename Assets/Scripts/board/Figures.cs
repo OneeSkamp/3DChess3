@@ -1,4 +1,4 @@
-namespace board {
+namespace chess {
     public enum FigureType {
         None,
         Pawn,
@@ -20,16 +20,6 @@ namespace board {
             figure.type = type;
             figure.firstMove = true;
             return figure;
-        }
-    }
-
-    public struct Position {
-        public int x;
-        public int y;
-
-        public Position(int x, int y) {
-            this.x = x;
-            this.y = y;
         }
     }
 }
