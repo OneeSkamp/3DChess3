@@ -52,21 +52,22 @@ namespace visual {
                     if (figuresMap[x, y] != null && fig.white == board.whiteMove) {
 
                         figPos = new Position(x, y);
+                        var figPaths = ChessEngine.CalcFigurePaths(figPos, fig.type, boardMap, board);
 
-                        var figPaths = ChessEngine.CalcFigurePaths(figPos, boardMap, board);
+                        if (fig.type == FigureType.Pawn) {
+                            figPaths = ChangePawnPaths(figPos, figPaths);
+                        }
+
                         possibleMoves = null;
                         possibleMoves = ChessEngine.CalcPossibleMoves(figPaths);
 
                         foreach (MovePath path in figPaths) {
                             var onWay = board.boardMap[path.onWay.x, path.onWay.y].Peel();
-                            //Debug.Log(path.onWay.x + "sdad" + path.onWay.y);
+
                             if (onWay.white != board.whiteMove) {
 
                                 possibleMoves.Add(new Position(path.onWay.x, path.onWay.y));
                             }
-                        }
-                        foreach (Position pos in possibleMoves) {
-                           // Debug.Log(pos.x + "s" + pos.y);
                         }
 
                         possibleMoveList = CreatingPossibleMoves(possibleMoves);
@@ -91,11 +92,62 @@ namespace visual {
             }
         }
 
+        private List<MovePath> ChangePawnPaths(Position pos, List<MovePath> paths) {
+            var pawnPaths = new List<MovePath>();
+
+            var fig = boardMap[pos.x, pos.y].Peel();
+            var prop = 0;
+
+            if (fig.white) {
+                prop = -1;
+            } else {
+                prop = 1;
+            }
+
+            foreach (MovePath path in paths) {
+
+                if (path.dir.x == 1 * prop && path.dir.y == 0) {
+                    var t = path;
+
+                    if (fig.firstMove) {
+                        t.Length = 2;
+                    } else {
+                        t.Length = 1;
+                    }
+
+                    if (boardMap[pos.x + path.dir.x, pos.y + path.dir.y].IsSome()) {
+                        t.onWay = new Position(pos.x, pos.y);
+                        t.Length = 0;
+
+                    } else if (boardMap[pos.x + path.dir.x * 2, pos.y + path.dir.y].IsSome()) {
+                        t.onWay = new Position(pos.x, pos.y);
+                        t.Length = 1;
+                    }
+                    pawnPaths.Add(t);
+                }
+
+                if (path.dir.x == prop && path.dir.y == 1 
+                && MovePaths.IsOnBoard(new Position(pos.x + path.dir.x, pos.y + path.dir.y), board.height, board.width)
+                && boardMap[pos.x + path.dir.x, pos.y + path.dir.y].IsSome()) {
+
+                    pawnPaths.Add(path);
+                }
+
+                if (path.dir.x == prop && path.dir.y == -1 
+                && MovePaths.IsOnBoard(new Position(pos.x + path.dir.x, pos.y + path.dir.y), board.height, board.width)
+                && boardMap[pos.x + path.dir.x, pos.y + path.dir.y].IsSome()) {
+
+                    pawnPaths.Add(path);
+                }
+            }
+            return pawnPaths;
+        }
+
         private List<GameObject> CreatingPossibleMoves(List<Position> possibleMoves) {
             var possibleMovesObj = new List<GameObject>();
 
             foreach (Position pos in possibleMoves) {
-               // Debug.Log(pos.x + "ss" + pos.y);
+
                 var objPos = new Vector3(CONST - pos.x * 1.5f, 0.01f, CONST - pos.y * 1.5f);
 
                 var obj = Instantiate(
@@ -130,24 +182,71 @@ namespace visual {
             }
 
             board.whiteMove = !board.whiteMove;
+            CheckKing();
         }
 
         private bool CheckKing() {
-            Option<Fig> king = Option<Fig>.None();
             var kingPos = new Position();
 
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j <8; j++) {
-                    if (board.boardMap[i, j].Peel().type == FigureType.King) {
-                        king = board.boardMap[i, j];
-                        kingPos = new Position(i, j);
+                    if (board.boardMap[i, j].IsSome()) {
+                        var fig = board.boardMap[i, j].Peel();
+
+                        if (fig.type == FigureType.King && fig.white == board.whiteMove) {
+                            kingPos = new Position(i, j);
+                        }
                     }
                 }
             }
 
-            var figure = king.Peel();
-            figure.type = FigureType.Bishop;
+            var bishopPaths = ChessEngine.CalcFigurePaths(kingPos, FigureType.Bishop, boardMap, board);
 
+            foreach (MovePath path in bishopPaths) {
+                if (boardMap[path.onWay.x, path.onWay.y].IsSome()) {
+                    var fig = boardMap[path.onWay.x, path.onWay.y].Peel();
+
+                    if (fig.white != board.whiteMove) {
+
+                        if (fig.type == FigureType.Bishop || fig.type == FigureType.Queen) {
+                           Debug.Log("shah");
+                           return true;
+                        }
+                    }
+                }
+            }
+
+            var rookPaths = ChessEngine.CalcFigurePaths(kingPos, FigureType.Rook, boardMap, board);
+
+            foreach (MovePath path in rookPaths) {
+                if (boardMap[path.onWay.x, path.onWay.y].IsSome()) {
+                    var fig = boardMap[path.onWay.x, path.onWay.y].Peel();
+
+                    if (fig.white != board.whiteMove) {
+
+                        if (fig.type == FigureType.Rook || fig.type == FigureType.Queen) {
+                           Debug.Log("shah");
+                           return true;
+                        }
+                    }
+                }
+            }
+
+            var knightPaths = ChessEngine.CalcFigurePaths(kingPos, FigureType.Knight, boardMap, board);
+
+            foreach (MovePath path in knightPaths) {
+                if (boardMap[path.onWay.x, path.onWay.y].IsSome()) {
+                    var fig = boardMap[path.onWay.x, path.onWay.y].Peel();
+
+                    if (fig.white != board.whiteMove) {
+
+                        if (fig.type == FigureType.Knight) {
+                            Debug.Log("shah");
+                            return true;
+                        }
+                    }
+                }
+            }
             return false;
         }
 

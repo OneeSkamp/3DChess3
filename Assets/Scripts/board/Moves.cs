@@ -3,10 +3,12 @@ namespace board {
         public bool lineMove;
         public bool circularMove;
         public bool diagonalMove;
-        public MoveType (bool lineMove, bool circularMove, bool diagonalMove) {
+        public int maxLength;
+        public MoveType (bool lineMove, bool circularMove, bool diagonalMove, int maxLength) {
             this.lineMove = lineMove;
             this.circularMove = circularMove;
             this.diagonalMove = diagonalMove;
+            this.maxLength = maxLength;
         }
     }
 

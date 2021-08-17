@@ -5,11 +5,11 @@ using UnityEngine;
 
 namespace chess {
     public static class ChessEngine {
-        public static List<MovePath> CalcFigurePaths(Position pos, Option<Fig>[,] boardMap, Board<Fig> board) {
-            var figure = boardMap[pos.x, pos.y].Peel();
+        public static List<MovePath> CalcFigurePaths(Position pos, FigureType type, Option<Fig>[,] boardMap, Board<Fig> board) {
+            //var figure = boardMap[pos.x, pos.y].Peel();
             var figurePaths = new List<MovePath>();
             var dirs = new List<Dir>();
-            var moveType = MoveTypes.moveTypes[figure.type];
+            var moveType = MoveTypes.moveTypes[type];
 
             if (moveType.lineMove) {
                 dirs.AddRange(board.lineDir);
@@ -23,7 +23,7 @@ namespace chess {
                 dirs.AddRange(board.circularDir);
             }
 
-            figurePaths.AddRange(MovePaths.CalcMovePaths<Fig>(pos, dirs, boardMap));
+            figurePaths.AddRange(MovePaths.CalcMovePaths<Fig>(pos, dirs, moveType.maxLength, boardMap));
 
             return figurePaths;
         }

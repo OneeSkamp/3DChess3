@@ -1,17 +1,18 @@
 using System.Collections.Generic;
-using chess;
 using board;
 
-public class MoveTypes {
-    public static readonly Dictionary<FigureType, MoveType> moveTypes = 
-        new Dictionary<FigureType, MoveType> {
+namespace chess {
+    public class MoveTypes {
+        public static readonly Dictionary<FigureType, MoveType> moveTypes = 
+            new Dictionary<FigureType, MoveType> {
 
-            {FigureType.Bishop, new MoveType(false, false, true)},
-            {FigureType.Rook, new MoveType(true, false, false)},
-            {FigureType.Knight, new MoveType(false, true, false)},
-            {FigureType.Queen, new MoveType(true, false, true)},
-            {FigureType.Pawn, new MoveType(true, false, true)},
-            {FigureType.King, new MoveType(true, false, true)}
-    };
-
+                {FigureType.Bishop, new MoveType(false, false, true, 8)},
+                {FigureType.Rook, new MoveType(true, false, false, 8)},
+                {FigureType.Knight, new MoveType(false, true, false, 1)},
+                {FigureType.Queen, new MoveType(true, false, true, 8)},
+                {FigureType.Pawn, new MoveType(true, false, true, 1)},
+                {FigureType.King, new MoveType(true, false, true, 1)}
+        };
+    }
 }
+
