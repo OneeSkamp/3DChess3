@@ -152,7 +152,7 @@ namespace visual {
 
                 var obj = Instantiate(
                     figCont.blueBacklight,
-                    objPos, 
+                    objPos,
                     Quaternion.Euler(90, 0, 0),
                     figureSpawner.boardTransform
                 );

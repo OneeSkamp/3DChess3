@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using option;
-using UnityEngine;
 
 namespace board {
     public static class MovePaths {
@@ -23,7 +22,6 @@ namespace board {
 
                 if (!board[posX, posY].IsNone()) {
                     movePath.onWay = new Position(posX, posY);
-
                     break;
                 }
             }
@@ -44,12 +42,6 @@ namespace board {
 
             foreach (Dir dir in directions) {
                 movePaths.Add(CalcMovePath(pos, dir, maxLength, board));
-               // Debug.Log(dir.x + "   " + dir.y);
-            }
-
-            foreach (MovePath pas in movePaths) {
-                
-              //  Debug.Log(pas.onWay.x + "   " + pas.onWay.y);
             }
 
             return movePaths;

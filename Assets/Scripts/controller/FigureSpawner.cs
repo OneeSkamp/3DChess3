@@ -1,7 +1,6 @@
 using UnityEngine;
 using option;
 using chess;
-using board;
 
 namespace visual {
     public class FigureSpawner : MonoBehaviour {
@@ -26,8 +25,8 @@ namespace visual {
 
                     if (fig.type == FigureType.Pawn && !fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
-                            figCont.bPawn, 
-                            pawnPos, 
+                            figCont.bPawn,
+                            pawnPos,
                             Quaternion.Euler(0, 90, 0),
                             boardTransform
                         );
@@ -35,8 +34,8 @@ namespace visual {
 
                     if (fig.type == FigureType.Queen && !fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
-                            figCont.bQueen, 
-                            pos, 
+                            figCont.bQueen,
+                            pos,
                             Quaternion.Euler(0, 90, 0),
                             boardTransform
                         );
@@ -44,8 +43,8 @@ namespace visual {
 
                     if (fig.type == FigureType.King && !fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
-                            figCont.bKing, 
-                            pos, 
+                            figCont.bKing,
+                            pos,
                             Quaternion.Euler(0, 90, 0),
                             boardTransform
                         );
@@ -53,8 +52,8 @@ namespace visual {
 
                     if (fig.type == FigureType.Knight && !fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
-                            figCont.bKnight, 
-                            pos, 
+                            figCont.bKnight,
+                            pos,
                             Quaternion.Euler(0, 90, 0),
                             boardTransform
                         );
@@ -62,8 +61,8 @@ namespace visual {
 
                     if (fig.type == FigureType.Bishop && !fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
-                            figCont.bBishop, 
-                            pos, 
+                            figCont.bBishop,
+                            pos,
                             Quaternion.Euler(0, 90, 0),
                             boardTransform
                         );
@@ -71,8 +70,8 @@ namespace visual {
 
                     if (fig.type == FigureType.Rook && !fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
-                            figCont.bRook, 
-                            pos, 
+                            figCont.bRook,
+                            pos,
                             Quaternion.Euler(0, 90, 0),
                             boardTransform
                         );
@@ -80,8 +79,8 @@ namespace visual {
 
                     if (fig.type == FigureType.Pawn && fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
-                            figCont.wPawn, 
-                            pawnPos, 
+                            figCont.wPawn,
+                            pawnPos,
                             Quaternion.Euler(0, 90, 0),
                             boardTransform
                         );
@@ -89,8 +88,8 @@ namespace visual {
 
                     if (fig.type == FigureType.Queen && fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
-                            figCont.wQueen, 
-                            pos, 
+                            figCont.wQueen,
+                            pos,
                             Quaternion.Euler(0, 90, 0),
                             boardTransform
                         );
@@ -98,8 +97,8 @@ namespace visual {
 
                     if (fig.type == FigureType.King && fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
-                            figCont.wKing, 
-                            pos, 
+                            figCont.wKing,
+                            pos,
                             Quaternion.Euler(0, 90, 0),
                             boardTransform
                         );
@@ -107,8 +106,8 @@ namespace visual {
 
                     if (fig.type == FigureType.Knight && fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
-                            figCont.wKnight, 
-                            pos, 
+                            figCont.wKnight,
+                            pos,
                             Quaternion.Euler(0, 90, 0),
                             boardTransform
                         );
@@ -116,8 +115,8 @@ namespace visual {
 
                     if (fig.type == FigureType.Bishop && fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
-                            figCont.wBishop, 
-                            pos, 
+                            figCont.wBishop,
+                            pos,
                             Quaternion.Euler(0, 90, 0),
                             boardTransform
                         );
@@ -125,8 +124,8 @@ namespace visual {
 
                     if (fig.type == FigureType.Rook && fig.white) {
                         chessController.figuresMap[i, j] = Instantiate(
-                            figCont.wRook, 
-                            pos, 
+                            figCont.wRook,
+                            pos,
                             Quaternion.Euler(0, 90, 0),
                             boardTransform
                         );

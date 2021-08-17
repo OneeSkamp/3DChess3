@@ -1,12 +1,15 @@
 using System.Collections.Generic;
 using board;
 using option;
-using UnityEngine;
 
 namespace chess {
     public static class ChessEngine {
-        public static List<MovePath> CalcFigurePaths(Position pos, FigureType type, Option<Fig>[,] boardMap, Board<Fig> board) {
-            //var figure = boardMap[pos.x, pos.y].Peel();
+        public static List<MovePath> CalcFigurePaths(
+            Position pos, 
+            FigureType type, 
+            Option<Fig>[,] boardMap, 
+            Board<Fig> board
+        ) {
             var figurePaths = new List<MovePath>();
             var dirs = new List<Dir>();
             var moveType = MoveTypes.moveTypes[type];
