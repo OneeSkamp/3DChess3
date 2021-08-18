@@ -80,14 +80,13 @@ namespace controller {
 
                         var from = figPos;
                         var to = new Position(x, y);
+                        var movePos = GetMovePosition(from, to);
 
-                        foreach (Position pos in possibleMoves) {
-                            if (pos.x == to.x && pos.y == to.y) {
-                                MoveFigure(from, to);
-                                var figure = board.boardMap[to.x, to.y].Peel();
-                                figure.firstMove = false;
-                                board.boardMap[to.x, to.y] = Option<Fig>.Some(figure);
-                            }
+                        if (movePos.x == to.x && movePos.y == to.y) {
+                            MoveFigure(from, to);
+                            var figure = board.boardMap[to.x, to.y].Peel();
+                            figure.firstMove = false;
+                            board.boardMap[to.x, to.y] = Option<Fig>.Some(figure);
                         }
 
                         possibleMoves.Clear();
@@ -151,6 +150,18 @@ namespace controller {
                 }
             }
             return pawnPaths;
+        }
+
+        private Position GetMovePosition(Position from, Position to) {
+            var movePos = new Position();
+
+            foreach (Position pos in possibleMoves) {
+                if (pos.x == to.x && pos.y == to.y) {
+                    movePos = new Position(pos.x, pos.y);
+                }
+            }
+
+            return movePos;
         }
 
         private List<GameObject> CreatingPossibleMoves(List<Position> possibleMoves) {
@@ -227,6 +238,16 @@ namespace controller {
                            Debug.Log("shah");
                            return true;
                         }
+
+                        if (fig.type == FigureType.Pawn && path.Length == 0) {
+                            Debug.Log("shah");
+                            return true;
+                        }
+
+                        if (fig.type == FigureType.King && path.Length == 1) {
+                            Debug.Log("shah");
+                            return true;
+                        }
                     }
                 }
             }
@@ -247,6 +268,11 @@ namespace controller {
                         if (fig.type == FigureType.Rook || fig.type == FigureType.Queen) {
                            Debug.Log("shah");
                            return true;
+                        }
+
+                        if (fig.type == FigureType.King && path.Length == 1) {
+                            Debug.Log("shah");
+                            return true;
                         }
                     }
                 }

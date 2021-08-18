@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnityEngine;
 using option;
 
 namespace board {
@@ -19,7 +18,6 @@ namespace board {
 
                 if (!IsOnBoard(new Position(posX, posY), 8, 8)) {
                     movePath.onWay = new Position(posX - dir.x, posY - dir.y);
-                    Debug.Log("+");
                     break;
                 }
 
@@ -33,7 +31,6 @@ namespace board {
 
                 if (!board[posX, posY].IsNone()) {
                     movePath.onWay = new Position(posX, posY);
-                    Debug.Log("-");
                     break;
                 }
             }
