@@ -1,8 +1,14 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace board {
     public struct LinearMovement {
         public Vector2Int dir;
+        public int maxLength;
+        public LinearMovement(Vector2Int dir, int maxLength) {
+            this.dir = dir;
+            this.maxLength = maxLength;
+        }
     }
 
     public struct CircularMovement {
@@ -10,22 +16,11 @@ namespace board {
     }
 
     public struct MovementType {
-        public LinearMovement? linear;
-        public CircularMovement? circular;
+        public List<LinearMovement?> linear;
+        public MovementType(List<LinearMovement?> linear) {
+            this.linear = linear;
+        }
     }
-
-    // public struct MoveType {
-    //     public bool lineMove;
-    //     public bool circularMove;
-    //     public bool diagonalMove;
-    //     public int maxLength;
-    //     public MoveType (bool lineMove, bool circularMove, bool diagonalMove, int maxLength) {
-    //         this.lineMove = lineMove;
-    //         this.circularMove = circularMove;
-    //         this.diagonalMove = diagonalMove;
-    //         this.maxLength = maxLength;
-    //     }
-    // }
 
     public struct LinearPath {
         public Vector2Int pos;

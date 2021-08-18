@@ -48,51 +48,56 @@ namespace controller {
                             Destroy(cell);
                         }
                     }
+                    if (figuresMap[x, y] != null && fig.white == whiteMove) {
+                    
+                       var test =  ChessEngine.CalcLinearMoves(new Vector2Int(x, y), ChessEngine.moveTypes[boardMap[x, y].Peel().type], boardMap);
+                        CreatingPossibleMoves(test);
+                        }
 
-                    // if (figuresMap[x, y] != null && fig.white == whiteMove) {
+                        // if (figuresMap[x, y] != null && fig.white == whiteMove) {
 
-                    //     figPos = new Position(x, y);
-                    //     var figPaths = ChessEngine.CalcFigurePaths(
-                    //         figPos,
-                    //         fig.type,
-                    //         boardMap,
-                    //         board
-                    //     );
+                        //     figPos = new Position(x, y);
+                        //     var figPaths = ChessEngine.CalcFigurePaths(
+                        //         figPos,
+                        //         fig.type,
+                        //         boardMap,
+                        //         board
+                        //     );
 
-                    //     if (fig.type == FigureType.Pawn) {
-                    //         figPaths = ChangePawnPaths(figPos, figPaths);
-                    //     }
+                        //     if (fig.type == FigureType.Pawn) {
+                        //         figPaths = ChangePawnPaths(figPos, figPaths);
+                        //     }
 
-                    //     possibleMoves = null;
-                    //     possibleMoves = ChessEngine.CalcPossibleMoves(figPaths);
+                        //     possibleMoves = null;
+                        //     possibleMoves = ChessEngine.CalcPossibleMoves(figPaths);
 
-                    //     foreach (MovePath path in figPaths) {
-                    //         var onWay = boardMap[path.onWay.x, path.onWay.y].Peel();
+                        //     foreach (MovePath path in figPaths) {
+                        //         var onWay = boardMap[path.onWay.x, path.onWay.y].Peel();
 
-                    //         if (onWay.white != whiteMove) {
+                        //         if (onWay.white != whiteMove) {
 
-                    //             possibleMoves.Add(new Position(path.onWay.x, path.onWay.y));
-                    //         }
-                    //     }
+                        //             possibleMoves.Add(new Position(path.onWay.x, path.onWay.y));
+                        //         }
+                        //     }
 
-                    //     possibleMoveList = CreatingPossibleMoves(possibleMoves);
+                        //     possibleMoveList = CreatingPossibleMoves(possibleMoves);
 
-                    // } else if (possibleMoves != null) {
+                        // } else if (possibleMoves != null) {
 
-                    //     var from = figPos;
-                    //     var to = new Position(x, y);
-                    //     var movePos = GetMovePosition(from, to);
+                        //     var from = figPos;
+                        //     var to = new Position(x, y);
+                        //     var movePos = GetMovePosition(from, to);
 
-                    //     if (movePos.x == to.x && movePos.y == to.y) {
-                    //         MoveFigure(from, to);
-                    //         var figure = boardMap[to.x, to.y].Peel();
-                    //         figure.firstMove = false;
-                    //         boardMap[to.x, to.y] = Option<Fig>.Some(figure);
-                    //     }
+                        //     if (movePos.x == to.x && movePos.y == to.y) {
+                        //         MoveFigure(from, to);
+                        //         var figure = boardMap[to.x, to.y].Peel();
+                        //         figure.firstMove = false;
+                        //         boardMap[to.x, to.y] = Option<Fig>.Some(figure);
+                        //     }
 
-                    //     possibleMoves.Clear();
-                    // }
-                }
+                        //     possibleMoves.Clear();
+                        // }
+                    }
             }
         }
 
@@ -316,9 +321,9 @@ namespace controller {
             boardMap[0, 3] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Queen));
             boardMap[0, 4] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.King));
 
-            for (int x = 0; x <= 7; x++) {
-                boardMap[1, x] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Pawn));
-            }
+            //for (int x = 0; x <= 7; x++) {
+            //    boardMap[1, x] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Pawn));
+            //}
 
             boardMap[7, 0] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Rook));
             boardMap[7, 7] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Rook));
@@ -332,9 +337,9 @@ namespace controller {
             boardMap[7, 3] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Queen));
             boardMap[7, 4] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.King));
 
-            for (int x = 0; x <= 7; x++) {
-                boardMap[6, x] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Pawn));
-            }
+            //for (int x = 0; x <= 7; x++) {
+            //    boardMap[6, x] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Pawn));
+            //}
 
             return boardMap;
         }
