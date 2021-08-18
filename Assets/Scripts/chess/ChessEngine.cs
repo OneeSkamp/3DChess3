@@ -5,9 +5,9 @@ using option;
 namespace chess {
     public static class ChessEngine {
         public static List<MovePath> CalcFigurePaths(
-            Position pos, 
-            FigureType type, 
-            Option<Fig>[,] boardMap, 
+            Position pos,
+            FigureType type,
+            Option<Fig>[,] boardMap,
             Board<Fig> board
         ) {
             var figurePaths = new List<MovePath>();
@@ -26,7 +26,12 @@ namespace chess {
                 dirs.AddRange(board.circularDir);
             }
 
-            figurePaths.AddRange(MovePaths.CalcMovePaths<Fig>(pos, dirs, moveType.maxLength, boardMap));
+            figurePaths.AddRange(MovePaths.CalcMovePaths<Fig>(
+                pos,
+                dirs,
+                moveType.maxLength,
+                boardMap
+            ));
 
             return figurePaths;
         }

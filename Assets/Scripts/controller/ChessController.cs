@@ -6,7 +6,6 @@ using option;
 
 namespace visual {
     public class ChessController : MonoBehaviour {
-
         public static Option<Fig>[,] boardMap; 
 
         public GameObject[,] figuresMap = new GameObject[8,8];
@@ -52,7 +51,12 @@ namespace visual {
                     if (figuresMap[x, y] != null && fig.white == board.whiteMove) {
 
                         figPos = new Position(x, y);
-                        var figPaths = ChessEngine.CalcFigurePaths(figPos, fig.type, boardMap, board);
+                        var figPaths = ChessEngine.CalcFigurePaths(
+                            figPos,
+                            fig.type,
+                            boardMap,
+                            board
+                        );
 
                         if (fig.type == FigureType.Pawn) {
                             figPaths = ChangePawnPaths(figPos, figPaths);
@@ -127,14 +131,20 @@ namespace visual {
                 }
 
                 if (path.dir.x == prop && path.dir.y == 1 
-                && MovePaths.IsOnBoard(new Position(pos.x + path.dir.x, pos.y + path.dir.y), board.height, board.width)
+                && MovePaths.IsOnBoard(
+                    new Position(pos.x + path.dir.x, pos.y + path.dir.y), 
+                    board.height, board.width
+                )
                 && boardMap[pos.x + path.dir.x, pos.y + path.dir.y].IsSome()) {
 
                     pawnPaths.Add(path);
                 }
 
                 if (path.dir.x == prop && path.dir.y == -1 
-                && MovePaths.IsOnBoard(new Position(pos.x + path.dir.x, pos.y + path.dir.y), board.height, board.width)
+                && MovePaths.IsOnBoard(
+                    new Position(pos.x + path.dir.x, pos.y + path.dir.y), 
+                    board.height, board.width
+                )
                 && boardMap[pos.x + path.dir.x, pos.y + path.dir.y].IsSome()) {
 
                     pawnPaths.Add(path);
@@ -200,7 +210,12 @@ namespace visual {
                 }
             }
 
-            var bishopPaths = ChessEngine.CalcFigurePaths(kingPos, FigureType.Bishop, boardMap, board);
+            var bishopPaths = ChessEngine.CalcFigurePaths(
+                kingPos,
+                FigureType.Bishop, 
+                boardMap,
+                board
+            );
 
             foreach (MovePath path in bishopPaths) {
                 if (boardMap[path.onWay.x, path.onWay.y].IsSome()) {
@@ -216,7 +231,12 @@ namespace visual {
                 }
             }
 
-            var rookPaths = ChessEngine.CalcFigurePaths(kingPos, FigureType.Rook, boardMap, board);
+            var rookPaths = ChessEngine.CalcFigurePaths(
+                kingPos,
+                FigureType.Rook, 
+                boardMap,
+                board
+            );
 
             foreach (MovePath path in rookPaths) {
                 if (boardMap[path.onWay.x, path.onWay.y].IsSome()) {
@@ -232,7 +252,12 @@ namespace visual {
                 }
             }
 
-            var knightPaths = ChessEngine.CalcFigurePaths(kingPos, FigureType.Knight, boardMap, board);
+            var knightPaths = ChessEngine.CalcFigurePaths(
+                kingPos,
+                FigureType.Knight,
+                boardMap,
+                board
+            );
 
             foreach (MovePath path in knightPaths) {
                 if (boardMap[path.onWay.x, path.onWay.y].IsSome()) {

@@ -3,7 +3,12 @@ using option;
 
 namespace board {
     public static class MovePaths {
-        public static MovePath CalcMovePath<T>(Position pos, Dir dir, int maxLength, Option<T>[,] board) {
+        public static MovePath CalcMovePath<T>(
+            Position pos, 
+            Dir dir, 
+            int maxLength, 
+            Option<T>[,] board
+        ) {
             var movePath = new MovePath();
             var length = 0;
 
