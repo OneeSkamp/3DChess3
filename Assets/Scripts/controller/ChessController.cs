@@ -4,7 +4,7 @@ using chess;
 using board;
 using option;
 
-namespace visual {
+namespace controller {
     public class ChessController : MonoBehaviour {
         public static Option<Fig>[,] boardMap; 
 

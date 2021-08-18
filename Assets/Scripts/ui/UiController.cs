@@ -1,7 +1,7 @@
 using System;
 using UnityEngine.UI;
 using UnityEngine;
-using visual;
+using controller;
 using parse;
 
 namespace ui {

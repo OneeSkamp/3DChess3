@@ -2,7 +2,7 @@ using UnityEngine;
 using option;
 using chess;
 
-namespace visual {
+namespace controller {
     public class FigureSpawner : MonoBehaviour {
         public Transform boardTransform;
 
