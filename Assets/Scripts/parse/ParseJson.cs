@@ -15,19 +15,19 @@ namespace parse {
         private string jsonAll;
 
 
-        public void ToJson(Option<Fig>[,] boardmap) {
-            jsonBoardMap = new string[8,8];
-            jsonBoard = JsonUtility.ToJson(chessController.board);
-            jsonAll = null;
+        // public void ToJson(Option<Fig>[,] boardmap) {
+        //     jsonBoardMap = new string[8,8];
+        //     jsonBoard = JsonUtility.ToJson(chessController.board);
+        //     jsonAll = null;
 
-            for (int i = 0; i < 8; i++) {
-                for (int j = 0; j < 8; j++) {
-                    string jsonFig = JsonUtility.ToJson(boardmap[i, j]);
+        //     for (int i = 0; i < 8; i++) {
+        //         for (int j = 0; j < 8; j++) {
+        //             string jsonFig = JsonUtility.ToJson(boardmap[i, j]);
 
-                    jsonAll += jsonFig;
-                }
-            }
-        }
+        //             jsonAll += jsonFig;
+        //         }
+        //     }
+        // }
 
 /*        public void FromJson(Option<Fig>[,] boardmap) {
             jsonBoardMap = new string[8,8];

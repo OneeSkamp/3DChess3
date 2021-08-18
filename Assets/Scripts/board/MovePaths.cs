@@ -1,23 +1,25 @@
-using System.Collections.Generic;
+using UnityEngine;
 using option;
 
 namespace board {
     public static class MovePaths {
-        public static MovePath CalcMovePath<T>(
-            Position pos, 
-            Dir dir, 
-            int maxLength, 
+        public static int CalcLinearMoveLength<T>(
+            Vector2Int pos,
+            LinearMovement lineMove,
+            int maxLength,
             Option<T>[,] board
         ) {
-            var movePath = new MovePath();
             var length = 0;
 
             for (int i = 1; i <= maxLength; i++) {
-                var posX = pos.x + i * dir.x;
-                var posY = pos.y + i * dir.y;
+                var posX = pos.x + i * lineMove.dir.x;
+                var posY = pos.y + i * lineMove.dir.y;
 
-                if (!IsOnBoard(new Position(posX, posY), 8, 8)) {
-                    movePath.onWay = new Position(posX - dir.x, posY - dir.y);
+                if (!IsOnBoard(
+                    new Vector2Int(posX, posY), 
+                    board.GetLength(0), 
+                    board.GetLength(1)
+                )) {
                     break;
                 }
 
@@ -25,38 +27,38 @@ namespace board {
                     length++;
                 }
 
-                if (i == maxLength) {
-                    movePath.onWay = new Position(posX, posY);
-                }
-
-                if (!board[posX, posY].IsNone()) {
-                    movePath.onWay = new Position(posX, posY);
+                if (board[posX, posY].IsSome()) {
+                    length++;
                     break;
                 }
             }
-            movePath.pos = pos;
-            movePath.dir = dir;
-            movePath.Length = length;
-
-            return movePath;
+            return length;
         }
 
-        public static List<MovePath> CalcMovePaths<T>(
-            Position pos,
-            List<Dir> directions,
-            int maxLength,
-            Option<T>[,] board
+        public static int CalcCircularMoveRadius(
+
         ) {
-            List<MovePath> movePaths = new List<MovePath>();
+            var radius = 0;
 
-            foreach (Dir dir in directions) {
-                movePaths.Add(CalcMovePath(pos, dir, maxLength, board));
-            }
-
-            return movePaths;
+            return radius;
         }
 
-        public static bool IsOnBoard(Position pos, int width, int height) {
+        // public static List<MovePath> CalcMovePaths<T>(
+        //     Vector2Int pos,
+        //     List<Dir> directions,
+        //     int maxLength,
+        //     Option<T>[,] board
+        // ) {
+        //     List<MovePath> movePaths = new List<MovePath>();
+
+        //     foreach (Dir dir in directions) {
+        //         movePaths.Add(CalcMovePath(pos, dir, maxLength, board));
+        //     }
+
+        //     return movePaths;
+        // }
+
+        public static bool IsOnBoard(Vector2Int pos, int width, int height) {
 
             if (pos.x < 0 || pos.y < 0 || pos.x >= height || pos.y >= width) {
                 return false;

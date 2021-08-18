@@ -143,7 +143,7 @@ namespace controller {
         }
 
         private void Start() {
-            CreatingFiguresOnBoard(chessController.board.boardMap);
+            CreatingFiguresOnBoard(ChessController.boardMap);
         }
     }
 }

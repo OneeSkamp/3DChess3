@@ -1,40 +1,36 @@
+using UnityEngine;
+
 namespace board {
-    public struct MoveType {
-        public bool lineMove;
-        public bool circularMove;
-        public bool diagonalMove;
-        public int maxLength;
-        public MoveType (bool lineMove, bool circularMove, bool diagonalMove, int maxLength) {
-            this.lineMove = lineMove;
-            this.circularMove = circularMove;
-            this.diagonalMove = diagonalMove;
-            this.maxLength = maxLength;
-        }
+    public struct LinearMovement {
+        public Vector2Int dir;
     }
 
-    public struct MovePath {
-        public Position pos;
-        public Position onWay;
-        public Dir dir;
-        public int Length;
+    public struct CircularMovement {
+        public Vector2Int radius;
     }
 
-    public struct Dir {
-        public int x;
-        public int y;
-        public Dir (int x, int y) {
-            this.x = x;
-            this.y = y;
-        }
+    public struct MovementType {
+        public LinearMovement? linear;
+        public CircularMovement? circular;
     }
 
-    public struct Position {
-        public int x;
-        public int y;
+    // public struct MoveType {
+    //     public bool lineMove;
+    //     public bool circularMove;
+    //     public bool diagonalMove;
+    //     public int maxLength;
+    //     public MoveType (bool lineMove, bool circularMove, bool diagonalMove, int maxLength) {
+    //         this.lineMove = lineMove;
+    //         this.circularMove = circularMove;
+    //         this.diagonalMove = diagonalMove;
+    //         this.maxLength = maxLength;
+    //     }
+    // }
 
-        public Position(int x, int y) {
-            this.x = x;
-            this.y = y;
-        }
+    public struct LinearPath {
+        public Vector2Int pos;
+        public Vector2Int dir;
+        public int length;
     }
+
 }
