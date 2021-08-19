@@ -16,18 +16,13 @@ namespace board {
                 var posY = pos.y + i * lineMove.dir.y;
 
                 if (!IsOnBoard(
-                    new Vector2Int(posX, posY), 
-                    board.GetLength(0), 
-                    board.GetLength(1)
-                )) {
+                    new Vector2Int(posX, posY), board.GetLength(0), board.GetLength(1))) {
                     break;
                 }
 
                 if (board[posX, posY].IsNone()) {
                     length++;
-                }
-
-                if (board[posX, posY].IsSome()) {
+                } else {
                     length++;
                     break;
                 }
@@ -35,28 +30,11 @@ namespace board {
             return length;
         }
 
-        public static int CalcCircularMoveRadius(
-
-        ) {
+        public static int CalcCircularMoveRadius() {
             var radius = 0;
 
             return radius;
         }
-
-        // public static List<MovePath> CalcMovePaths<T>(
-        //     Vector2Int pos,
-        //     List<Dir> directions,
-        //     int maxLength,
-        //     Option<T>[,] board
-        // ) {
-        //     List<MovePath> movePaths = new List<MovePath>();
-
-        //     foreach (Dir dir in directions) {
-        //         movePaths.Add(CalcMovePath(pos, dir, maxLength, board));
-        //     }
-
-        //     return movePaths;
-        // }
 
         public static bool IsOnBoard(Vector2Int pos, int width, int height) {
 

@@ -7,7 +7,6 @@ using option;
 namespace controller {
     public class ChessController : MonoBehaviour {
         public static Option<Fig>[,] boardMap = CreateBoard();
-        //public Board<Fig> board = new Board<Fig>(true, CreateBoard());
 
         public bool whiteMove = true;
 
@@ -18,9 +17,9 @@ namespace controller {
 
         private int x;
         private int y;
-
+ 
+        private List<Vector2Int> possibleMoves = new List<Vector2Int>();
         private Vector2Int figPos;
-        private List<Vector2Int> possibleMoves;
 
         private const float CONST = 5.25f;
 
@@ -48,126 +47,120 @@ namespace controller {
                             Destroy(cell);
                         }
                     }
+
                     if (figuresMap[x, y] != null && fig.white == whiteMove) {
-                    
-                       var test =  ChessEngine.CalcLinearMoves(new Vector2Int(x, y), ChessEngine.moveTypes[boardMap[x, y].Peel().type], boardMap);
-                        CreatingPossibleMoves(test);
+
+                        var moveType = ChessEngine.GetMovementType(fig.type);
+                        possibleMoves.Clear();
+                        figPos = new Vector2Int(x, y);
+
+                        possibleMoves = CalcPossibleMoves(fig, figPos, moveType);
+
+                        if (fig.type == FigureType.Pawn) {
+                            possibleMoves = ChangePawnMoves(fig);
                         }
 
-                        // if (figuresMap[x, y] != null && fig.white == whiteMove) {
+                        possibleMoveList = CreatingPossibleMoves(possibleMoves);
 
-                        //     figPos = new Position(x, y);
-                        //     var figPaths = ChessEngine.CalcFigurePaths(
-                        //         figPos,
-                        //         fig.type,
-                        //         boardMap,
-                        //         board
-                        //     );
-
-                        //     if (fig.type == FigureType.Pawn) {
-                        //         figPaths = ChangePawnPaths(figPos, figPaths);
-                        //     }
-
-                        //     possibleMoves = null;
-                        //     possibleMoves = ChessEngine.CalcPossibleMoves(figPaths);
-
-                        //     foreach (MovePath path in figPaths) {
-                        //         var onWay = boardMap[path.onWay.x, path.onWay.y].Peel();
-
-                        //         if (onWay.white != whiteMove) {
-
-                        //             possibleMoves.Add(new Position(path.onWay.x, path.onWay.y));
-                        //         }
-                        //     }
-
-                        //     possibleMoveList = CreatingPossibleMoves(possibleMoves);
-
-                        // } else if (possibleMoves != null) {
-
-                        //     var from = figPos;
-                        //     var to = new Position(x, y);
-                        //     var movePos = GetMovePosition(from, to);
-
-                        //     if (movePos.x == to.x && movePos.y == to.y) {
-                        //         MoveFigure(from, to);
-                        //         var figure = boardMap[to.x, to.y].Peel();
-                        //         figure.firstMove = false;
-                        //         boardMap[to.x, to.y] = Option<Fig>.Some(figure);
-                        //     }
-
-                        //     possibleMoves.Clear();
-                        // }
+                    } else if (possibleMoves != null) {
+                            MoveFigure(figPos, new Vector2Int(x,y));
+                            possibleMoves.Clear();
                     }
+
+                }
             }
         }
 
-        // private List<MovePath> ChangePawnPaths(Vector2Int pos, List<MovePath> paths) {
-        //     var pawnPaths = new List<MovePath>();
+        private List<Vector2Int> CalcPossibleMoves(
+            Fig fig,
+            Vector2Int figPos,
+            MovementType moveType
+        ) {
+            var moves = new List<Vector2Int>();
+            foreach (LinearMovement linear in moveType.linear) {
+                var length = MovePaths.CalcLinearMoveLength(
+                    figPos,
+                    linear,
+                    moveType.maxLength,
+                    boardMap
+                );
 
-        //     var fig = boardMap[pos.x, pos.y].Peel();
-        //     var prop = 0;
+                var linearMoves = ChessEngine.CalcLinearMoves(
+                    figPos,
+                    linear,
+                    length,
+                    boardMap
+                );
 
-        //     if (fig.white) {
-        //         prop = -1;
-        //     } else {
-        //         prop = 1;
-        //     }
+                var lastPos = ChessEngine.GetLastLinearPosition(linearMoves);
 
-        //     foreach (MovePath path in paths) {
+                if (lastPos != null) {
+                    var lastFig = boardMap[lastPos.Value.x, lastPos.Value.y].Peel();
 
-        //         if (path.dir.x == 1 * prop && path.dir.y == 0) {
-        //             var t = path;
+                    if (lastFig.type != FigureType.None && lastFig.white == fig.white) {
+                        linearMoves.Remove(lastPos.Value);
+                    }
+                }
 
-        //             if (fig.firstMove) {
-        //                 t.Length = 2;
-        //             } else {
-        //                 t.Length = 1;
-        //             }
+                moves.AddRange(linearMoves);
+            }
+            return moves;
+        }
 
-        //             if (boardMap[pos.x + path.dir.x, pos.y + path.dir.y].IsSome()) {
-        //                 t.onWay = new Vector2Int(pos.x, pos.y);
-        //                 t.Length = 0;
+        private List<Vector2Int> ChangePawnMoves(Fig fig) {
+            var pawnMoves = new List<Vector2Int>();
+            var length = 0;
+            var prop = 0;
 
-        //             } else if (boardMap[pos.x + path.dir.x * 2, pos.y + path.dir.y].IsSome()) {
-        //                 t.onWay = new Vector2Int(pos.x, pos.y);
-        //                 t.Length = 1;
-        //             }
-        //             pawnPaths.Add(t);
-        //         }
+            if (fig.firstMove) {
+                length = 2;
+            } else {
+                length = 1;
+            }
 
-        //         if (path.dir.x == prop && path.dir.y == 1 
-        //         && MovePaths.IsOnBoard(
-        //             new Position(pos.x + path.dir.x, pos.y + path.dir.y), 
-        //             boardMap.GetLength(0), boardMap.GetLength(1)
-        //         )
-        //         && boardMap[pos.x + path.dir.x, pos.y + path.dir.y].IsSome()) {
+            if (fig.white) {
+                prop = -1;
+            } else {
+                prop = 1;
+            }
 
-        //             pawnPaths.Add(path);
-        //         }
+            var forwardMove = new LinearMovement {dir = new Vector2Int(prop, 0)};
+            var leftDiagonalMove = new LinearMovement {dir = new Vector2Int(prop, 1)};
+            var rightDiagonalMove = new LinearMovement {dir = new Vector2Int(prop, -1)};
 
-        //         if (path.dir.x == prop && path.dir.y == -1 
-        //         && MovePaths.IsOnBoard(
-        //             new Position(pos.x + path.dir.x, pos.y + path.dir.y), 
-        //             boardMap.GetLength(0), boardMap.GetLength(1)
-        //         )
-        //         && boardMap[pos.x + path.dir.x, pos.y + path.dir.y].IsSome()) {
+            var forward = ChessEngine.CalcLinearMoves(figPos, forwardMove, length, boardMap);
+            var leftDiagonal = ChessEngine.CalcLinearMoves(
+                figPos,
+                leftDiagonalMove,
+                length,
+                boardMap
+            );
 
-        //             pawnPaths.Add(path);
-        //         }
-        //     }
-        //     return pawnPaths;
-        // }
+            var rightDiagonal = ChessEngine.CalcLinearMoves(
+                figPos,
+                rightDiagonalMove,
+                length,
+                boardMap
+            );
 
-        private Vector2Int GetMovePosition(Vector2Int from, Vector2Int to) {
-            var movePos = new Vector2Int();
-
-            foreach (Vector2Int pos in possibleMoves) {
-                if (pos.x == to.x && pos.y == to.y) {
-                    movePos = new Vector2Int(pos.x, pos.y);
+            foreach (Vector2Int pos in forward) {
+                if (boardMap[pos.x, pos.y].IsNone()) {
+                    pawnMoves.Add(pos);
                 }
             }
 
-            return movePos;
+            if (MovePaths.IsOnBoard(new Vector2Int(leftDiagonal[0].x, leftDiagonal[0].y), 8, 8)
+                && boardMap[leftDiagonal[0].x, leftDiagonal[0].y].IsSome()
+            ) {
+                pawnMoves.Add(leftDiagonal[0]);
+            }
+
+            if (MovePaths.IsOnBoard(new Vector2Int(rightDiagonal[0].x, rightDiagonal[0].y), 8, 8)
+                &&boardMap[rightDiagonal[0].x, rightDiagonal[0].y].IsSome()) {
+                pawnMoves.Add(rightDiagonal[0]);
+            }
+
+            return pawnMoves;
         }
 
         private List<GameObject> CreatingPossibleMoves(List<Vector2Int> possibleMoves) {
@@ -191,121 +184,30 @@ namespace controller {
             return possibleMovesObj;
         }
 
-        private void MoveFigure(Vector2Int from, Vector2Int to) {
-            boardMap[to.x, to.y] = boardMap[from.x, from.y];
-            boardMap[from.x, from.y] = Option<Fig>.None();
+        private bool MoveFigure(Vector2Int from, Vector2Int to) {
+            foreach (var move in possibleMoves) {
+                if (move.x == to.x && move.y == to.y) {
 
-            var figForMove = figuresMap[from.x, from.y];
+                    boardMap[to.x, to.y] = boardMap[from.x, from.y];
+                    boardMap[from.x, from.y] = Option<Fig>.None();
 
-            Destroy(figuresMap[to.x, to.y]);
+                    Destroy(figuresMap[to.x, to.y]);
+                    figuresMap[to.x, to.y] = figuresMap[from.x, from.y];
 
-            figuresMap[to.x, to.y] = figuresMap[from.x, from.y];
-            figuresMap[from.x, from.y] = null;
+                    var newPos = new Vector3(CONST - to.x * 1.5f, 0.0f, CONST - to.y * 1.5f);
+                    figuresMap[from.x, from.y].transform.localPosition = newPos;
 
-            var newPos = new Vector3(CONST - to.x * 1.5f, 0.0f, CONST - to.y * 1.5f);
+                    figuresMap[from.x, from.y] = null;
+                    whiteMove = !whiteMove;
 
-            if (figForMove != null) {
-                figForMove.transform.localPosition = newPos;
+                    var figure = boardMap[to.x, to.y].Peel();
+                    figure.firstMove = false;
+                    boardMap[to.x, to.y] = Option<Fig>.Some(figure);
+                    return true;
+                }
             }
-
-            whiteMove = !whiteMove;
-           // CheckKing();
+            return false;
         }
-
-        // private bool CheckKing() {
-        //     var kingPos = new Position();
-
-        //     for (int i = 0; i < 8; i++) {
-        //         for (int j = 0; j <8; j++) {
-        //             if (boardMap[i, j].IsSome()) {
-        //                 var fig = boardMap[i, j].Peel();
-
-        //                 if (fig.type == FigureType.King && fig.white == whiteMove) {
-        //                     kingPos = new Position(i, j);
-        //                 }
-        //             }
-        //         }
-        //     }
-
-        //     var bishopPaths = ChessEngine.CalcFigurePaths(
-        //         kingPos,
-        //         FigureType.Bishop, 
-        //         boardMap,
-        //         board
-        //     );
-
-        //     foreach (MovePath path in bishopPaths) {
-        //         if (boardMap[path.onWay.x, path.onWay.y].IsSome()) {
-        //             var fig = boardMap[path.onWay.x, path.onWay.y].Peel();
-
-        //             if (fig.white != whiteMove) {
-
-        //                 if (fig.type == FigureType.Bishop || fig.type == FigureType.Queen) {
-        //                    Debug.Log("shah");
-        //                    return true;
-        //                 }
-
-        //                 if (fig.type == FigureType.Pawn && path.Length == 0) {
-        //                     Debug.Log("shah");
-        //                     return true;
-        //                 }
-
-        //                 if (fig.type == FigureType.King && path.Length == 1) {
-        //                     Debug.Log("shah");
-        //                     return true;
-        //                 }
-        //             }
-        //         }
-        //     }
-
-        //     var rookPaths = ChessEngine.CalcFigurePaths(
-        //         kingPos,
-        //         FigureType.Rook, 
-        //         boardMap,
-        //         board
-        //     );
-
-        //     foreach (MovePath path in rookPaths) {
-        //         if (boardMap[path.onWay.x, path.onWay.y].IsSome()) {
-        //             var fig = boardMap[path.onWay.x, path.onWay.y].Peel();
-
-        //             if (fig.white != whiteMove) {
-
-        //                 if (fig.type == FigureType.Rook || fig.type == FigureType.Queen) {
-        //                    Debug.Log("shah");
-        //                    return true;
-        //                 }
-
-        //                 if (fig.type == FigureType.King && path.Length == 1) {
-        //                     Debug.Log("shah");
-        //                     return true;
-        //                 }
-        //             }
-        //         }
-        //     }
-
-        //     var knightPaths = ChessEngine.CalcFigurePaths(
-        //         kingPos,
-        //         FigureType.Knight,
-        //         boardMap,
-        //         board
-        //     );
-
-        //     foreach (MovePath path in knightPaths) {
-        //         if (boardMap[path.onWay.x, path.onWay.y].IsSome()) {
-        //             var fig = boardMap[path.onWay.x, path.onWay.y].Peel();
-
-        //             if (fig.white != whiteMove) {
-
-        //                 if (fig.type == FigureType.Knight) {
-        //                     Debug.Log("shah");
-        //                     return true;
-        //                 }
-        //             }
-        //         }
-        //     }
-        //     return false;
-        // }
 
         private static Option<Fig>[,] CreateBoard() {
             boardMap = new Option<Fig>[8, 8];
@@ -321,9 +223,9 @@ namespace controller {
             boardMap[0, 3] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Queen));
             boardMap[0, 4] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.King));
 
-            //for (int x = 0; x <= 7; x++) {
-            //    boardMap[1, x] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Pawn));
-            //}
+            for (int x = 0; x <= 7; x++) {
+               boardMap[1, x] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Pawn));
+            }
 
             boardMap[7, 0] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Rook));
             boardMap[7, 7] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Rook));
@@ -337,9 +239,9 @@ namespace controller {
             boardMap[7, 3] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Queen));
             boardMap[7, 4] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.King));
 
-            //for (int x = 0; x <= 7; x++) {
-            //    boardMap[6, x] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Pawn));
-            //}
+            for (int x = 0; x <= 7; x++) {
+               boardMap[6, x] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Pawn));
+            }
 
             return boardMap;
         }
