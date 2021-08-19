@@ -54,7 +54,11 @@ namespace controller {
                         possibleMoves.Clear();
                         figPos = new Vector2Int(x, y);
 
-                        possibleMoves = CalcPossibleMoves(fig, figPos, moveType);
+                        if (Equals(moveType, ChessEngine.circularMovementType)) {
+                            possibleMoves = CalcCircularPossibleMoves(fig, figPos, moveType.circular.Value.radius);
+                        } else {
+                            possibleMoves = CalcLinearPossibleMoves(fig, figPos, moveType);
+                        }
 
                         if (fig.type == FigureType.Pawn) {
                             possibleMoves = ChangePawnMoves(fig);
@@ -66,19 +70,18 @@ namespace controller {
                             MoveFigure(figPos, new Vector2Int(x,y));
                             possibleMoves.Clear();
                     }
-
                 }
             }
         }
 
-        private List<Vector2Int> CalcPossibleMoves(
+        private List<Vector2Int> CalcLinearPossibleMoves(
             Fig fig,
             Vector2Int figPos,
             MovementType moveType
         ) {
             var moves = new List<Vector2Int>();
             foreach (LinearMovement linear in moveType.linear) {
-                var length = MovePaths.CalcLinearMoveLength(
+                var length = BoardInspector.CalcLinearMoveLength(
                     figPos,
                     linear,
                     moveType.maxLength,
@@ -105,6 +108,24 @@ namespace controller {
                 moves.AddRange(linearMoves);
             }
             return moves;
+        }
+
+        private List<Vector2Int> CalcCircularPossibleMoves(Fig fig, Vector2Int pos, int radius) {
+            var possMoves = new List<Vector2Int>();
+            var circularMoves = BoardInspector.CalcCircularMoves(pos, radius);
+
+            foreach (var move in circularMoves) {
+                if (BoardInspector.IsOnBoard(move, boardMap.GetLength(0), boardMap.GetLength(1))) {
+                    var figure = boardMap[move.x, move.y];
+
+                    if (figure.IsSome() && figure.Peel().white == fig.white) {
+                        continue;
+                    }
+
+                    possMoves.Add(move);
+                }
+            }
+            return possMoves;
         }
 
         private List<Vector2Int> ChangePawnMoves(Fig fig) {
@@ -149,18 +170,36 @@ namespace controller {
                 }
             }
 
-            if (MovePaths.IsOnBoard(new Vector2Int(leftDiagonal[0].x, leftDiagonal[0].y), 8, 8)
+            if (BoardInspector.IsOnBoard(new Vector2Int(leftDiagonal[0].x, leftDiagonal[0].y), 8, 8)
                 && boardMap[leftDiagonal[0].x, leftDiagonal[0].y].IsSome()
             ) {
                 pawnMoves.Add(leftDiagonal[0]);
             }
 
-            if (MovePaths.IsOnBoard(new Vector2Int(rightDiagonal[0].x, rightDiagonal[0].y), 8, 8)
+            if (BoardInspector.IsOnBoard(new Vector2Int(rightDiagonal[0].x, rightDiagonal[0].y), 8, 8)
                 &&boardMap[rightDiagonal[0].x, rightDiagonal[0].y].IsSome()) {
                 pawnMoves.Add(rightDiagonal[0]);
             }
 
             return pawnMoves;
+        }
+
+        private bool CheckKing() {
+            var kingPos = new Vector2Int();
+
+            for (int i = 0; i < boardMap.GetLength(0); i++) {
+                for (int j = 0; j < boardMap.GetLength(1); j++) {
+                    if (boardMap[i, j].IsSome()) {
+                        var fig = boardMap[i, j].Peel();
+
+                        if (fig.type == FigureType.King && fig.white == whiteMove) {
+                            kingPos = new Vector2Int(i, j);
+                        }
+                    }
+                }
+            }
+
+            return false;
         }
 
         private List<GameObject> CreatingPossibleMoves(List<Vector2Int> possibleMoves) {

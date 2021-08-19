@@ -4,6 +4,30 @@ using UnityEngine;
 using option;
 
 namespace chess {
+    public enum FigureType {
+        None,
+        Pawn,
+        Knight,
+        Bishop,
+        Rook,
+        Queen,
+        King
+    }
+
+    public struct Fig {
+        public bool white;
+        public bool firstMove;
+        public FigureType type;
+
+        public static Fig CreateFig(bool white, FigureType type) {
+            Fig figure = new Fig();
+            figure.white = white;
+            figure.type = type;
+            figure.firstMove = true;
+            return figure;
+        }
+    }
+
     public static class ChessEngine {
         public static List<LinearMovement?> diagonalMovementType = new List<LinearMovement?> {
             new LinearMovement {dir = new Vector2Int(1, 1)},
@@ -30,6 +54,9 @@ namespace chess {
             new LinearMovement {dir = new Vector2Int(-1, -1)}
         };
 
+        public static MovementType circularMovementType = new MovementType {
+            circular = new CircularMovement {radius = 2}
+        };
         public static Dictionary<FigureType, MovementType> moveTypes =
             new Dictionary<FigureType, MovementType> {
                 {FigureType.Bishop, new MovementType {
@@ -55,7 +82,9 @@ namespace chess {
                 {FigureType.Pawn, new MovementType {
                     linear = mixedMovementType,
                     maxLength = 1
-                }}
+                }},
+
+                {FigureType.Knight, circularMovementType}
         };
 
         public static MovementType GetMovementType(FigureType type) {
