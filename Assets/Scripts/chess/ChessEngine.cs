@@ -57,6 +57,7 @@ namespace chess {
         public static MovementType circularMovementType = new MovementType {
             circular = new CircularMovement {radius = 2}
         };
+
         public static Dictionary<FigureType, MovementType> moveTypes =
             new Dictionary<FigureType, MovementType> {
                 {FigureType.Bishop, new MovementType {

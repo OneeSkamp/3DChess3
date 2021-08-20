@@ -55,7 +55,11 @@ namespace controller {
                         figPos = new Vector2Int(x, y);
 
                         if (Equals(moveType, ChessEngine.circularMovementType)) {
-                            possibleMoves = CalcCircularPossibleMoves(fig, figPos, moveType.circular.Value.radius);
+                            possibleMoves = CalcCircularPossibleMoves(
+                                fig,
+                                figPos,
+                                moveType.circular.Value.radius
+                            );
                         } else {
                             possibleMoves = CalcLinearPossibleMoves(fig, figPos, moveType);
                         }
@@ -67,8 +71,9 @@ namespace controller {
                         possibleMoveList = CreatingPossibleMoves(possibleMoves);
 
                     } else if (possibleMoves != null) {
-                            MoveFigure(figPos, new Vector2Int(x,y));
-                            possibleMoves.Clear();
+                        MoveFigure(figPos, new Vector2Int(x,y));
+                        CheckKing();
+                        possibleMoves.Clear();
                     }
                 }
             }
@@ -81,7 +86,7 @@ namespace controller {
         ) {
             var moves = new List<Vector2Int>();
             foreach (LinearMovement linear in moveType.linear) {
-                var length = BoardInspector.CalcLinearMoveLength(
+                var length = BoardCalculator.CalcLinearMoveLength(
                     figPos,
                     linear,
                     moveType.maxLength,
@@ -112,10 +117,10 @@ namespace controller {
 
         private List<Vector2Int> CalcCircularPossibleMoves(Fig fig, Vector2Int pos, int radius) {
             var possMoves = new List<Vector2Int>();
-            var circularMoves = BoardInspector.CalcCircularMoves(pos, radius);
+            var circularMoves = BoardCalculator.CalcCircularMoves(pos, radius);
 
             foreach (var move in circularMoves) {
-                if (BoardInspector.IsOnBoard(move, boardMap.GetLength(0), boardMap.GetLength(1))) {
+                if (BoardCalculator.IsOnBoard(move, boardMap.GetLength(0), boardMap.GetLength(1))) {
                     var figure = boardMap[move.x, move.y];
 
                     if (figure.IsSome() && figure.Peel().white == fig.white) {
@@ -170,14 +175,16 @@ namespace controller {
                 }
             }
 
-            if (BoardInspector.IsOnBoard(new Vector2Int(leftDiagonal[0].x, leftDiagonal[0].y), 8, 8)
-                && boardMap[leftDiagonal[0].x, leftDiagonal[0].y].IsSome()
+            if (BoardCalculator.IsOnBoard(
+                new Vector2Int(leftDiagonal[0].x, leftDiagonal[0].y), 8, 8
+                ) && boardMap[leftDiagonal[0].x, leftDiagonal[0].y].IsSome()
             ) {
                 pawnMoves.Add(leftDiagonal[0]);
             }
 
-            if (BoardInspector.IsOnBoard(new Vector2Int(rightDiagonal[0].x, rightDiagonal[0].y), 8, 8)
-                &&boardMap[rightDiagonal[0].x, rightDiagonal[0].y].IsSome()) {
+            if (BoardCalculator.IsOnBoard(
+                new Vector2Int(rightDiagonal[0].x, rightDiagonal[0].y), 8, 8
+                ) &&boardMap[rightDiagonal[0].x, rightDiagonal[0].y].IsSome()) {
                 pawnMoves.Add(rightDiagonal[0]);
             }
 
@@ -190,10 +197,48 @@ namespace controller {
             for (int i = 0; i < boardMap.GetLength(0); i++) {
                 for (int j = 0; j < boardMap.GetLength(1); j++) {
                     if (boardMap[i, j].IsSome()) {
-                        var fig = boardMap[i, j].Peel();
+                        var figure = boardMap[i, j].Peel();
 
-                        if (fig.type == FigureType.King && fig.white == whiteMove) {
+                        if (figure.type == FigureType.King && figure.white == whiteMove) {
                             kingPos = new Vector2Int(i, j);
+                        }
+                    }
+                }
+            }
+
+            var king = boardMap[kingPos.x, kingPos.y].Peel();
+            var linearType = ChessEngine.mixedMovementType;
+            Fig fig;
+            MovementType figMoveType;
+
+            foreach (LinearMovement linearMove in linearType) {
+                var linear = ChessEngine.CalcLinearMoves(
+                    kingPos,
+                    linearMove,
+                    boardMap.GetLength(0),
+                    boardMap
+                );
+
+                var lastLinearPos = ChessEngine.GetLastLinearPosition(linear);
+
+                if (BoardCalculator.IsOnBoard(
+                    new Vector2Int(lastLinearPos.Value.x, lastLinearPos.Value.y),
+                    boardMap.GetLength(0),
+                    boardMap.GetLength(1)
+                ) && boardMap[lastLinearPos.Value.x, lastLinearPos.Value.y].IsSome()) {
+                    fig = boardMap[lastLinearPos.Value.x, lastLinearPos.Value.y].Peel();
+                    figMoveType = ChessEngine.GetMovementType(fig.type);
+
+                } else {
+                    continue;
+                }
+
+                foreach (LinearMovement linMove in figMoveType.linear) {
+                    if (boardMap[lastLinearPos.Value.x, lastLinearPos.Value.y].IsSome() 
+                        && fig.white != king.white) {
+
+                        if (Equals(linMove.dir, linearMove.dir * -1)) {
+                            Debug.Log("check");
                         }
                     }
                 }

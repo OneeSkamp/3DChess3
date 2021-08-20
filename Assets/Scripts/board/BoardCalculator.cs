@@ -17,7 +17,7 @@ namespace board {
         public int maxLength;
     }
 
-    public static class BoardInspector {
+    public static class BoardCalculator {
         public static int CalcLinearMoveLength<T>(
             Vector2Int pos,
             LinearMovement lineMove,
