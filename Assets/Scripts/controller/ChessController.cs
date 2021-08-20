@@ -54,11 +54,11 @@ namespace controller {
                         possibleMoves.Clear();
                         figPos = new Vector2Int(x, y);
 
-                        if (Equals(moveType, ChessEngine.circularMovementType)) {
+                        if (Equals(moveType, ChessEngine.squareMovementType)) {
                             possibleMoves = CalcCircularPossibleMoves(
                                 fig,
                                 figPos,
-                                moveType.circular.Value.radius
+                                moveType.square.Value.side
                             );
                         } else {
                             possibleMoves = CalcLinearPossibleMoves(fig, figPos, moveType);
@@ -72,7 +72,7 @@ namespace controller {
 
                     } else if (possibleMoves != null) {
                         MoveFigure(figPos, new Vector2Int(x,y));
-                        CheckKing();
+                        //CheckKing();
                         possibleMoves.Clear();
                     }
                 }
@@ -86,26 +86,16 @@ namespace controller {
         ) {
             var moves = new List<Vector2Int>();
             foreach (LinearMovement linear in moveType.linear) {
-                var length = BoardCalculator.CalcLinearMoveLength(
-                    figPos,
-                    linear,
-                    moveType.maxLength,
-                    boardMap
-                );
-
-                var linearMoves = ChessEngine.CalcLinearMoves(
-                    figPos,
-                    linear,
-                    length,
-                    boardMap
-                );
-
+                var length = BoardEngine.CalcLinearLength(figPos, linear, boardMap);
+                var linearMoves = BoardEngine.CalcLinearMoves(figPos, linear, boardMap);
                 var lastPos = ChessEngine.GetLastLinearPosition(linearMoves);
+                var height = boardMap.GetLength(0);
+                var width = boardMap.GetLength(1);
 
-                if (lastPos != null) {
-                    var lastFig = boardMap[lastPos.Value.x, lastPos.Value.y].Peel();
+                if (BoardEngine.IsOnBoard(lastPos.Value, height, width)) {
+                    var lastFig = boardMap[lastPos.Value.x, lastPos.Value.y];
 
-                    if (lastFig.type != FigureType.None && lastFig.white == fig.white) {
+                    if (lastFig.IsSome() && lastFig.Peel().white == fig.white) {
                         linearMoves.Remove(lastPos.Value);
                     }
                 }
@@ -115,12 +105,12 @@ namespace controller {
             return moves;
         }
 
-        private List<Vector2Int> CalcCircularPossibleMoves(Fig fig, Vector2Int pos, int radius) {
+        private List<Vector2Int> CalcCircularPossibleMoves(Fig fig, Vector2Int pos, int side) {
             var possMoves = new List<Vector2Int>();
-            var circularMoves = BoardCalculator.CalcCircularMoves(pos, radius);
+            var circularMoves = BoardEngine.CalcSquareMoves(pos, side);
 
             foreach (var move in circularMoves) {
-                if (BoardCalculator.IsOnBoard(move, boardMap.GetLength(0), boardMap.GetLength(1))) {
+                if (BoardEngine.IsOnBoard(move, boardMap.GetLength(0), boardMap.GetLength(1))) {
                     var figure = boardMap[move.x, move.y];
 
                     if (figure.IsSome() && figure.Peel().white == fig.white) {
@@ -135,39 +125,19 @@ namespace controller {
 
         private List<Vector2Int> ChangePawnMoves(Fig fig) {
             var pawnMoves = new List<Vector2Int>();
-            var length = 0;
-            var prop = 0;
-
-            if (fig.firstMove) {
-                length = 2;
-            } else {
-                length = 1;
-            }
+            var prop = 1;
 
             if (fig.white) {
                 prop = -1;
-            } else {
-                prop = 1;
-            }
+            } 
 
             var forwardMove = new LinearMovement {dir = new Vector2Int(prop, 0)};
             var leftDiagonalMove = new LinearMovement {dir = new Vector2Int(prop, 1)};
             var rightDiagonalMove = new LinearMovement {dir = new Vector2Int(prop, -1)};
 
-            var forward = ChessEngine.CalcLinearMoves(figPos, forwardMove, length, boardMap);
-            var leftDiagonal = ChessEngine.CalcLinearMoves(
-                figPos,
-                leftDiagonalMove,
-                length,
-                boardMap
-            );
-
-            var rightDiagonal = ChessEngine.CalcLinearMoves(
-                figPos,
-                rightDiagonalMove,
-                length,
-                boardMap
-            );
+            var forward = BoardEngine.CalcLinearMoves(figPos, forwardMove, boardMap);
+            var leftDiagonal = BoardEngine.CalcLinearMoves(figPos, leftDiagonalMove, boardMap);
+            var rightDiagonal = BoardEngine.CalcLinearMoves(figPos, rightDiagonalMove, boardMap);
 
             foreach (Vector2Int pos in forward) {
                 if (boardMap[pos.x, pos.y].IsNone()) {
@@ -175,7 +145,7 @@ namespace controller {
                 }
             }
 
-            if (BoardCalculator.IsOnBoard(
+            if (BoardEngine.IsOnBoard(
                 new Vector2Int(leftDiagonal[0].x, leftDiagonal[0].y), 8, 8
                 ) && boardMap[leftDiagonal[0].x, leftDiagonal[0].y].IsSome()
                   && boardMap[leftDiagonal[0].x, leftDiagonal[0].y].Peel().white != fig.white
@@ -183,7 +153,7 @@ namespace controller {
                 pawnMoves.Add(leftDiagonal[0]);
             }
 
-            if (BoardCalculator.IsOnBoard(
+            if (BoardEngine.IsOnBoard(
                 new Vector2Int(rightDiagonal[0].x, rightDiagonal[0].y), 8, 8
                 ) && boardMap[rightDiagonal[0].x, rightDiagonal[0].y].IsSome()
                   && boardMap[rightDiagonal[0].x, rightDiagonal[0].y].Peel().white != fig.white
@@ -215,20 +185,17 @@ namespace controller {
             MovementType figMoveType;
 
             foreach (LinearMovement linearMove in linearType) {
-                var linear = ChessEngine.CalcLinearMoves(
-                    kingPos,
-                    linearMove,
-                    boardMap.GetLength(0),
-                    boardMap
-                );
+                var linear = BoardEngine.CalcLinearMoves(kingPos, linearMove, boardMap);
 
                 var lastLinearPos = ChessEngine.GetLastLinearPosition(linear);
+                Debug.Log(lastLinearPos.Value.x + "  " + lastLinearPos.Value.y);
 
-                if (BoardCalculator.IsOnBoard(
+                if (BoardEngine.IsOnBoard(
                     new Vector2Int(lastLinearPos.Value.x, lastLinearPos.Value.y),
                     boardMap.GetLength(0),
                     boardMap.GetLength(1)
                 ) && boardMap[lastLinearPos.Value.x, lastLinearPos.Value.y].IsSome()) {
+                    Debug.Log("2");
                     fig = boardMap[lastLinearPos.Value.x, lastLinearPos.Value.y].Peel();
                     figMoveType = ChessEngine.GetMovementType(fig.type);
 
@@ -310,9 +277,9 @@ namespace controller {
             boardMap[0, 3] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Queen));
             boardMap[0, 4] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.King));
 
-            for (int x = 0; x <= 7; x++) {
-               boardMap[1, x] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Pawn));
-            }
+            // for (int x = 0; x <= 7; x++) {
+            //    boardMap[1, x] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Pawn));
+            // }
 
             boardMap[7, 0] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Rook));
             boardMap[7, 7] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Rook));
@@ -326,9 +293,9 @@ namespace controller {
             boardMap[7, 3] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Queen));
             boardMap[7, 4] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.King));
 
-            for (int x = 0; x <= 7; x++) {
-               boardMap[6, x] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Pawn));
-            }
+            // for (int x = 0; x <= 7; x++) {
+            //    boardMap[6, x] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Pawn));
+            // }
 
             return boardMap;
         }

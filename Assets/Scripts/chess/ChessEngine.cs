@@ -20,11 +20,10 @@ namespace chess {
         public FigureType type;
 
         public static Fig CreateFig(bool white, FigureType type) {
-            Fig figure = new Fig();
-            figure.white = white;
-            figure.type = type;
-            figure.firstMove = true;
-            return figure;
+            return new Fig {
+                white = white,
+                type = type
+            };
         }
     }
 
@@ -54,62 +53,54 @@ namespace chess {
             new LinearMovement {dir = new Vector2Int(-1, -1)}
         };
 
-        public static MovementType circularMovementType = new MovementType {
-            circular = new CircularMovement {radius = 2}
+        public static MovementType squareMovementType = new MovementType {
+            square = new SquareMovement {side = 5}
         };
 
         public static Dictionary<FigureType, MovementType> moveTypes =
             new Dictionary<FigureType, MovementType> {
-                {FigureType.Bishop, new MovementType {
-                    linear = diagonalMovementType,
-                    maxLength = 8
-                }},
+                {
+                    FigureType.Bishop,
+                    new MovementType {
+                        linear = diagonalMovementType
+                    }
+                },
 
-                {FigureType.Rook, new MovementType {
-                    linear = horizontalMovementType,
-                    maxLength = 8
-                }},
+                {
+                    FigureType.Rook,
+                    new MovementType {
+                        linear = horizontalMovementType
+                    }
+                },
 
-                {FigureType.Queen, new MovementType {
-                    linear = mixedMovementType,
-                    maxLength = 8
-                }},
+                {
+                    FigureType.Queen,
+                    new MovementType {
+                        linear = mixedMovementType
+                    }
+                },
 
-                {FigureType.King, new MovementType {
-                    linear = mixedMovementType,
-                    maxLength = 1
-                }},
+                {
+                    FigureType.King,
+                    new MovementType {
+                        linear = mixedMovementType
+                    }
+                },
 
-                {FigureType.Pawn, new MovementType {
-                    linear = mixedMovementType,
-                    maxLength = 1
-                }},
+                {
+                    FigureType.Pawn,
+                    new MovementType {
+                        linear = mixedMovementType
+                    }
+                },
 
-                {FigureType.Knight, circularMovementType}
+                {FigureType.Knight, squareMovementType}
         };
 
         public static MovementType GetMovementType(FigureType type) {
             var movementType = new MovementType();
             movementType = moveTypes[type];
             return movementType;
-        }
-
-        public static List<Vector2Int> CalcLinearMoves(
-            Vector2Int pos,
-            LinearMovement linear,
-            int maxLength,
-            Option<Fig>[,] board
-        ) {
-            var linearMoves = new List<Vector2Int>();
-
-            for (int i = 1; i <= maxLength; i++) {
-                var posX = pos.x + i * linear.dir.x;
-                var posY = pos.y + i * linear.dir.y;
-
-                linearMoves.Add(new Vector2Int(posX, posY));
-            }
-
-            return linearMoves;
         }
 
         public static Vector2Int? GetLastLinearPosition (List<Vector2Int> linearMoves) {
