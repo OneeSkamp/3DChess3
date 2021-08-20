@@ -178,13 +178,16 @@ namespace controller {
             if (BoardCalculator.IsOnBoard(
                 new Vector2Int(leftDiagonal[0].x, leftDiagonal[0].y), 8, 8
                 ) && boardMap[leftDiagonal[0].x, leftDiagonal[0].y].IsSome()
+                  && boardMap[leftDiagonal[0].x, leftDiagonal[0].y].Peel().white != fig.white
             ) {
                 pawnMoves.Add(leftDiagonal[0]);
             }
 
             if (BoardCalculator.IsOnBoard(
                 new Vector2Int(rightDiagonal[0].x, rightDiagonal[0].y), 8, 8
-                ) &&boardMap[rightDiagonal[0].x, rightDiagonal[0].y].IsSome()) {
+                ) && boardMap[rightDiagonal[0].x, rightDiagonal[0].y].IsSome()
+                  && boardMap[rightDiagonal[0].x, rightDiagonal[0].y].Peel().white != fig.white
+            ) {
                 pawnMoves.Add(rightDiagonal[0]);
             }
 
