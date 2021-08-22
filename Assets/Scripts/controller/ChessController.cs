@@ -27,6 +27,76 @@ namespace controller {
         private RaycastHit hit;
 
         private List<GameObject> possibleMoveList;
+        private List<Vector2Int> diagonal = new List<Vector2Int> {
+            new Vector2Int(1, 1),
+            new Vector2Int(1, -1),
+            new Vector2Int(-1, 1),
+            new Vector2Int(-1, -1)
+        };
+
+        private List<Vector2Int> straight = new List<Vector2Int> {
+            new Vector2Int(1, 0),
+            new Vector2Int(0, 1),
+            new Vector2Int(-1, 0),
+            new Vector2Int(0, -1)
+        };
+        //private List<Vector2Int> s
+        public Dictionary<FigureType, MovementType> moveTypes;
+
+        private void Awake() {
+            moveTypes =  new Dictionary<FigureType, MovementType> {
+                {
+                    FigureType.Bishop,
+                    new MovementType {
+                        linear = new LinearMovement {
+                            diagonal = new Diagonal {
+                                diagonalDirs = diagonal
+                            }
+                        }
+                    }
+                },
+                {
+                    FigureType.Rook,
+                    new MovementType {
+                        linear = new LinearMovement {
+                            straight = new Straight {
+                                straightDirs = straight
+                            }
+                        }
+                    }
+                },
+                {
+                    FigureType.Queen,
+                    new MovementType {
+                        linear = new LinearMovement {
+                            straight = new Straight {
+                                straightDirs = straight
+                            },
+                            diagonal = new Diagonal {
+                                diagonalDirs = diagonal
+                            }
+                        }
+                    }
+                },
+                {
+                    FigureType.King,
+                    new MovementType {
+                        square = new SquareMovement {
+                                side = 3
+                        }
+                    }
+                },
+                {
+                    FigureType.Knight,
+                    new MovementType {
+                        square = new SquareMovement {
+                                side = 5
+                        }
+                    }
+                },
+
+            };
+        }
 
         private void Update() {
 
@@ -50,12 +120,12 @@ namespace controller {
 
                     if (figuresMap[x, y] != null && fig.white == whiteMove) {
 
-                        var moveType = ChessEngine.GetMovementType(fig.type);
+                        var moveType = moveTypes[fig.type];
                         possibleMoves.Clear();
                         figPos = new Vector2Int(x, y);
 
-                        if (Equals(moveType, ChessEngine.squareMovementType)) {
-                            possibleMoves = CalcCircularPossibleMoves(
+                        if (moveType.square != null) {
+                            possibleMoves = CalcSquarePossibleMoves(
                                 fig,
                                 figPos,
                                 moveType.square.Value.side
@@ -65,7 +135,7 @@ namespace controller {
                         }
 
                         if (fig.type == FigureType.Pawn) {
-                            possibleMoves = ChangePawnMoves(fig);
+                            //possibleMoves = ChangePawnMoves(fig);
                         }
 
                         possibleMoveList = CreatingPossibleMoves(possibleMoves);
@@ -85,31 +155,41 @@ namespace controller {
             MovementType moveType
         ) {
             var moves = new List<Vector2Int>();
-            foreach (LinearMovement linear in moveType.linear) {
-                var length = BoardEngine.CalcLinearLength(figPos, linear, boardMap);
-                var linearMoves = BoardEngine.CalcLinearMoves(figPos, linear, boardMap);
-                var lastPos = ChessEngine.GetLastLinearPosition(linearMoves);
+            var dirs = new List<Vector2Int>();
+            if (moveType.linear.Value.diagonal != null) {
+                dirs.AddRange(moveType.linear.Value.diagonal.Value.diagonalDirs);
+            }
+            if (moveType.linear.Value.straight != null) {
+                dirs.AddRange(moveType.linear.Value.straight.Value.straightDirs);
+            }
+            
+            foreach (Vector2Int dir in dirs) {
+                //var length = BoardEngine.CalcLinearLength(figPos, linear, boardMap);
+                var linearMoves = BoardEngine.CalcLinearMoves(figPos, dir, boardMap);
                 var height = boardMap.GetLength(0);
                 var width = boardMap.GetLength(1);
 
-                if (BoardEngine.IsOnBoard(lastPos.Value, height, width)) {
-                    var lastFig = boardMap[lastPos.Value.x, lastPos.Value.y];
-
-                    if (lastFig.IsSome() && lastFig.Peel().white == fig.white) {
-                        linearMoves.Remove(lastPos.Value);
+                if (linearMoves.Count > 0) {
+                    var lastPos = linearMoves[linearMoves.Count - 1];
+                    if (BoardEngine.IsOnBoard(lastPos, height, width)) {
+                        var lastFig = boardMap[lastPos.x, lastPos.y];
+                        if (lastFig.IsSome() && lastFig.Peel().white == fig.white) {
+                            linearMoves.Remove(lastPos);
+                        }
                     }
                 }
+
 
                 moves.AddRange(linearMoves);
             }
             return moves;
         }
 
-        private List<Vector2Int> CalcCircularPossibleMoves(Fig fig, Vector2Int pos, int side) {
+        private List<Vector2Int> CalcSquarePossibleMoves(Fig fig, Vector2Int pos, int side) {
             var possMoves = new List<Vector2Int>();
-            var circularMoves = BoardEngine.CalcSquareMoves(pos, side);
+            var squareMoves = BoardEngine.CalcSquareMoves(pos, side);
 
-            foreach (var move in circularMoves) {
+            foreach (var move in squareMoves) {
                 if (BoardEngine.IsOnBoard(move, boardMap.GetLength(0), boardMap.GetLength(1))) {
                     var figure = boardMap[move.x, move.y];
 
@@ -123,99 +203,99 @@ namespace controller {
             return possMoves;
         }
 
-        private List<Vector2Int> ChangePawnMoves(Fig fig) {
-            var pawnMoves = new List<Vector2Int>();
-            var prop = 1;
+        // private List<Vector2Int> ChangePawnMoves(Fig fig) {
+        //     var pawnMoves = new List<Vector2Int>();
+        //     var prop = 1;
 
-            if (fig.white) {
-                prop = -1;
-            } 
+        //     if (fig.white) {
+        //         prop = -1;
+        //     } 
 
-            var forwardMove = new LinearMovement {dir = new Vector2Int(prop, 0)};
-            var leftDiagonalMove = new LinearMovement {dir = new Vector2Int(prop, 1)};
-            var rightDiagonalMove = new LinearMovement {dir = new Vector2Int(prop, -1)};
+        //     var forwardMove = new LinearMovement {dir = new Vector2Int(prop, 0)};
+        //     var leftDiagonalMove = new LinearMovement {dir = new Vector2Int(prop, 1)};
+        //     var rightDiagonalMove = new LinearMovement {dir = new Vector2Int(prop, -1)};
 
-            var forward = BoardEngine.CalcLinearMoves(figPos, forwardMove, boardMap);
-            var leftDiagonal = BoardEngine.CalcLinearMoves(figPos, leftDiagonalMove, boardMap);
-            var rightDiagonal = BoardEngine.CalcLinearMoves(figPos, rightDiagonalMove, boardMap);
+        //     var forward = BoardEngine.CalcLinearMoves(figPos, forwardMove, boardMap);
+        //     var leftDiagonal = BoardEngine.CalcLinearMoves(figPos, leftDiagonalMove, boardMap);
+        //     var rightDiagonal = BoardEngine.CalcLinearMoves(figPos, rightDiagonalMove, boardMap);
 
-            foreach (Vector2Int pos in forward) {
-                if (boardMap[pos.x, pos.y].IsNone()) {
-                    pawnMoves.Add(pos);
-                }
-            }
+        //     foreach (Vector2Int pos in forward) {
+        //         if (boardMap[pos.x, pos.y].IsNone()) {
+        //             pawnMoves.Add(pos);
+        //         }
+        //     }
 
-            if (BoardEngine.IsOnBoard(
-                new Vector2Int(leftDiagonal[0].x, leftDiagonal[0].y), 8, 8
-                ) && boardMap[leftDiagonal[0].x, leftDiagonal[0].y].IsSome()
-                  && boardMap[leftDiagonal[0].x, leftDiagonal[0].y].Peel().white != fig.white
-            ) {
-                pawnMoves.Add(leftDiagonal[0]);
-            }
+        //     if (BoardEngine.IsOnBoard(
+        //         new Vector2Int(leftDiagonal[0].x, leftDiagonal[0].y), 8, 8
+        //         ) && boardMap[leftDiagonal[0].x, leftDiagonal[0].y].IsSome()
+        //           && boardMap[leftDiagonal[0].x, leftDiagonal[0].y].Peel().white != fig.white
+        //     ) {
+        //         pawnMoves.Add(leftDiagonal[0]);
+        //     }
 
-            if (BoardEngine.IsOnBoard(
-                new Vector2Int(rightDiagonal[0].x, rightDiagonal[0].y), 8, 8
-                ) && boardMap[rightDiagonal[0].x, rightDiagonal[0].y].IsSome()
-                  && boardMap[rightDiagonal[0].x, rightDiagonal[0].y].Peel().white != fig.white
-            ) {
-                pawnMoves.Add(rightDiagonal[0]);
-            }
+        //     if (BoardEngine.IsOnBoard(
+        //         new Vector2Int(rightDiagonal[0].x, rightDiagonal[0].y), 8, 8
+        //         ) && boardMap[rightDiagonal[0].x, rightDiagonal[0].y].IsSome()
+        //           && boardMap[rightDiagonal[0].x, rightDiagonal[0].y].Peel().white != fig.white
+        //     ) {
+        //         pawnMoves.Add(rightDiagonal[0]);
+        //     }
 
-            return pawnMoves;
-        }
+        //     return pawnMoves;
+        // }
 
-        private bool CheckKing() {
-            var kingPos = new Vector2Int();
+        // private bool CheckKing() {
+        //     var kingPos = new Vector2Int();
 
-            for (int i = 0; i < boardMap.GetLength(0); i++) {
-                for (int j = 0; j < boardMap.GetLength(1); j++) {
-                    if (boardMap[i, j].IsSome()) {
-                        var figure = boardMap[i, j].Peel();
+        //     for (int i = 0; i < boardMap.GetLength(0); i++) {
+        //         for (int j = 0; j < boardMap.GetLength(1); j++) {
+        //             if (boardMap[i, j].IsSome()) {
+        //                 var figure = boardMap[i, j].Peel();
 
-                        if (figure.type == FigureType.King && figure.white == whiteMove) {
-                            kingPos = new Vector2Int(i, j);
-                        }
-                    }
-                }
-            }
+        //                 if (figure.type == FigureType.King && figure.white == whiteMove) {
+        //                     kingPos = new Vector2Int(i, j);
+        //                 }
+        //             }
+        //         }
+        //     }
 
-            var king = boardMap[kingPos.x, kingPos.y].Peel();
-            var linearType = ChessEngine.mixedMovementType;
-            Fig fig;
-            MovementType figMoveType;
+        //     var king = boardMap[kingPos.x, kingPos.y].Peel();
+        //     var linearType = ChessEngine.mixedMovementType;
+        //     Fig fig;
+        //     MovementType figMoveType;
 
-            foreach (LinearMovement linearMove in linearType) {
-                var linear = BoardEngine.CalcLinearMoves(kingPos, linearMove, boardMap);
+        //     foreach (LinearMovement linearMove in linearType) {
+        //         var linear = BoardEngine.CalcLinearMoves(kingPos, linearMove, boardMap);
 
-                var lastLinearPos = ChessEngine.GetLastLinearPosition(linear);
-                Debug.Log(lastLinearPos.Value.x + "  " + lastLinearPos.Value.y);
+        //         var lastLinearPos = ChessEngine.GetLastLinearPosition(linear);
+        //         Debug.Log(lastLinearPos.Value.x + "  " + lastLinearPos.Value.y);
 
-                if (BoardEngine.IsOnBoard(
-                    new Vector2Int(lastLinearPos.Value.x, lastLinearPos.Value.y),
-                    boardMap.GetLength(0),
-                    boardMap.GetLength(1)
-                ) && boardMap[lastLinearPos.Value.x, lastLinearPos.Value.y].IsSome()) {
-                    Debug.Log("2");
-                    fig = boardMap[lastLinearPos.Value.x, lastLinearPos.Value.y].Peel();
-                    figMoveType = ChessEngine.GetMovementType(fig.type);
+        //         if (BoardEngine.IsOnBoard(
+        //             new Vector2Int(lastLinearPos.Value.x, lastLinearPos.Value.y),
+        //             boardMap.GetLength(0),
+        //             boardMap.GetLength(1)
+        //         ) && boardMap[lastLinearPos.Value.x, lastLinearPos.Value.y].IsSome()) {
+        //             Debug.Log("2");
+        //             fig = boardMap[lastLinearPos.Value.x, lastLinearPos.Value.y].Peel();
+        //             figMoveType = ChessEngine.GetMovementType(fig.type);
 
-                } else {
-                    continue;
-                }
+        //         } else {
+        //             continue;
+        //         }
 
-                foreach (LinearMovement linMove in figMoveType.linear) {
-                    if (boardMap[lastLinearPos.Value.x, lastLinearPos.Value.y].IsSome() 
-                        && fig.white != king.white) {
+        //         foreach (LinearMovement linMove in figMoveType.linear) {
+        //             if (boardMap[lastLinearPos.Value.x, lastLinearPos.Value.y].IsSome() 
+        //                 && fig.white != king.white) {
 
-                        if (Equals(linMove.dir, linearMove.dir * -1)) {
-                            Debug.Log("check");
-                        }
-                    }
-                }
-            }
+        //                 if (Equals(linMove.dir, linearMove.dir * -1)) {
+        //                     Debug.Log("check");
+        //                 }
+        //             }
+        //         }
+        //     }
 
-            return false;
-        }
+        //     return false;
+        // }
 
         private List<GameObject> CreatingPossibleMoves(List<Vector2Int> possibleMoves) {
             var possibleMovesObj = new List<GameObject>();

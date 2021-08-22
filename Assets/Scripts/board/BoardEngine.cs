@@ -3,8 +3,17 @@ using UnityEngine;
 using option;
 
 namespace board {
+    public struct Diagonal {
+        public List<Vector2Int> diagonalDirs;
+    }
+
+    public struct Straight {
+        public List<Vector2Int> straightDirs;
+    }
+
     public struct LinearMovement {
-        public Vector2Int dir;
+        public Diagonal? diagonal;
+        public Straight? straight;
     }
 
     public struct SquareMovement {
@@ -12,14 +21,14 @@ namespace board {
     }
 
     public struct MovementType {
-        public List<LinearMovement?> linear;
+        public LinearMovement? linear;
         public SquareMovement? square;
     }
 
     public static class BoardEngine {
         public static int CalcLinearLength<T>(
             Vector2Int pos,
-            LinearMovement lineMove,
+            Vector2Int dir,
             Option<T>[,] board
         ) {
             var length = 0;
@@ -27,7 +36,7 @@ namespace board {
             var width = board.GetLength(1);
 
             for (int i = 1; i <= height; i++) {
-                var nextPos = pos + i * lineMove.dir;
+                var nextPos = pos + i * dir;
                 if (!IsOnBoard(nextPos, height, width)) {
                     break;
                 }
@@ -37,19 +46,20 @@ namespace board {
                     break;
                 }
             }
+            Debug.Log(length);
             return length;
         }
 
         public static List<Vector2Int> CalcLinearMoves<T>(
             Vector2Int pos,
-            LinearMovement linear,
+            Vector2Int dir,
             Option<T>[,] board
         ) {
             var linearMoves = new List<Vector2Int>();
-            var height = board.GetLength(0);
+            var length = CalcLinearLength(pos, dir, board);
 
-            for (int i = 1; i <= height; i++) {
-                var nextPos = pos + i * linear.dir;
+            for (int i = 1; i <= length; i++) {
+                var nextPos = pos + i * dir;
 
                 linearMoves.Add(nextPos);
             }
