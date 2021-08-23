@@ -158,7 +158,6 @@ namespace controller {
 
                     if (BoardEngine.IsOnBoard(new Vector2Int(x, y), width, height)) {
                         var fig = boardMap[x, y].Peel();
-                        Debug.Log(fig.type);
 
                         if (possibleMoveList != null) {
                             foreach (GameObject cell in possibleMoveList) {
@@ -169,40 +168,111 @@ namespace controller {
                         if (figuresMap[x, y] != null && fig.white == whiteMove) {
 
                             var moveType = moveTypes[fig.type];
+                            
                             possibleMoves.Clear();
                             figPos = new Vector2Int(x, y);
 
+
+
                             if (moveType.square != null) {
+
+                                var square = BoardEngine.CalcSquarePath(
+                                    figPos,
+                                    moveType.square.Value.side
+                                );
+
+                                if (fig.type == FigureType.Knight) {
+                                    square = ChangeKnightPath(square);
+                                }
+
                                 possibleMoves = ChessEngine.CalcSquareMoves(
                                     figPos,
-                                    moveType,
+                                    square,
                                     boardMap
                                 );
                             } else {
                                 possibleMoves = ChessEngine.CalcLinearMoves(
                                     figPos,
-                                    moveType,
+                                    moveType.linear.Value,
                                     boardMap
                                 );
                             }
 
                             if (fig.type == FigureType.Pawn) {
-                                //possibleMoves = ChangePawnMoves(fig);
+                                possibleMoves = ChangePawnMoves(figPos, possibleMoves, boardMap);
                             }
 
                             possibleMoveList = CreatingPossibleMoves(possibleMoves);
 
                         } else if (possibleMoves != null) {
                             MoveFigure(figPos, new Vector2Int(x,y));
-                            //CheckKing();
                             possibleMoves.Clear();
                         }
                     }
-
                 }
             }
         }
 
+        private List<Vector2Int> ChangePawnMoves(
+            Vector2Int pos,
+            List<Vector2Int> moves,
+            Option<Fig>[,] board
+        ) {
+            var newMoves = new List<Vector2Int>();
+            var fig = board[pos.x, pos.y].Peel();
+            var prop = 1;
+
+            if (fig.white) {
+                prop = -1;
+            }
+
+            var width = boardMap.GetLength(0);
+            var height = boardMap.GetLength(1);
+            var nextFig = board[pos.x + prop, pos.y];
+            var leftPos = new Vector2Int(pos.x + prop, pos.y + prop);
+            var rightPos = new Vector2Int(pos.x + prop, pos.y - prop);
+            var leftOnBoard = BoardEngine.IsOnBoard(leftPos, width, height);
+            var rightOnBoard = BoardEngine.IsOnBoard(rightPos, width, height);
+
+            foreach (Vector2Int move in moves) {
+                if (pos.x == 6 && prop == -1 || pos.x == 1 && prop == 1) {
+                    if (Equals(new Vector2Int(pos.x + prop * 2, pos.y), move) && nextFig.IsNone()) {
+                        newMoves.Add(move);
+                    }
+                }
+
+                if (Equals(new Vector2Int(pos.x + prop, pos.y), move) && nextFig.IsNone()) {
+                    newMoves.Add(move);
+                }
+
+                if (leftOnBoard && Equals(leftPos, move) 
+                    && board[pos.x + prop, pos.y + prop].IsSome()) {
+
+                    newMoves.Add(move);
+                }
+
+                if (rightOnBoard && Equals(rightPos, move) 
+                    && board[pos.x + prop, pos.y - prop].IsSome()) {
+
+                    newMoves.Add(move);
+                }
+            }
+            return newMoves;
+        }
+
+        private List<Vector2Int> ChangeKnightPath(List<Vector2Int> square) {
+            var newPath = new List<Vector2Int>();
+            var count = 0;
+
+            foreach (Vector2Int move in square) {
+                if (count < square.Count) {
+                    newPath.Add(square[count]);
+                    count += 2;
+                }
+            }
+
+            return newPath;
+        }
 
         private List<GameObject> CreatingPossibleMoves(List<Vector2Int> possibleMoves) {
             var possibleMovesObj = new List<GameObject>();

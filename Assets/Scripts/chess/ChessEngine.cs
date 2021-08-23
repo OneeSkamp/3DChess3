@@ -48,14 +48,13 @@ namespace chess {
 
         public static List<Vector2Int> CalcSquareMoves(
             Vector2Int pos,
-            MovementType moveType,
+            List<Vector2Int> square,
             Option<Fig> [,] board
         ) {
             var possMoves = new List<Vector2Int>();
-            var squarePath = BoardEngine.CalcSquarePath(pos, moveType.square.Value.side);
             var fig = board[pos.x, pos.y].Peel();
 
-            foreach (var cell in squarePath) {
+            foreach (var cell in square) {
                 var move = new Move {
                     from = pos,
                     to = cell
@@ -70,23 +69,23 @@ namespace chess {
 
         public static List<Vector2Int> CalcLinearMoves(
             Vector2Int pos,
-            MovementType moveType,
+            LinearMovement linear,
             Option<Fig>[,] board
         ) {
             var moves = new List<Vector2Int>();
             var dirs = new List<Vector2Int>();
 
-            if (moveType.linear.Value.diagonal != null) {
-                dirs.AddRange(moveType.linear.Value.diagonal.Value.diagonalDirs);
+            if (linear.diagonal != null) {
+                dirs.AddRange(linear.diagonal.Value.diagonalDirs);
             }
 
-            if (moveType.linear.Value.straight != null) {
-                dirs.AddRange(moveType.linear.Value.straight.Value.straightDirs);
+            if (linear.straight != null) {
+                dirs.AddRange(linear.straight.Value.straightDirs);
             }
 
             foreach (Vector2Int dir in dirs) {
-                var linear = BoardEngine.CalcLinearPath<Fig>(pos, dir, board);
-                foreach (Vector2Int cell in linear) {
+                var linearPath = BoardEngine.CalcLinearPath<Fig>(pos, dir, board);
+                foreach (Vector2Int cell in linearPath) {
                     var move = new Move {
                         from = pos,
                         to = cell
