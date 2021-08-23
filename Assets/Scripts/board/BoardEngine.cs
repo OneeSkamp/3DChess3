@@ -46,11 +46,10 @@ namespace board {
                     break;
                 }
             }
-            Debug.Log(length);
             return length;
         }
 
-        public static List<Vector2Int> CalcLinearMoves<T>(
+        public static List<Vector2Int> CalcLinearPath<T>(
             Vector2Int pos,
             Vector2Int dir,
             Option<T>[,] board
@@ -67,11 +66,10 @@ namespace board {
             return linearMoves;
         }
 
-        public static List<Vector2Int> CalcSquareMoves(Vector2Int pos, int side) {
+        public static List<Vector2Int> CalcSquarePath(Vector2Int pos, int side) {
             var squareMoves = new List<Vector2Int>();
             var startPos = new Vector2Int(pos.x - side/2, pos.y - side/2);
             var nextPos = new Vector2Int();
-            Debug.Log(startPos.x + " " + startPos.y);
 
             for (int i = 1; i < side; i++) {
                 nextPos = new Vector2Int(startPos.x, startPos.y + i);

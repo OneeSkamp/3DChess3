@@ -5,7 +5,6 @@ using option;
 
 namespace chess {
     public enum FigureType {
-        None,
         Pawn,
         Knight,
         Bishop,
@@ -16,7 +15,6 @@ namespace chess {
 
     public struct Fig {
         public bool white;
-        public bool firstMove;
         public FigureType type;
 
         public static Fig CreateFig(bool white, FigureType type) {
@@ -27,23 +25,79 @@ namespace chess {
         }
     }
 
-    public struct MoveTypes {
-
+    public struct Move {
+        public Vector2Int from;
+        public Vector2Int to;
     }
 
     public static class ChessEngine {
+        public static bool IsPossibleMove(Move move, Option<Fig>[,] board) {
+            var fig = board[move.from.x, move.from.y].Peel();
 
-        // public static MovementType GetMovementType(FigureType type) {
-        //     var movementType = new MovementType();
-        //     movementType = MoveTypes.moveTypes[type];
-        //     return movementType;
-        // }
-
-        public static Vector2Int? GetLastLinearPosition (List<Vector2Int> linearMoves) {
-            if (linearMoves.Count != 0) {
-                return linearMoves[linearMoves.Count - 1];
+            if (BoardEngine.IsOnBoard(move.to, board.GetLength(0), board.GetLength(1))) {
+                var nextFig = board[move.to.x, move.to.y].Peel();
+                if (board[move.to.x, move.to.y].IsNone()) {
+                    return true;
+                }
+                if (fig.white != nextFig.white) {
+                    return true;
+                }
             }
-            return null;
+            return false;
+        }
+
+        public static List<Vector2Int> CalcSquareMoves(
+            Vector2Int pos,
+            MovementType moveType,
+            Option<Fig> [,] board
+        ) {
+            var possMoves = new List<Vector2Int>();
+            var squarePath = BoardEngine.CalcSquarePath(pos, moveType.square.Value.side);
+            var fig = board[pos.x, pos.y].Peel();
+
+            foreach (var cell in squarePath) {
+                var move = new Move {
+                    from = pos,
+                    to = cell
+                };
+
+                if (IsPossibleMove(move, board)) {
+                    possMoves.Add(move.to);
+                }
+            }
+            return possMoves;
+        }
+
+        public static List<Vector2Int> CalcLinearMoves(
+            Vector2Int pos,
+            MovementType moveType,
+            Option<Fig>[,] board
+        ) {
+            var moves = new List<Vector2Int>();
+            var dirs = new List<Vector2Int>();
+
+            if (moveType.linear.Value.diagonal != null) {
+                dirs.AddRange(moveType.linear.Value.diagonal.Value.diagonalDirs);
+            }
+
+            if (moveType.linear.Value.straight != null) {
+                dirs.AddRange(moveType.linear.Value.straight.Value.straightDirs);
+            }
+
+            foreach (Vector2Int dir in dirs) {
+                var linear = BoardEngine.CalcLinearPath<Fig>(pos, dir, board);
+                foreach (Vector2Int cell in linear) {
+                    var move = new Move {
+                        from = pos,
+                        to = cell
+                    };
+
+                    if (IsPossibleMove(move, board)) {
+                        moves.Add(move.to);
+                    }
+                }
+            }
+            return moves;
         }
     }
 }
