@@ -32,13 +32,24 @@ namespace chess {
 
     public static class ChessEngine {
         public static bool IsPossibleMove(Move move, Option<Fig>[,] board) {
-            var fig = board[move.from.x, move.from.y].Peel();
+            var fromPos = move.from;
+            var figOpt = board[fromPos.x, fromPos.y];
+            var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
 
-            if (BoardEngine.IsOnBoard(move.to, board.GetLength(0), board.GetLength(1))) {
-                var nextFig = board[move.to.x, move.to.y].Peel();
-                if (board[move.to.x, move.to.y].IsNone()) {
+            if (figOpt.IsNone()) {
+                return false;
+            }
+
+            var fig = figOpt.Peel();
+
+            if (BoardEngine.IsOnBoard(move.to, size)) {
+                var nextFigOpt = board[move.to.x, move.to.y];
+
+                if (nextFigOpt.IsNone()) {
                     return true;
                 }
+
+                var nextFig = nextFigOpt.Peel();
                 if (fig.white != nextFig.white) {
                     return true;
                 }
@@ -46,12 +57,12 @@ namespace chess {
             return false;
         }
 
-        public static List<Vector2Int> CalcSquareMoves(
+        public static List<Move> PossibleSquareMoves(
             Vector2Int pos,
             List<Vector2Int> square,
             Option<Fig> [,] board
         ) {
-            var possMoves = new List<Vector2Int>();
+            var possMoves = new List<Move>();
             var fig = board[pos.x, pos.y].Peel();
 
             foreach (var cell in square) {
@@ -61,30 +72,31 @@ namespace chess {
                 };
 
                 if (IsPossibleMove(move, board)) {
-                    possMoves.Add(move.to);
+                    possMoves.Add(move);
                 }
             }
             return possMoves;
         }
 
-        public static List<Vector2Int> CalcLinearMoves(
+        public static List<Move> CalcLinearMoves(
             Vector2Int pos,
             LinearMovement linear,
+            int length,
             Option<Fig>[,] board
         ) {
-            var moves = new List<Vector2Int>();
+            var moves = new List<Move>();
             var dirs = new List<Vector2Int>();
 
-            if (linear.diagonal != null) {
+            if (linear.diagonal.HasValue) {
                 dirs.AddRange(linear.diagonal.Value.diagonalDirs);
             }
 
-            if (linear.straight != null) {
+            if (linear.straight.HasValue) {
                 dirs.AddRange(linear.straight.Value.straightDirs);
             }
 
             foreach (Vector2Int dir in dirs) {
-                var linearPath = BoardEngine.CalcLinearPath<Fig>(pos, dir, board);
+                var linearPath = BoardEngine.CalcLinearPath<Fig>(pos, dir, length, board);
                 foreach (Vector2Int cell in linearPath) {
                     var move = new Move {
                         from = pos,
@@ -92,7 +104,7 @@ namespace chess {
                     };
 
                     if (IsPossibleMove(move, board)) {
-                        moves.Add(move.to);
+                        moves.Add(move);
                     }
                 }
             }

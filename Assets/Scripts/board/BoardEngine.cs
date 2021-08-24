@@ -32,12 +32,11 @@ namespace board {
             Option<T>[,] board
         ) {
             var length = 0;
-            var height = board.GetLength(0);
-            var width = board.GetLength(1);
+            var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
 
-            for (int i = 1; i <= height; i++) {
+            for (int i = 1; i <= size.x; i++) {
                 var nextPos = pos + i * dir;
-                if (!IsOnBoard(nextPos, height, width)) {
+                if (!IsOnBoard(nextPos, size)) {
                     break;
                 }
 
@@ -52,17 +51,16 @@ namespace board {
         public static List<Vector2Int> CalcLinearPath<T>(
             Vector2Int pos,
             Vector2Int dir,
+            int length,
             Option<T>[,] board
         ) {
             var linearMoves = new List<Vector2Int>();
-            var length = CalcLinearLength(pos, dir, board);
 
             for (int i = 1; i <= length; i++) {
                 var nextPos = pos + i * dir;
 
                 linearMoves.Add(nextPos);
             }
-
             return linearMoves;
         }
 
@@ -93,12 +91,11 @@ namespace board {
                 nextPos = new Vector2Int(startPos.x - i, startPos.y);
                 squareMoves.Add(nextPos);
             }
-
             return squareMoves;
         }
 
-        public static bool IsOnBoard(Vector2Int pos, int width, int height) {
-            if (pos.x < 0 || pos.y < 0 || pos.x >= height || pos.y >= width) {
+        public static bool IsOnBoard(Vector2Int pos, Vector2Int size) {
+            if (pos.x < 0 || pos.y < 0 || pos.x >= size.x || pos.y >= size.y) {
                 return false;
             }
 
