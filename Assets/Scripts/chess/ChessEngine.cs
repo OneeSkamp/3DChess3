@@ -57,17 +57,16 @@ namespace chess {
             return false;
         }
 
-        public static List<Move> PossibleSquareMoves(
-            Vector2Int pos,
-            List<Vector2Int> square,
-            Option<Fig> [,] board
+        public static List<Move> GetPossibleMoves(
+            Vector2Int start,
+            List<Vector2Int> movePath,
+            Option<Fig>[,] board
         ) {
             var possMoves = new List<Move>();
-            var fig = board[pos.x, pos.y].Peel();
 
-            foreach (var cell in square) {
+            foreach (var cell in movePath) {
                 var move = new Move {
-                    from = pos,
+                    from = start,
                     to = cell
                 };
 
@@ -78,37 +77,16 @@ namespace chess {
             return possMoves;
         }
 
-        public static List<Move> CalcLinearMoves(
-            Vector2Int pos,
+        public static List<Move> CalcPossibleLinearMoves(
+            Vector2Int start,
             LinearMovement linear,
             int length,
             Option<Fig>[,] board
         ) {
-            var moves = new List<Move>();
-            var dirs = new List<Vector2Int>();
+            var possMoves = new List<Move>();
+            var linearPath = BoardEngine.CalcLinearPath<Fig>(start, linear.dir, length, board);
 
-            if (linear.diagonal.HasValue) {
-                dirs.AddRange(linear.diagonal.Value.diagonalDirs);
-            }
-
-            if (linear.straight.HasValue) {
-                dirs.AddRange(linear.straight.Value.straightDirs);
-            }
-
-            foreach (Vector2Int dir in dirs) {
-                var linearPath = BoardEngine.CalcLinearPath<Fig>(pos, dir, length, board);
-                foreach (Vector2Int cell in linearPath) {
-                    var move = new Move {
-                        from = pos,
-                        to = cell
-                    };
-
-                    if (IsPossibleMove(move, board)) {
-                        moves.Add(move);
-                    }
-                }
-            }
-            return moves;
+            return GetPossibleMoves(start, linearPath, board);
         }
     }
 }

@@ -3,24 +3,15 @@ using UnityEngine;
 using option;
 
 namespace board {
-    public struct Diagonal {
-        public List<Vector2Int> diagonalDirs;
-    }
-
-    public struct Straight {
-        public List<Vector2Int> straightDirs;
-    }
-
     public struct LinearMovement {
-        public Diagonal? diagonal;
-        public Straight? straight;
+        public Vector2Int dir;
     }
 
     public struct SquareMovement {
         public int side;
     }
 
-    public struct MovementType {
+    public struct Movement {
         public LinearMovement? linear;
         public SquareMovement? square;
     }
@@ -91,6 +82,20 @@ namespace board {
                 nextPos = new Vector2Int(startPos.x - i, startPos.y);
                 squareMoves.Add(nextPos);
             }
+            return squareMoves;
+        }
+
+        public static List<Vector2Int> ChangeSquarePath(List<Vector2Int> square, int skipValue) {
+            var squareMoves = new List<Vector2Int>();
+            var count = 0;
+
+            foreach (Vector2Int move in square) {
+                if (count < square.Count) {
+                    squareMoves.Add(square[count]);
+                    count += skipValue + 1;
+                }
+            }
+
             return squareMoves;
         }
 

@@ -28,86 +28,87 @@ namespace controller {
         private RaycastHit hit;
 
         private List<GameObject> possibleMoveList;
-        private List<Vector2Int> diagonal = new List<Vector2Int> {
-            new Vector2Int(1, 1),
-            new Vector2Int(1, -1),
-            new Vector2Int(-1, 1),
-            new Vector2Int(-1, -1)
+        private List<Movement> bishopMovement = new List<Movement> {
+            new Movement {
+                linear = new LinearMovement {
+                    dir = new Vector2Int(1, 1)
+                }
+            },
+            new Movement {
+                linear = new LinearMovement {
+                    dir = new Vector2Int(-1, 1)
+                }
+            },
+            new Movement {
+                linear = new LinearMovement {
+                    dir = new Vector2Int(1, -1)
+                }
+            },
+            new Movement {
+                linear = new LinearMovement {
+                    dir = new Vector2Int(-1, -1)
+                }
+            }
         };
 
-        private List<Vector2Int> straight = new List<Vector2Int> {
-            new Vector2Int(1, 0),
-            new Vector2Int(0, 1),
-            new Vector2Int(-1, 0),
-            new Vector2Int(0, -1)
+        private List<Movement> rookMovement = new List<Movement> {
+            new Movement {
+                linear = new LinearMovement {
+                    dir = new Vector2Int(1, 0)
+                }
+            },
+            new Movement {
+                linear = new LinearMovement {
+                    dir = new Vector2Int(0, 1)
+                }
+            },
+            new Movement {
+                linear = new LinearMovement {
+                    dir = new Vector2Int(0, -1)
+                }
+            },
+            new Movement {
+                linear = new LinearMovement {
+                    dir = new Vector2Int(-1, 0)
+                }
+            }
         };
 
-        public Dictionary<FigureType, MovementType> moveTypes;
+        private List<Movement> knightMovemetn = new List<Movement> {
+            new Movement {
+                square = new SquareMovement {
+                    side = 5
+                }
+            }
+        };
+
+        private List<Movement> kingMovement = new List<Movement> {
+            new Movement {
+                square = new SquareMovement {
+                    side = 3
+                }
+            }
+        };
+
+        private List<Movement> queenMovement = new List<Movement>();
+        private List<Movement> allMovement = new List<Movement>();
+
+        public Dictionary<FigureType, List<Movement>> moveTypes;
 
         private void Awake() {
-            moveTypes =  new Dictionary<FigureType, MovementType> {
-                {
-                    FigureType.Bishop,
-                    new MovementType {
-                        linear = new LinearMovement {
-                            diagonal = new Diagonal {
-                                diagonalDirs = diagonal
-                            }
-                        }
-                    }
-                },
-                {
-                    FigureType.Rook,
-                    new MovementType {
-                        linear = new LinearMovement {
-                            straight = new Straight {
-                                straightDirs = straight
-                            }
-                        }
-                    }
-                },
-                {
-                    FigureType.Queen,
-                    new MovementType {
-                        linear = new LinearMovement {
-                            straight = new Straight {
-                                straightDirs = straight
-                            },
-                            diagonal = new Diagonal {
-                                diagonalDirs = diagonal
-                            }
-                        }
-                    }
-                },
-                {
-                    FigureType.King,
-                    new MovementType {
-                        square = new SquareMovement {
-                                side = 3
-                        }
-                    }
-                },
-                {
-                    FigureType.Knight,
-                    new MovementType {
-                        square = new SquareMovement {
-                                side = 5
-                        }
-                    }
-                },
-                {
-                    FigureType.Pawn,
-                    new MovementType {
-                        linear = new LinearMovement {
-                            straight = new Straight {
-                                straightDirs = straight
-                            },
-                            diagonal = new Diagonal {
-                                diagonalDirs = diagonal
-                            }
-                        }
-                    }
-                },
+            queenMovement.AddRange(bishopMovement);
+            queenMovement.AddRange(rookMovement);
+
+            allMovement.AddRange(queenMovement);
+            allMovement.AddRange(knightMovemetn);
+
+            moveTypes =  new Dictionary<FigureType, List<Movement>> {
+                {FigureType.Bishop, bishopMovement},
+                {FigureType.Rook, rookMovement},
+                {FigureType.Queen, queenMovement},
+                {FigureType.Knight, knightMovemetn},
+                {FigureType.Pawn, queenMovement},
+                {FigureType.King, kingMovement}
             };
 
             boardMap[0, 0] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Rook));
@@ -168,60 +169,69 @@ namespace controller {
                         if (figuresMap[x, y] != null && fig.white == whiteMove) {
 
                             var moveType = moveTypes[fig.type];
-                            
+
                             possibleMoves.Clear();
                             figPos = new Vector2Int(x, y);
 
 
+                            foreach (Movement type in moveType) {
+                                if (type.square.HasValue) {
+                                    var square = BoardEngine.CalcSquarePath(
+                                        figPos,
+                                        type.square.Value.side
+                                    );
 
-                            if (moveType.square != null) {
+                                    if (fig.type == FigureType.Knight) {
+                                        square = BoardEngine.ChangeSquarePath(square, 1);
+                                    }
 
-                                var square = BoardEngine.CalcSquarePath(
-                                    figPos,
-                                    moveType.square.Value.side
-                                );
+                                    possibleMoves.AddRange(ChessEngine.GetPossibleMoves(
+                                        figPos,
+                                        square,
+                                        boardMap
+                                    ));
+                                } else {
+                                    var linear = type.linear.Value;
+                                    var length = BoardEngine.CalcLinearLength(figPos,
+                                        linear.dir,
+                                        boardMap
+                                    );
 
-                                if (fig.type == FigureType.Knight) {
-                                    square = ChangeKnightPath(square);
+                                    possibleMoves.AddRange(ChessEngine.CalcPossibleLinearMoves(
+                                        figPos,
+                                        linear,
+                                        length,
+                                        boardMap
+                                    ));
                                 }
 
-                                possibleMoves = ChessEngine.PossibleSquareMoves(
-                                    figPos,
-                                    square,
-                                    boardMap
-                                );
-                            } else {
-                                possibleMoves = ChessEngine.CalcLinearMoves(
-                                    figPos,
-                                    moveType.linear.Value,
-                                    boardMap.GetLength(0),
-                                    boardMap
-                                );
                             }
 
                             if (fig.type == FigureType.Pawn) {
-                                possibleMoves = ChangePawnMoves(figPos, possibleMoves, boardMap);
+                                possibleMoves = Master.ChangePawnMoves(
+                                    figPos,
+                                    possibleMoves,
+                                    boardMap);
                             }
 
                             possibleMoveList = CreatingPossibleMoves(possibleMoves);
 
-                        } else if (possibleMoves != null) {
+                        } else {
                             Move move = new Move {
                                 from = figPos,
                                 to = new Vector2Int(x, y)
                             };
 
-                            relocation(move, boardMap);
+                            Relocation(move, boardMap);
 
                             possibleMoves.Clear();
-                            whiteMove = !whiteMove;
                         }
                     }
                 }
             }
         }
 
-        private void relocation (Move move, Option<Fig>[,] board) {
+        private void Relocation (Move move, Option<Fig>[,] board) {
             foreach (Move possMove in possibleMoves) {
                 if (Equals(move, possMove)) {
                     var moveRes = Master.MoveFigure(move, board);
@@ -234,73 +244,17 @@ namespace controller {
 
                     figuresMap[posTo.x, posTo.y] = figuresMap[posFrom.x, posFrom.y];
                     figuresMap[posFrom.x, posFrom.y] = null;
+
                     var newPos = new Vector3(CONST - posTo.x * 1.5f, 0.0f, CONST - posTo.y * 1.5f);
                     figuresMap[posTo.x, posTo.y].transform.position = newPos;
-
+                    var kingPos = Master.FindEnemyKing(whiteMove, boardMap);
+                    Master.CheckKing(moveTypes, allMovement, kingPos, boardMap);
+                    whiteMove = !whiteMove;
                 }
             }
         }
 
-        private List<Move> ChangePawnMoves(
-            Vector2Int pos,
-            List<Move> moves,
-            Option<Fig>[,] board
-        ) {
-            var newMoves = new List<Move>();
-            var fig = board[pos.x, pos.y].Peel();
-            var prop = 1;
 
-            if (fig.white) {
-                prop = -1;
-            }
-
-            var size = new Vector2Int(boardMap.GetLength(0), boardMap.GetLength(1));
-            var nextFig = board[pos.x + prop, pos.y];
-            var leftPos = new Vector2Int(pos.x + prop, pos.y + prop);
-            var rightPos = new Vector2Int(pos.x + prop, pos.y - prop);
-            var leftOnBoard = BoardEngine.IsOnBoard(leftPos, size);
-            var rightOnBoard = BoardEngine.IsOnBoard(rightPos, size);
-
-
-            foreach (Move move in moves) {
-                if (pos.x == 6 && prop == -1 || pos.x == 1 && prop == 1) {
-                    if (Equals(new Vector2Int(pos.x + prop * 2, pos.y), move.to) && nextFig.IsNone()) {
-                        newMoves.Add(move);
-                    }
-                }
-
-                if (Equals(new Vector2Int(pos.x + prop, pos.y), move.to) && nextFig.IsNone()) {
-                    newMoves.Add(move);
-                }
-
-                if (leftOnBoard && Equals(leftPos, move.to) 
-                    && board[pos.x + prop, pos.y + prop].IsSome()) {
-
-                    newMoves.Add(move);
-                }
-
-                if (rightOnBoard && Equals(rightPos, move.to) 
-                    && board[pos.x + prop, pos.y - prop].IsSome()) {
-
-                    newMoves.Add(move);
-                }
-            }
-            return newMoves;
-        }
-
-        private List<Vector2Int> ChangeKnightPath(List<Vector2Int> square) {
-            var newPath = new List<Vector2Int>();
-            var count = 0;
-
-            foreach (Vector2Int move in square) {
-                if (count < square.Count) {
-                    newPath.Add(square[count]);
-                    count += 2;
-                }
-            }
-
-            return newPath;
-        }
 
         private List<GameObject> CreatingPossibleMoves(List<Move> possibleMoves) {
             var possibleMovesObj = new List<GameObject>();
