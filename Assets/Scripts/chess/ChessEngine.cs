@@ -77,14 +77,14 @@ namespace chess {
             return possMoves;
         }
 
-        public static List<Move> CalcPossibleLinearMoves(
+        public static List<Move> GetPossibleLinearMoves(
             Vector2Int start,
             LinearMovement linear,
             int length,
             Option<Fig>[,] board
         ) {
             var possMoves = new List<Move>();
-            var linearPath = BoardEngine.CalcLinearPath<Fig>(start, linear.dir, length, board);
+            var linearPath = BoardEngine.GetLinearPath<Fig>(start, linear.dir, length, board);
 
             return GetPossibleMoves(start, linearPath, board);
         }

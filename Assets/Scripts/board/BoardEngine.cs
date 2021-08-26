@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using option;
+using collections;
 
 namespace board {
     public struct LinearMovement {
@@ -17,16 +18,17 @@ namespace board {
     }
 
     public static class BoardEngine {
-        public static int CalcLinearLength<T>(
+        public static int GetLinearLength<T>(
             Vector2Int pos,
             Vector2Int dir,
             Option<T>[,] board
         ) {
-            var length = 0;
             var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
 
+            var length = 0;
             for (int i = 1; i <= size.x; i++) {
                 var nextPos = pos + i * dir;
+
                 if (!IsOnBoard(nextPos, size)) {
                     break;
                 }
@@ -39,7 +41,7 @@ namespace board {
             return length;
         }
 
-        public static List<Vector2Int> CalcLinearPath<T>(
+        public static List<Vector2Int> GetLinearPath<T>(
             Vector2Int pos,
             Vector2Int dir,
             int length,
@@ -55,7 +57,7 @@ namespace board {
             return linearMoves;
         }
 
-        public static List<Vector2Int> CalcSquarePath(Vector2Int pos, int side) {
+        public static List<Vector2Int> GetSquarePath(Vector2Int pos, int side) {
             var squareMoves = new List<Vector2Int>();
             var startPos = new Vector2Int(pos.x - side/2, pos.y - side/2);
             var nextPos = new Vector2Int();

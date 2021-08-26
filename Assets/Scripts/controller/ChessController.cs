@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using collections;
 using chess;
 using board;
 using option;
@@ -185,7 +186,7 @@ namespace controller {
 
                             foreach (Movement type in moveType) {
                                 if (type.square.HasValue) {
-                                    var square = BoardEngine.CalcSquarePath(
+                                    var square = BoardEngine.GetSquarePath(
                                         figPos,
                                         type.square.Value.side
                                     );
@@ -202,12 +203,12 @@ namespace controller {
                                     possibleMoves.AddRange(CalcCastlingRes().castlingMoves);
                                 } else {
                                     var linear = type.linear.Value;
-                                    var length = BoardEngine.CalcLinearLength(figPos,
+                                    var length = BoardEngine.GetLinearLength(figPos,
                                         linear.dir,
                                         boardMap
                                     );
 
-                                    possibleMoves.AddRange(ChessEngine.CalcPossibleLinearMoves(
+                                    possibleMoves.AddRange(ChessEngine.GetPossibleLinearMoves(
                                         figPos,
                                         linear,
                                         length,
@@ -359,7 +360,7 @@ namespace controller {
 
             if (castlingRes.rookPos.y == 7) {
                 rookMove.from = new Vector2Int(kingPos.x, 7);
-                rookMove.to = new Vector2Int(kingPos.x, kingPos.y - 1); 
+                rookMove.to = new Vector2Int(kingPos.x, kingPos.y - 1);
             }
             var rookMoveRes = Master.MoveFigure(rookMove, boardMap);
 

@@ -81,8 +81,8 @@ namespace master {
                 if (movement.linear.HasValue) {
                     var kingDir = movement.linear.Value.dir;
                     var lastPos = new Vector2Int();
-                    var length = BoardEngine.CalcLinearLength(kingPos, kingDir, board);
-                    var linearPath = BoardEngine.CalcLinearPath(kingPos, kingDir, length, board);
+                    var length = BoardEngine.GetLinearLength(kingPos, kingDir, board);
+                    var linearPath = BoardEngine.GetLinearPath(kingPos, kingDir, length, board);
 
                     if (linearPath.Count > 0) {
                         lastPos = linearPath[linearPath.Count - 1];
@@ -119,7 +119,7 @@ namespace master {
 
                 if (movement.square.HasValue) {
                     var side = movement.square.Value.side;
-                    var squarePath = BoardEngine.CalcSquarePath(kingPos, side);
+                    var squarePath = BoardEngine.GetSquarePath(kingPos, side);
                     var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
                     squarePath = BoardEngine.ChangeSquarePath(squarePath, 1);
 
