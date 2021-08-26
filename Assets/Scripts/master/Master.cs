@@ -10,6 +10,7 @@ namespace master {
         ImpossibleMove,
         MoveOnFigure
     }
+
     public struct MoveRes {
         public Vector2Int pos;
         public MoveError error;
@@ -20,6 +21,7 @@ namespace master {
         public MoveRes rookRes;
         public MoveRes kingRes;
     }
+
     public static class Master {
         public static MoveRes MoveFigure(Move move, Option<Fig>[,] board) {
             var moveRes = new MoveRes();
@@ -47,7 +49,7 @@ namespace master {
             return moveRes;
         }
 
-        public static Vector2Int FindEnemyKing(bool whiteMove, Option<Fig>[,] board) {
+        public static Vector2Int FindKingPos(bool whiteMove, Option<Fig>[,] board) {
             var kingPos = new Vector2Int();
             var width = board.GetLength(0);
             var height = board.GetLength(1);
@@ -58,9 +60,9 @@ namespace master {
 
                     if (figOpt.IsSome()) {
                         var fig = figOpt.Peel();
-                        if (fig.type == FigureType.King && fig.white != whiteMove) {
+
+                        if (fig.type == FigureType.King && fig.white == whiteMove) {
                             kingPos = new Vector2Int(i, j);
-                            Debug.Log(fig.type + " " + fig.white);
                         }
                     }
                 }
@@ -76,7 +78,6 @@ namespace master {
         ) {
             foreach (Movement movement in allMovements) {
                 var king = board[kingPos.x, kingPos.y].Peel();
-
                 if (movement.linear.HasValue) {
                     var kingDir = movement.linear.Value.dir;
                     var lastPos = new Vector2Int();
@@ -91,10 +92,25 @@ namespace master {
                             var fig = figOpt.Peel();
                             var moveList = moveTypes[fig.type];
 
+                            if (fig.type == FigureType.Pawn && length > 1) {
+                                continue;
+                            }
+
                             foreach (Movement figMovement in moveList) {
-                                var figDir = figMovement.linear.Value.dir;
-                                if (fig.white != king.white && figDir == kingDir * - 1) {
-                                    Debug.Log("check");
+                                if (figMovement.linear.HasValue) {
+                                    var figDir = figMovement.linear.Value.dir;
+
+                                    if (fig.type == FigureType.Pawn) {
+                                        var forwardDir = new Vector2Int(-1, 0);
+
+                                        if (figDir == forwardDir || figDir == -forwardDir) {
+                                            continue;
+                                        }
+                                    }
+
+                                    if (fig.white != king.white && figDir == kingDir * - 1) {
+                                        Debug.Log("check");
+                                    }
                                 }
                             }
                         }
@@ -119,6 +135,15 @@ namespace master {
                             }
                         }
                     }
+                }
+            }
+            return false;
+        }
+
+        public static bool IsCastlingMove (Move move, List<Move> castlingMoves) {
+            foreach (Move castlMove in castlingMoves) {
+                if (Equals(castlMove, move)) {
+                    return true;
                 }
             }
             return false;
