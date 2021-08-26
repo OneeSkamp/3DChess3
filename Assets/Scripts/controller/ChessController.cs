@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
-using collections;
 using chess;
 using board;
 using option;
+using move;
 using master;
 
 namespace controller {
@@ -233,7 +233,8 @@ namespace controller {
                                 to = new Vector2Int(x, y)
                             };
 
-                            if (Master.IsCastlingMove(move, CalcCastlingRes().castlingMoves)) {
+                            var castlingMoves = CalcCastlingRes().castlingMoves;
+                            if (MoveController.IsCastlingMove(move, castlingMoves)) {
                                 Castling(CalcCastlingRes(), move);
 
                             } else {
@@ -282,7 +283,7 @@ namespace controller {
                 }
             }
 
-            var moveRes = Master.MoveFigure(move, board);
+            var moveRes = MoveController.MoveFigure(move, board);
             var posFrom = move.from;
             var posTo = move.to;
 
@@ -349,7 +350,7 @@ namespace controller {
         }
 
         private void Castling(CastlingRes castlingRes, Move kingMove) {
-            var kingMoveRes = Master.MoveFigure(kingMove, boardMap);
+            var kingMoveRes = MoveController.MoveFigure(kingMove, boardMap);
             var kingPos = Master.FindKingPos(whiteMove, boardMap);
             var rookMove = new Move();
 
@@ -360,9 +361,9 @@ namespace controller {
 
             if (castlingRes.rookPos.y == 7) {
                 rookMove.from = new Vector2Int(kingPos.x, 7);
-                rookMove.to = new Vector2Int(kingPos.x, kingPos.y - 1);
+                rookMove.to = new Vector2Int(kingPos.x, kingPos.y - 1); 
             }
-            var rookMoveRes = Master.MoveFigure(rookMove, boardMap);
+            var rookMoveRes = MoveController.MoveFigure(rookMove, boardMap);
 
             Relocation(kingMove, boardMap);
             Relocation(rookMove, boardMap);
