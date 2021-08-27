@@ -5,12 +5,10 @@ using board;
 using option;
 using move;
 using master;
+using king;
+using castling;
 
 namespace controller {
-    public struct CastlingRes {
-        public Vector2Int rookPos;
-        public List<Move> castlingMoves;
-    }
     public class ChessController : MonoBehaviour {
         public Option<Fig>[,] boardMap = new Option<Fig>[8, 8];
 
@@ -23,11 +21,6 @@ namespace controller {
 
         private int x;
         private int y;
-
-        public bool isWShortCastling = true;
-        public bool isWLongCastling = true;
-        public bool isBShortCastling = true;
-        public bool isBLongCastling = true;
  
         private List<Move> possibleMoves = new List<Move>();
         private Vector2Int figPos;
@@ -105,6 +98,8 @@ namespace controller {
 
         public Dictionary<FigureType, List<Movement>> moveTypes;
 
+        public Dictionary<CastlingType, bool> castlings;
+
         private void Awake() {
             queenMovement.AddRange(bishopMovement);
             queenMovement.AddRange(rookMovement);
@@ -119,6 +114,13 @@ namespace controller {
                 {FigureType.Knight, knightMovemetn},
                 {FigureType.Pawn, queenMovement},
                 {FigureType.King, kingMovement}
+            };
+
+            castlings = new Dictionary<CastlingType, bool>() {
+                {CastlingType.BLongCastling, true},
+                {CastlingType.BShortCastling, true},
+                {CastlingType.WLongCastling, true},
+                {CastlingType.WShortCastling, true}
             };
 
             boardMap[0, 0] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Rook));
@@ -195,12 +197,17 @@ namespace controller {
                                         square = BoardEngine.ChangeSquarePath(square, 1);
                                     }
 
-                                    possibleMoves.AddRange(ChessEngine.GetPossibleMoves(
+                                    possibleMoves.AddRange(MoveController.GetPossibleMoves(
                                         figPos,
                                         square,
                                         boardMap
                                     ));
-                                    possibleMoves.AddRange(CalcCastlingRes().castlingMoves);
+                                    var castlingInfo = CastlingController.GetCastlingInfo(
+                                        castlings,
+                                        whiteMove,
+                                        boardMap
+                                    );
+                                    possibleMoves.AddRange(castlingInfo.castlingMoves);
                                 } else {
                                     var linear = type.linear.Value;
                                     var length = BoardEngine.GetLinearLength(figPos,
@@ -208,7 +215,7 @@ namespace controller {
                                         boardMap
                                     );
 
-                                    possibleMoves.AddRange(ChessEngine.GetPossibleLinearMoves(
+                                    possibleMoves.AddRange(MoveController.GetPossibleLinearMoves(
                                         figPos,
                                         linear,
                                         length,
@@ -233,9 +240,16 @@ namespace controller {
                                 to = new Vector2Int(x, y)
                             };
 
-                            var castlingMoves = CalcCastlingRes().castlingMoves;
+                            var castlingInfo = CastlingController.GetCastlingInfo(
+                                castlings,
+                                whiteMove,
+                                boardMap
+                            );
+
+                            var castlingMoves = castlingInfo.castlingMoves;
+
                             if (MoveController.IsCastlingMove(move, castlingMoves)) {
-                                Castling(CalcCastlingRes(), move);
+                                Castling(castlingInfo, move);
 
                             } else {
 
@@ -256,32 +270,7 @@ namespace controller {
         private void Relocation (Move move, Option<Fig>[,] board) {
             var fig = board[move.from.x, move.from.y].Peel();
 
-            if (fig.type == FigureType.King) {
-                if (fig.white) {
-                    isWLongCastling = false;
-                    isWShortCastling = false;
-                } else {
-                    isBLongCastling = false;
-                    isBShortCastling = false;
-                }
-            }
-
-            if (fig.type == FigureType.Rook) {
-                if (fig.white) {
-                    if (move.from.y == 7) {
-
-                        isWShortCastling = false;
-                    } else {
-                        isWLongCastling = false;
-                    }
-                } else {
-                    if (move.from.y == 7) {
-                        isBShortCastling = false;
-                    } else {
-                        isBLongCastling = false;
-                    }
-                }
-            }
+            CastlingController.ChangeCastlingValues(castlings, move, boardMap);
 
             var moveRes = MoveController.MoveFigure(move, board);
             var posFrom = move.from;
@@ -296,76 +285,25 @@ namespace controller {
 
             var newPos = new Vector3(CONST - posTo.x * 1.5f, 0.0f, CONST - posTo.y * 1.5f);
             figuresMap[posTo.x, posTo.y].transform.position = newPos;
-            var kingPos = Master.FindKingPos(!whiteMove, boardMap);
-            Master.CheckKing(moveTypes, allMovement, kingPos, boardMap);
+            var kingPos = KingController.FindKingPos(!whiteMove, boardMap);
+            KingController.CheckKing(moveTypes, allMovement, kingPos, boardMap);
             whiteMove = !whiteMove;
         }
 
-        private CastlingRes CalcCastlingRes() {
-            var castlingRes = new CastlingRes();
-            var castlingMoves = new List<Move>();
-            var kingPos = Master.FindKingPos(whiteMove, boardMap);
-            var king = boardMap[kingPos.x, kingPos.y].Peel();
-
-            var right1 = boardMap[kingPos.x, 5].IsNone();
-            var right2 = boardMap[kingPos.x, 6].IsNone();
-            var left1 = boardMap[kingPos.x, 3].IsNone();
-            var left2 = boardMap[kingPos.x, 2].IsNone();
-            var left3 = boardMap[kingPos.x, 1].IsNone();
-            var move = new Move();
-            var rookPos = new Vector2Int();
-            move.from = kingPos;
-
-            if (king.white) {
-                if (right1 && right2 && isWShortCastling) {
-                    move.to = new Vector2Int(kingPos.x, 6);
-                    rookPos = new Vector2Int(kingPos.x, 7);
-                    castlingMoves.Add(move);
-                }
-
-                if (left1 && left2 && left3 && isWLongCastling) {
-                    move.to = new Vector2Int(kingPos.x, 2);
-                    rookPos = new Vector2Int(kingPos.x, 0);
-                    castlingMoves.Add(move);
-                }
-
-            } else {
-
-                if (right1 && right2 && isBShortCastling) {
-                    move.to = new Vector2Int(kingPos.x, 6);
-                    rookPos = new Vector2Int(kingPos.x, 7);
-                    castlingMoves.Add(move);
-                }
-
-                if (left1 && left2 && left3 && isBLongCastling) {
-                    move.to = new Vector2Int(kingPos.x, 2);
-                    rookPos = new Vector2Int(kingPos.x, 0);
-                    castlingMoves.Add(move);
-                }
-            }
-            castlingRes.rookPos = rookPos;
-            castlingRes.castlingMoves = castlingMoves;
-
-            return castlingRes;
-        }
-
-        private void Castling(CastlingRes castlingRes, Move kingMove) {
-            var kingMoveRes = MoveController.MoveFigure(kingMove, boardMap);
-            var kingPos = Master.FindKingPos(whiteMove, boardMap);
+        private void Castling(CastlingInfo castlingInfo, Move kingMove) {
+            Relocation(kingMove, boardMap);
             var rookMove = new Move();
+            var kingPos = KingController.FindKingPos(!whiteMove, boardMap);
 
-            if (castlingRes.rookPos.y == 0) {
+            if (castlingInfo.rookPos.y == 0) {
                 rookMove.from = new Vector2Int(kingPos.x, 0);
                 rookMove.to = new Vector2Int(kingPos.x, kingPos.y + 1);
             }
 
-            if (castlingRes.rookPos.y == 7) {
+            if (castlingInfo.rookPos.y == 7) {
                 rookMove.from = new Vector2Int(kingPos.x, 7);
                 rookMove.to = new Vector2Int(kingPos.x, kingPos.y - 1); 
             }
-            var rookMoveRes = MoveController.MoveFigure(rookMove, boardMap);
-
-            Relocation(kingMove, boardMap);
             Relocation(rookMove, boardMap);
             whiteMove = !whiteMove;
         }

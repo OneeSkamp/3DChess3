@@ -56,38 +56,6 @@ namespace chess {
             }
             return false;
         }
-
-        public static List<Move> GetPossibleMoves(
-            Vector2Int start,
-            List<Vector2Int> movePath,
-            Option<Fig>[,] board
-        ) {
-            var possMoves = new List<Move>();
-
-            foreach (var cell in movePath) {
-                var move = new Move {
-                    from = start,
-                    to = cell
-                };
-
-                if (IsPossibleMove(move, board)) {
-                    possMoves.Add(move);
-                }
-            }
-            return possMoves;
-        }
-
-        public static List<Move> GetPossibleLinearMoves(
-            Vector2Int start,
-            LinearMovement linear,
-            int length,
-            Option<Fig>[,] board
-        ) {
-            var possMoves = new List<Move>();
-            var linearPath = BoardEngine.GetLinearPath<Fig>(start, linear.dir, length, board);
-
-            return GetPossibleMoves(start, linearPath, board);
-        }
     }
 }
 
