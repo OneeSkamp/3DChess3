@@ -1,11 +1,11 @@
-using UnityEngine;
 using System.Collections.Generic;
-using chess;
+using UnityEngine;
 using board;
+using chess;
 using option;
 
-namespace master {
-    public static class Master {
+namespace pawn {
+    public class PawnController {
         public static List<Move> ChangePawnMoves(
             Vector2Int pos,
             List<Move> moves,
@@ -54,4 +54,3 @@ namespace master {
         }
     }
 }
-

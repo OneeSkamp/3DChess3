@@ -82,25 +82,25 @@ namespace king {
                     }
                 }
 
-                if (movement.square.HasValue) {
-                    var side = movement.square.Value.side;
-                    var squarePath = BoardEngine.GetSquarePath(kingPos, side);
-                    var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
-                    squarePath = BoardEngine.ChangeSquarePath(squarePath, 1);
+                // if (movement.square.HasValue) {
+                //     var side = movement.square.Value.side;
+                //     var squarePath = BoardEngine.GetSquarePath(kingPos, side);
+                //     var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
+                //     squarePath = BoardEngine.ChangeSquarePath(squarePath, 1);
 
-                    foreach (Vector2Int cell in squarePath) {
-                        if (BoardEngine.IsOnBoard(new Vector2Int(cell.x, cell.y), size)) {
-                            var figOpt = board[cell.x, cell.y];
+                //     foreach (Vector2Int cell in squarePath) {
+                //         if (BoardEngine.IsOnBoard(new Vector2Int(cell.x, cell.y), size)) {
+                //             var figOpt = board[cell.x, cell.y];
 
-                            if (figOpt.IsSome()) {
-                                var fig = figOpt.Peel();
-                                if (fig.type == FigureType.Knight && fig.white != king.white) {
-                                    Debug.Log("check");
-                                }
-                            }
-                        }
-                    }
-                }
+                //             if (figOpt.IsSome()) {
+                //                 var fig = figOpt.Peel();
+                //                 if (fig.type == FigureType.Knight && fig.white != king.white) {
+                //                     Debug.Log("check");
+                //                 }
+                //             }
+                //         }
+                //     }
+                // }
             }
             return false;
         }

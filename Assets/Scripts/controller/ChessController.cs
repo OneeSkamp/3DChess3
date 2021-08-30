@@ -4,7 +4,7 @@ using chess;
 using board;
 using option;
 using move;
-using master;
+using pawn;
 using king;
 using castling;
 
@@ -188,13 +188,17 @@ namespace controller {
 
                             foreach (Movement type in moveType) {
                                 if (type.square.HasValue) {
-                                    var square = BoardEngine.GetSquarePath(
+                                    var squarePath = BoardEngine.GetSquarePath(
                                         figPos,
                                         type.square.Value.side
                                     );
-
+                                    var square = new List<Vector2Int>();
                                     if (fig.type == FigureType.Knight) {
-                                        square = BoardEngine.ChangeSquarePath(square, 1);
+                                        square = BoardEngine.ChangeSquarePath(squarePath, 0, 1);
+                                    }
+
+                                    if (fig.type == FigureType.King) {
+                                        square = BoardEngine.ChangeSquarePath(squarePath, 0, 0);
                                     }
 
                                     possibleMoves.AddRange(MoveController.GetPossibleMoves(
@@ -222,11 +226,10 @@ namespace controller {
                                         boardMap
                                     ));
                                 }
-
                             }
 
                             if (fig.type == FigureType.Pawn) {
-                                possibleMoves = Master.ChangePawnMoves(
+                                possibleMoves = PawnController.ChangePawnMoves(
                                     figPos,
                                     possibleMoves,
                                     boardMap);

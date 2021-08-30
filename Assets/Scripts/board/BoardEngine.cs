@@ -57,48 +57,111 @@ namespace board {
             return linearMoves;
         }
 
-        public static List<Vector2Int> GetSquarePath(Vector2Int pos, int side) {
-            var squareMoves = new List<Vector2Int>();
+        public static BindableList<Vector2Int> GetSquarePath(Vector2Int pos, int side) {
+            var squareMoves = new BindableList<Vector2Int>();
             var startPos = new Vector2Int(pos.x - side/2, pos.y - side/2);
-            var nextPos = new Vector2Int();
+            var dir = new Vector2Int(1, 0);
 
-            for (int i = 1; i < side; i++) {
-                nextPos = new Vector2Int(startPos.x, startPos.y + i);
-                squareMoves.Add(nextPos);
-            }
-            startPos = nextPos;
+            for (int i = startPos.x + 1, j = startPos.y; ; i += dir.x, j += dir.y) {
+                if (i == startPos.x && j == startPos.y) {
+                    squareMoves.Add(new Vector2Int(i, j));
+                    return squareMoves;
+                }
 
-            for (int i = 1; i < side; i++) {
-                nextPos = new Vector2Int(startPos.x + i, startPos.y);
-                squareMoves.Add(nextPos);
-            }
-            startPos = nextPos;
+                if (j - startPos.y > side - 1) {
+                    j--;
+                    dir.x = -1;
+                    dir.y = 0;
+                    continue;
+                }
 
-            for (int i = 1; i < side; i++) {
-                nextPos = new Vector2Int(startPos.x, startPos.y - i);
-                squareMoves.Add(nextPos);
-            }
-            startPos = nextPos;
+                if (i - startPos.x > side - 1) {
+                    i--;
+                    dir.x = 0;
+                    dir.y = 1;
+                    continue;
+                }
 
-            for (int i = 1; i < side; i++) {
-                nextPos = new Vector2Int(startPos.x - i, startPos.y);
-                squareMoves.Add(nextPos);
+                if (i < startPos.x) {
+                    i++;
+                    dir.x = 0;
+                    dir.y = -1;
+                    continue;
+                }
+                squareMoves.Add(new Vector2Int(i, j));
             }
-            return squareMoves;
+
+            // for (int i = 1; i < side; i++) {
+            //     nextPos = new Vector2Int(startPos.x, startPos.y + i);
+            //     squareMoves.Add(nextPos);
+            // }
+            // startPos = nextPos;
+
+            // for (int i = 1; i < side; i++) {
+            //     nextPos = new Vector2Int(startPos.x + i, startPos.y);
+            //     squareMoves.Add(nextPos);
+            // }
+            // startPos = nextPos;
+
+            // for (int i = 1; i < side; i++) {
+            //     nextPos = new Vector2Int(startPos.x, startPos.y - i);
+            //     squareMoves.Add(nextPos);
+            // }
+            // startPos = nextPos;
+
+            // for (int i = 1; i < side; i++) {
+            //     nextPos = new Vector2Int(startPos.x - i, startPos.y);
+            //     squareMoves.Add(nextPos);
+            // }
+            //return squareMoves;
         }
 
-        public static List<Vector2Int> ChangeSquarePath(List<Vector2Int> square, int skipValue) {
-            var squareMoves = new List<Vector2Int>();
-            var count = 0;
+        public static List<Vector2Int> ChangeSquarePath(
+            BindableList<Vector2Int> square,
+            int start,
+            int skipValue
+        ) {
+            var list = new List<Vector2Int>();
+            var pointer = square.start;
 
-            foreach (Vector2Int move in square) {
-                if (count < square.Count) {
-                    squareMoves.Add(square[count]);
-                    count += skipValue + 1;
-                }
+            for (int i = 0; i < start; i++) {
+                pointer = pointer.next;
             }
 
-            return squareMoves;
+            var startPointer = pointer;
+            list.Add(startPointer.value);
+
+            if (pointer.next == null) {
+                pointer = square.start;
+            } else {
+                pointer = pointer.next;
+            }
+
+            var count = skipValue;
+
+            while (pointer != startPointer) {
+                if (count == 0) {
+                    count = skipValue;
+                    list.Add(pointer.value);
+
+                    if (pointer.next == null) {
+                        pointer = square.start;
+                    } else {
+                        pointer = pointer.next;
+                    }
+                    continue;
+                }
+
+                if (pointer.next == null) {
+                    pointer = square.start;
+                } else {
+                    pointer = pointer.next;
+                }
+
+                count--;
+            }
+
+            return list;
         }
 
         public static bool IsOnBoard(Vector2Int pos, Vector2Int size) {
