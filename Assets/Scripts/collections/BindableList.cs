@@ -36,6 +36,7 @@ namespace collections {
                 tail = head;
             } else {
                 tail.next = node;
+                node.next = head;
                 node.previous = tail;
             }
 
@@ -43,20 +44,32 @@ namespace collections {
             count++;
         }
 
-        public void Remove(Element<T> node) {
-            var current = head;
-            var next = node.next;
-            var previous = node.previous;
-
-            if (node.next != null) {
-                next.previous = node.previous;
+        public void Remove( Element<T> node) {
+            var current = node;
+            Debug.Log(node.value);
+            if (current.next == null && current.previous != null) {
+                current.previous.next = null;
             }
 
-            if (node.previous != null) {
-                previous.next = node.next;
+            if (current.next != null && current.previous == null) {
+                Debug.Log("+");
+                current.next.previous = null;
             }
 
-            node = null;
+            if (current.next != null && current.previous != null) {
+                Debug.Log("+");
+                current.next.previous = current.previous;
+                current.previous.next = current.next;
+            }
+
+            if (current.next == null && current.previous == null) {
+                current = null;
+            }
+
+            if (current.previous != null) {
+                current.previous.next = current.next;
+                //previous.next = node.next;
+            }
         }
 
         public void Clear() {

@@ -53,7 +53,6 @@ namespace move {
         public static List<Vector2Int> GetFigureMoves(Vector2Int pos, Option<Fig> board) {
             var figMoves = new List<Vector2Int>();
 
-
             return figMoves;
         }
 

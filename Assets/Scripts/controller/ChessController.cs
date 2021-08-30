@@ -106,18 +106,23 @@ namespace controller {
         public BindableList<string> list = new BindableList<string>();
 
         private void Awake() {
-            list.Add("ss");
-            list.Add("fsf");
-            list.Add("sdasd");
+            list.Add("ss1");
+            list.Add("fsf2");
+            list.Add("sd3");
+            list.Add("sdas4");
+            list.Add("sdas5");
 
             foreach (var l in list) {
-                Debug.Log(l.value);
+                list.Remove( l);
+                //Debug.Log(l.value);
             }
 
-            foreach (var l in list) {
-                list.Remove(l);
-                Debug.Log(list.count);
-            }
+
+            //list.Remove(list.tail);
+            //Debug.Log(list.head.value);
+            // list.head.next = list.tail;
+            // list.tail.previous = list.head;
+
 
             foreach (var l in list) {
                 Debug.Log(l.value);
