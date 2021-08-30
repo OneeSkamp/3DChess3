@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using chess;
 using option;
-using king;
 
 namespace castling {
     public enum CastlingType {
@@ -24,7 +23,8 @@ namespace castling {
         ) {
             var castlingRes = new CastlingInfo();
             var castlingMoves = new List<Move>();
-            var kingPos = KingController.FindKingPos(whiteMove, board);
+            var kingPos = new Vector2Int();
+            //var kingPos = KingController.FindKingPos(whiteMove, board);
             var king = board[kingPos.x, kingPos.y].Peel();
 
             var right1 = board[kingPos.x, 5].IsNone();

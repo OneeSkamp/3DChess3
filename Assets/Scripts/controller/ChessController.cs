@@ -1,11 +1,11 @@
+using System.ComponentModel;
 using System.Collections.Generic;
 using UnityEngine;
 using chess;
 using board;
 using option;
 using move;
-using pawn;
-using king;
+using collections;
 using castling;
 
 namespace controller {
@@ -21,6 +21,9 @@ namespace controller {
 
         private int x;
         private int y;
+
+        private Vector2Int whiteKingPos;
+        private Vector2Int blackKingPos;
  
         private List<Move> possibleMoves = new List<Move>();
         private Vector2Int figPos;
@@ -100,7 +103,26 @@ namespace controller {
 
         public Dictionary<CastlingType, bool> castlings;
 
+        public BindableList<string> list = new BindableList<string>();
+
         private void Awake() {
+            list.Add("ss");
+            list.Add("fsf");
+            list.Add("sdasd");
+
+            foreach (var l in list) {
+                Debug.Log(l.value);
+            }
+
+            foreach (var l in list) {
+                list.Remove(l);
+                Debug.Log(list.count);
+            }
+
+            foreach (var l in list) {
+                Debug.Log(l.value);
+            }
+
             queenMovement.AddRange(bishopMovement);
             queenMovement.AddRange(rookMovement);
 
@@ -185,7 +207,6 @@ namespace controller {
                             possibleMoves.Clear();
                             figPos = new Vector2Int(x, y);
 
-
                             foreach (Movement type in moveType) {
                                 if (type.square.HasValue) {
                                     var squarePath = BoardEngine.GetSquarePath(
@@ -201,7 +222,7 @@ namespace controller {
                                         square = BoardEngine.ChangeSquarePath(squarePath, 0, 0);
                                     }
 
-                                    possibleMoves.AddRange(MoveController.GetPossibleMoves(
+                                    possibleMoves.AddRange(MoveEngine.GetPossibleMoves(
                                         figPos,
                                         square,
                                         boardMap
@@ -219,7 +240,7 @@ namespace controller {
                                         boardMap
                                     );
 
-                                    possibleMoves.AddRange(MoveController.GetPossibleLinearMoves(
+                                    possibleMoves.AddRange(MoveEngine.GetPossibleLinearMoves(
                                         figPos,
                                         linear,
                                         length,
@@ -228,12 +249,12 @@ namespace controller {
                                 }
                             }
 
-                            if (fig.type == FigureType.Pawn) {
-                                possibleMoves = PawnController.ChangePawnMoves(
-                                    figPos,
-                                    possibleMoves,
-                                    boardMap);
-                            }
+                            // if (fig.type == FigureType.Pawn) {
+                            //     possibleMoves = PawnController.ChangePawnMoves(
+                            //         figPos,
+                            //         possibleMoves,
+                            //         boardMap);
+                            // }
 
                             possibleMoveList = CreatingPossibleMoves(possibleMoves);
 
@@ -251,7 +272,7 @@ namespace controller {
 
                             var castlingMoves = castlingInfo.castlingMoves;
 
-                            if (MoveController.IsCastlingMove(move, castlingMoves)) {
+                            if (MoveEngine.IsCastlingMove(move, castlingMoves)) {
                                 Castling(castlingInfo, move);
 
                             } else {
@@ -275,7 +296,7 @@ namespace controller {
 
             CastlingController.ChangeCastlingValues(castlings, move, boardMap);
 
-            var moveRes = MoveController.MoveFigure(move, board);
+            var moveRes = MoveEngine.MoveFigure(move, board);
             var posFrom = move.from;
             var posTo = move.to;
 
@@ -288,15 +309,16 @@ namespace controller {
 
             var newPos = new Vector3(CONST - posTo.x * 1.5f, 0.0f, CONST - posTo.y * 1.5f);
             figuresMap[posTo.x, posTo.y].transform.position = newPos;
-            var kingPos = KingController.FindKingPos(!whiteMove, boardMap);
-            KingController.CheckKing(moveTypes, allMovement, kingPos, boardMap);
+            // var kingPos = KingController.FindKingPos(!whiteMove, boardMap);
+            // KingController.CheckKing(moveTypes, allMovement, kingPos, boardMap);
             whiteMove = !whiteMove;
         }
 
         private void Castling(CastlingInfo castlingInfo, Move kingMove) {
             Relocation(kingMove, boardMap);
             var rookMove = new Move();
-            var kingPos = KingController.FindKingPos(!whiteMove, boardMap);
+            //var kingPos = KingController.FindKingPos(!whiteMove, boardMap);
+            var kingPos = new Vector2Int();
 
             if (castlingInfo.rookPos.y == 0) {
                 rookMove.from = new Vector2Int(kingPos.x, 0);

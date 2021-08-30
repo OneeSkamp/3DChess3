@@ -60,60 +60,32 @@ namespace board {
         public static BindableList<Vector2Int> GetSquarePath(Vector2Int pos, int side) {
             var squareMoves = new BindableList<Vector2Int>();
             var startPos = new Vector2Int(pos.x - side/2, pos.y - side/2);
+            var nextPos = new Vector2Int();
             var dir = new Vector2Int(1, 0);
 
-            for (int i = startPos.x + 1, j = startPos.y; ; i += dir.x, j += dir.y) {
-                if (i == startPos.x && j == startPos.y) {
-                    squareMoves.Add(new Vector2Int(i, j));
-                    return squareMoves;
-                }
-
-                if (j - startPos.y > side - 1) {
-                    j--;
-                    dir.x = -1;
-                    dir.y = 0;
-                    continue;
-                }
-
-                if (i - startPos.x > side - 1) {
-                    i--;
-                    dir.x = 0;
-                    dir.y = 1;
-                    continue;
-                }
-
-                if (i < startPos.x) {
-                    i++;
-                    dir.x = 0;
-                    dir.y = -1;
-                    continue;
-                }
-                squareMoves.Add(new Vector2Int(i, j));
+            for (int i = 1; i < side; i++) {
+                nextPos = new Vector2Int(startPos.x, startPos.y + i);
+                squareMoves.Add(nextPos);
             }
+            startPos = nextPos;
 
-            // for (int i = 1; i < side; i++) {
-            //     nextPos = new Vector2Int(startPos.x, startPos.y + i);
-            //     squareMoves.Add(nextPos);
-            // }
-            // startPos = nextPos;
+            for (int i = 1; i < side; i++) {
+                nextPos = new Vector2Int(startPos.x + i, startPos.y);
+                squareMoves.Add(nextPos);
+            }
+            startPos = nextPos;
 
-            // for (int i = 1; i < side; i++) {
-            //     nextPos = new Vector2Int(startPos.x + i, startPos.y);
-            //     squareMoves.Add(nextPos);
-            // }
-            // startPos = nextPos;
+            for (int i = 1; i < side; i++) {
+                nextPos = new Vector2Int(startPos.x, startPos.y - i);
+                squareMoves.Add(nextPos);
+            }
+            startPos = nextPos;
 
-            // for (int i = 1; i < side; i++) {
-            //     nextPos = new Vector2Int(startPos.x, startPos.y - i);
-            //     squareMoves.Add(nextPos);
-            // }
-            // startPos = nextPos;
-
-            // for (int i = 1; i < side; i++) {
-            //     nextPos = new Vector2Int(startPos.x - i, startPos.y);
-            //     squareMoves.Add(nextPos);
-            // }
-            //return squareMoves;
+            for (int i = 1; i < side; i++) {
+                nextPos = new Vector2Int(startPos.x - i, startPos.y);
+                squareMoves.Add(nextPos);
+            }
+            return squareMoves;
         }
 
         public static List<Vector2Int> ChangeSquarePath(
@@ -122,7 +94,7 @@ namespace board {
             int skipValue
         ) {
             var list = new List<Vector2Int>();
-            var pointer = square.start;
+            var pointer = square.head;
 
             for (int i = 0; i < start; i++) {
                 pointer = pointer.next;
@@ -132,7 +104,7 @@ namespace board {
             list.Add(startPointer.value);
 
             if (pointer.next == null) {
-                pointer = square.start;
+                pointer = square.head;
             } else {
                 pointer = pointer.next;
             }
@@ -145,7 +117,7 @@ namespace board {
                     list.Add(pointer.value);
 
                     if (pointer.next == null) {
-                        pointer = square.start;
+                        pointer = square.head;
                     } else {
                         pointer = pointer.next;
                     }
@@ -153,7 +125,7 @@ namespace board {
                 }
 
                 if (pointer.next == null) {
-                    pointer = square.start;
+                    pointer = square.head;
                 } else {
                     pointer = pointer.next;
                 }

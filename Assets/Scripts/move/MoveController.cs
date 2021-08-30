@@ -17,7 +17,7 @@ namespace move {
 
     }
 
-    public static class MoveController {
+    public static class MoveEngine {
         public static List<Move> GetPossibleMoves(
             Vector2Int start,
             List<Vector2Int> movePath,
@@ -48,6 +48,13 @@ namespace move {
             var linearPath = BoardEngine.GetLinearPath<Fig>(start, linear.dir, length, board);
 
             return GetPossibleMoves(start, linearPath, board);
+        }
+
+        public static List<Vector2Int> GetFigureMoves(Vector2Int pos, Option<Fig> board) {
+            var figMoves = new List<Vector2Int>();
+
+
+            return figMoves;
         }
 
         public static MoveRes MoveFigure(Move move, Option<Fig>[,] board) {
