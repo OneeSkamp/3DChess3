@@ -88,7 +88,21 @@ namespace board {
             return squareMoves;
         }
 
-        public static List<Vector2Int> ChangeSquarePath(
+        public static List<Vector2Int> RemoveLinearParts<T>(
+            List<Vector2Int> linear,
+            int newLength,
+            Option<T>[,] board
+        ) {
+            var newPath = linear;
+
+            for (int i = linear.Count; i > newLength; i--) {
+                newPath.Remove(linear[i]);
+            }
+
+            return newPath;
+        }
+
+        public static List<Vector2Int> RemoveSquareParts(
             BindableList<Vector2Int> square,
             int start,
             int skipValue

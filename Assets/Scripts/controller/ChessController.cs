@@ -6,7 +6,6 @@ using board;
 using option;
 using move;
 using collections;
-using castling;
 
 namespace controller {
     public class ChessController : MonoBehaviour {
@@ -99,42 +98,20 @@ namespace controller {
         private List<Movement> queenMovement = new List<Movement>();
         private List<Movement> allMovement = new List<Movement>();
 
-        public Dictionary<FigureType, List<Movement>> moveTypes;
+        public Dictionary<FigureType, List<Movement>> movements;
 
         public Dictionary<CastlingType, bool> castlings;
 
         public BindableList<string> list = new BindableList<string>();
 
         private void Awake() {
-            list.Add("ss1");
-            list.Add("fsf2");
-            list.Add("sd3");
-            list.Add("sdas4");
-            list.Add("sdas5");
-
-            foreach (var l in list) {
-                list.Remove( l);
-                //Debug.Log(l.value);
-            }
-
-
-            //list.Remove(list.tail);
-            //Debug.Log(list.head.value);
-            // list.head.next = list.tail;
-            // list.tail.previous = list.head;
-
-
-            foreach (var l in list) {
-                Debug.Log(l.value);
-            }
-
             queenMovement.AddRange(bishopMovement);
             queenMovement.AddRange(rookMovement);
 
             allMovement.AddRange(queenMovement);
             allMovement.AddRange(knightMovemetn);
 
-            moveTypes =  new Dictionary<FigureType, List<Movement>> {
+            movements =  new Dictionary<FigureType, List<Movement>> {
                 {FigureType.Bishop, bishopMovement},
                 {FigureType.Rook, rookMovement},
                 {FigureType.Queen, queenMovement},
@@ -197,7 +174,7 @@ namespace controller {
                     var size = new Vector2Int(boardMap.GetLength(0), boardMap.GetLength(1));
 
                     if (BoardEngine.IsOnBoard(new Vector2Int(x, y), size)) {
-                        var fig = boardMap[x, y].Peel();
+                        var figOpt = boardMap[x, y];
 
                         if (possibleMoveList != null) {
                             foreach (GameObject cell in possibleMoveList) {
@@ -205,87 +182,23 @@ namespace controller {
                             }
                         }
 
-                        if (figuresMap[x, y] != null && fig.white == whiteMove) {
-
-                            var moveType = moveTypes[fig.type];
-
-                            possibleMoves.Clear();
+                        if (figOpt.IsSome() && figOpt.Peel().white == whiteMove) {
+                            var movement = movements[figOpt.Peel().type];
                             figPos = new Vector2Int(x, y);
 
-                            foreach (Movement type in moveType) {
-                                if (type.square.HasValue) {
-                                    var squarePath = BoardEngine.GetSquarePath(
-                                        figPos,
-                                        type.square.Value.side
-                                    );
-                                    var square = new List<Vector2Int>();
-                                    if (fig.type == FigureType.Knight) {
-                                        square = BoardEngine.ChangeSquarePath(squarePath, 0, 1);
-                                    }
-
-                                    if (fig.type == FigureType.King) {
-                                        square = BoardEngine.ChangeSquarePath(squarePath, 0, 0);
-                                    }
-
-                                    possibleMoves.AddRange(MoveEngine.GetPossibleMoves(
-                                        figPos,
-                                        square,
-                                        boardMap
-                                    ));
-                                    var castlingInfo = CastlingController.GetCastlingInfo(
-                                        castlings,
-                                        whiteMove,
-                                        boardMap
-                                    );
-                                    possibleMoves.AddRange(castlingInfo.castlingMoves);
-                                } else {
-                                    var linear = type.linear.Value;
-                                    var length = BoardEngine.GetLinearLength(figPos,
-                                        linear.dir,
-                                        boardMap
-                                    );
-
-                                    possibleMoves.AddRange(MoveEngine.GetPossibleLinearMoves(
-                                        figPos,
-                                        linear,
-                                        length,
-                                        boardMap
-                                    ));
-                                }
-                            }
-
-                            // if (fig.type == FigureType.Pawn) {
-                            //     possibleMoves = PawnController.ChangePawnMoves(
-                            //         figPos,
-                            //         possibleMoves,
-                            //         boardMap);
-                            // }
-
+                            possibleMoves.Clear();
+                            possibleMoves = MoveEngine.GetFigureMoves(figPos, movement, boardMap);
                             possibleMoveList = CreatingPossibleMoves(possibleMoves);
 
                         } else {
-                            Move move = new Move {
+                            var move = new Move {
                                 from = figPos,
                                 to = new Vector2Int(x, y)
                             };
 
-                            var castlingInfo = CastlingController.GetCastlingInfo(
-                                castlings,
-                                whiteMove,
-                                boardMap
-                            );
-
-                            var castlingMoves = castlingInfo.castlingMoves;
-
-                            if (MoveEngine.IsCastlingMove(move, castlingMoves)) {
-                                Castling(castlingInfo, move);
-
-                            } else {
-
-                                foreach (Move possMove in possibleMoves) {
-                                    if (Equals(move, possMove)) {
-                                        Relocation(move, boardMap);
-                                    }
+                            foreach (Move possMove in possibleMoves) {
+                                if (Equals(move, possMove)) {
+                                    Relocation(move, boardMap);
                                 }
                             }
 
@@ -299,11 +212,19 @@ namespace controller {
         private void Relocation (Move move, Option<Fig>[,] board) {
             var fig = board[move.from.x, move.from.y].Peel();
 
-            CastlingController.ChangeCastlingValues(castlings, move, boardMap);
+            MoveEngine.UpdateCastlingValues(castlings, move, boardMap);
 
             var moveRes = MoveEngine.MoveFigure(move, board);
             var posFrom = move.from;
             var posTo = move.to;
+
+            if (fig.type == FigureType.King) {
+                if (fig.white) {
+                    whiteKingPos = posTo;
+                } else {
+                    blackKingPos = posTo;
+                }
+            }
 
             if (moveRes.error == MoveError.MoveOnFigure) {
                 Destroy(figuresMap[moveRes.pos.x, moveRes.pos.y]);
@@ -314,8 +235,6 @@ namespace controller {
 
             var newPos = new Vector3(CONST - posTo.x * 1.5f, 0.0f, CONST - posTo.y * 1.5f);
             figuresMap[posTo.x, posTo.y].transform.position = newPos;
-            // var kingPos = KingController.FindKingPos(!whiteMove, boardMap);
-            // KingController.CheckKing(moveTypes, allMovement, kingPos, boardMap);
             whiteMove = !whiteMove;
         }
 
