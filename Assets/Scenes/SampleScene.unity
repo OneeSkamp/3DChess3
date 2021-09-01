@@ -1805,8 +1805,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a4ffc895af5d5246a21e075666f7bad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  board:
-    whiteMove: 1
+  whiteMove: 1
   figureSpawner: {fileID: 1564542936}
   figCont: {fileID: 1564542934}
 --- !u!114 &1564542934

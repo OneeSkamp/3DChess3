@@ -1,13 +1,11 @@
 using System.Collections.Generic;
 using System.Collections;
-using UnityEngine;
 
 namespace collections {
     public class Element<T> {
         public T value;
         public Element<T> previous;
         public Element<T> next;
-
         public static Element<T> Mk(T value) {
             return new Element<T> {
                 value = value
@@ -15,66 +13,43 @@ namespace collections {
         }
     }
 
-    public class BindableList<T> : IEnumerable<Element<T>>{
-        public Element<T> head;
-        public Element<T> tail;
+    public class BindableList<T> : IEnumerable<Element<T>> {
+        public Element<T> root;
         public int count;
-
-        public BindableList() {
-            head = new Element<T>();
-            tail = new Element<T>();
-
-            head.next = tail;
-            tail.previous = head;
-        }
 
         public void Add(T value) {
             var node = Element<T>.Mk(value);
 
             if (count == 0) {
-                head = node;
-                tail = head;
+                root = node;
+                root.previous = root;
             } else {
-                tail.next = node;
-                node.next = head;
-                node.previous = tail;
+                root.previous.next = node;
+                node.previous = root.previous;
+                root.previous = node;
+                node.next = root;
             }
-
-            tail = node;
             count++;
         }
 
-        public void Remove( Element<T> node) {
+        public void Remove(Element<T> node) {
             var current = node;
-            Debug.Log(node.value);
-            if (current.next == null && current.previous != null) {
-                current.previous.next = null;
-            }
 
-            if (current.next != null && current.previous == null) {
-                Debug.Log("+");
-                current.next.previous = null;
-            }
+            if (count != 1) {
+                if (current == root) {
+                    root = current.next;
+                }
 
-            if (current.next != null && current.previous != null) {
-                Debug.Log("+");
                 current.next.previous = current.previous;
                 current.previous.next = current.next;
+            } else {
+                root = null;
             }
-
-            if (current.next == null && current.previous == null) {
-                current = null;
-            }
-
-            if (current.previous != null) {
-                current.previous.next = current.next;
-                //previous.next = node.next;
-            }
+            count--;
         }
 
         public void Clear() {
-            head = null;
-            tail = null;
+            root = null;
             count = 0;
         }
 
@@ -83,12 +58,15 @@ namespace collections {
         }
 
         IEnumerator<Element<T>> IEnumerable<Element<T>>.GetEnumerator() {
-            var node = head;
-            while (node != null) {
+            var node = root;
+
+            while (node != root.previous) {
                 yield return node;
 
                 node = node.next;
             }
+
+            yield return node;
         }
     }
 }

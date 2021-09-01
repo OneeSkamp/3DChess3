@@ -1,6 +1,7 @@
-using System.ComponentModel;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+using inspector;
 using chess;
 using board;
 using option;
@@ -21,8 +22,8 @@ namespace controller {
         private int x;
         private int y;
 
-        private Vector2Int whiteKingPos;
-        private Vector2Int blackKingPos;
+        private Vector2Int whiteKingPos = new Vector2Int(7, 4);
+        private Vector2Int blackKingPos = new Vector2Int(0, 4);
  
         private List<Move> possibleMoves = new List<Move>();
         private Vector2Int figPos;
@@ -102,7 +103,9 @@ namespace controller {
 
         public Dictionary<CastlingType, bool> castlings;
 
+
         public BindableList<string> list = new BindableList<string>();
+
 
         private void Awake() {
             queenMovement.AddRange(bishopMovement);
@@ -199,7 +202,14 @@ namespace controller {
                             foreach (Move possMove in possibleMoves) {
                                 if (Equals(move, possMove)) {
                                     Relocation(move, boardMap);
+                                    break;
                                 }
+                            }
+
+                            if (whiteMove) {
+                                ChessInspector.CheckKing(whiteKingPos, movements, boardMap);
+                            } else {
+                                ChessInspector.CheckKing(blackKingPos, movements, boardMap);
                             }
 
                             possibleMoves.Clear();
@@ -207,6 +217,28 @@ namespace controller {
                     }
                 }
             }
+        }
+        private List<GameObject> CreatingPossibleMoves(List<Move> possibleMoves) {
+            var possibleMovesObj = new List<GameObject>();
+
+            foreach (Move move in possibleMoves) {
+                var posX = move.to.x;
+                var posY = move.to.y;
+
+                var objPos = new Vector3(CONST - posX * 1.5f, 0.01f, CONST - posY * 1.5f);
+
+                var obj = Instantiate(
+                    figCont.blueBacklight,
+                    objPos,
+                    Quaternion.Euler(90, 0, 0),
+                    figureSpawner.boardTransform
+                );
+
+                obj.transform.localPosition = objPos;
+                possibleMovesObj.Add(obj);
+            }
+
+            return possibleMovesObj;
         }
 
         private void Relocation (Move move, Option<Fig>[,] board) {
@@ -255,29 +287,6 @@ namespace controller {
             }
             Relocation(rookMove, boardMap);
             whiteMove = !whiteMove;
-        }
-
-        private List<GameObject> CreatingPossibleMoves(List<Move> possibleMoves) {
-            var possibleMovesObj = new List<GameObject>();
-
-            foreach (Move move in possibleMoves) {
-                var posX = move.to.x;
-                var posY = move.to.y;
-
-                var objPos = new Vector3(CONST - posX * 1.5f, 0.01f, CONST - posY * 1.5f);
-
-                var obj = Instantiate(
-                    figCont.blueBacklight,
-                    objPos,
-                    Quaternion.Euler(90, 0, 0),
-                    figureSpawner.boardTransform
-                );
-
-                obj.transform.localPosition = objPos;
-                possibleMovesObj.Add(obj);
-            }
-
-            return possibleMovesObj;
         }
     }
 }

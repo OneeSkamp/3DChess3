@@ -3,6 +3,7 @@ using UnityEngine;
 using chess;
 using board;
 using option;
+using collections;
 
 namespace move {
     public enum MoveError {
@@ -73,7 +74,7 @@ namespace move {
             foreach (Movement type in movements) {
                 if (type.square.HasValue) {
                     var squarePath = BoardEngine.GetSquarePath(pos, type.square.Value.side);
-                    var square = new List<Vector2Int>();
+                    var square = new BindableList<Vector2Int>();
 
                     if (fig.Peel().type == FigureType.Knight) {
                         square = BoardEngine.RemoveSquareParts(squarePath, 0, 1);
@@ -82,8 +83,12 @@ namespace move {
                     if (fig.Peel().type == FigureType.King) {
                         square = BoardEngine.RemoveSquareParts(squarePath, 0, 0);
                     }
+                    var list = new List<Vector2Int>();
+                    foreach (var i in square) {
+                        list.Add(i.value);
+                    }
 
-                    figMoves.AddRange(GetPossibleMoves(pos, square, board));
+                    figMoves.AddRange(GetPossibleMoves(pos, list, board));
 
                 } else {
                     if (fig.Peel().type == FigureType.Pawn) {

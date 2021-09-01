@@ -102,52 +102,31 @@ namespace board {
             return newPath;
         }
 
-        public static List<Vector2Int> RemoveSquareParts(
+        public static BindableList<Vector2Int> RemoveSquareParts(
             BindableList<Vector2Int> square,
             int start,
             int skipValue
         ) {
-            var list = new List<Vector2Int>();
-            var pointer = square.head;
+            var pointer = square.root;
 
             for (int i = 0; i < start; i++) {
                 pointer = pointer.next;
             }
 
-            var startPointer = pointer;
-            list.Add(startPointer.value);
+            square.root = pointer;
+            var count = 0;
 
-            if (pointer.next == null) {
-                pointer = square.head;
-            } else {
-                pointer = pointer.next;
-            }
-
-            var count = skipValue;
-
-            while (pointer != startPointer) {
+            foreach (var i in square) {
                 if (count == 0) {
                     count = skipValue;
-                    list.Add(pointer.value);
-
-                    if (pointer.next == null) {
-                        pointer = square.head;
-                    } else {
-                        pointer = pointer.next;
-                    }
                     continue;
                 }
-
-                if (pointer.next == null) {
-                    pointer = square.head;
-                } else {
-                    pointer = pointer.next;
-                }
+                square.Remove(i);
 
                 count--;
             }
 
-            return list;
+            return square;
         }
 
         public static bool IsOnBoard(Vector2Int pos, Vector2Int size) {
