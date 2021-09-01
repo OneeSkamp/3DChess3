@@ -31,12 +31,13 @@ namespace move {
     }
 
     public static class MoveEngine {
-        public static List<Move> GetPossibleMoves(
+        public static List<DoubleMove> GetPossibleMoves(
             Vector2Int start,
             List<Vector2Int> movePath,
             Option<Fig>[,] board
         ) {
-            var possMoves = new List<Move>();
+            var possMoves = new List<DoubleMove>();
+            var doubleMove = new DoubleMove();
 
             foreach (var cell in movePath) {
                 var move = new Move {
@@ -45,30 +46,30 @@ namespace move {
                 };
 
                 if (ChessEngine.IsPossibleMove(move, board)) {
-                    possMoves.Add(move);
+                    doubleMove.first = move;
+                    possMoves.Add(doubleMove);
                 }
             }
             return possMoves;
         }
 
-        public static List<Move> GetPossibleLinearMoves(
+        public static List<DoubleMove> GetPossibleLinearMoves(
             Vector2Int start,
             LinearMovement linear,
             int length,
             Option<Fig>[,] board
         ) {
-            var possMoves = new List<Move>();
             var linearPath = BoardEngine.GetLinearPath<Fig>(start, linear.dir, length, board);
 
             return GetPossibleMoves(start, linearPath, board);
         }
 
-        public static List<Move> GetFigureMoves(
+        public static List<DoubleMove> GetFigureMoves(
             Vector2Int pos,
             List<Movement> movements,
             Option<Fig>[,] board
         ) {
-            var figMoves = new List<Move>();
+            var figMoves = new List<DoubleMove>();
             var fig = board[pos.x, pos.y];
 
             foreach (Movement type in movements) {
@@ -106,8 +107,8 @@ namespace move {
             return figMoves;
         }
 
-        public static List<Move> GetPawnMoves(Vector2Int pos, Option<Fig>[,] board) {
-            var pawnMoves = new List<Move>();
+        public static List<DoubleMove> GetPawnMoves(Vector2Int pos, Option<Fig>[,] board) {
+            var pawnMoves = new List<DoubleMove>();
             var pawnPath = new List<Vector2Int>();
             var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
             var pawn = board[pos.x, pos.y].Peel();

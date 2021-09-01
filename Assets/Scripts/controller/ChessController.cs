@@ -24,7 +24,7 @@ namespace controller {
         private Vector2Int whiteKingPos = new Vector2Int(7, 4);
         private Vector2Int blackKingPos = new Vector2Int(0, 4);
  
-        private List<Move> possibleMoves = new List<Move>();
+        private List<DoubleMove> possibleMoves = new List<DoubleMove>();
         private Vector2Int figPos;
 
         private const float CONST = 5.25f;
@@ -107,8 +107,8 @@ namespace controller {
                                 to = new Vector2Int(x, y)
                             };
 
-                            foreach (Move possMove in possibleMoves) {
-                                if (Equals(move, possMove)) {
+                            foreach (DoubleMove possMove in possibleMoves) {
+                                if (Equals(move, possMove.first)) {
                                     Relocation(move, boardMap);
                                     break;
                                 }
@@ -126,12 +126,12 @@ namespace controller {
                 }
             }
         }
-        private List<GameObject> CreatingPossibleMoves(List<Move> possibleMoves) {
+        private List<GameObject> CreatingPossibleMoves(List<DoubleMove> possibleMoves) {
             var possibleMovesObj = new List<GameObject>();
 
-            foreach (Move move in possibleMoves) {
-                var posX = move.to.x;
-                var posY = move.to.y;
+            foreach (DoubleMove move in possibleMoves) {
+                var posX = move.first.to.x;
+                var posY = move.first.to.y;
 
                 var objPos = new Vector3(CONST - posX * 1.5f, 0.01f, CONST - posY * 1.5f);
 

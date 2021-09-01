@@ -1,3 +1,4 @@
+using System;
 using board;
 using UnityEngine;
 using option;
@@ -23,6 +24,11 @@ namespace chess {
                 type = type
             };
         }
+    }
+
+    public struct DoubleMove {
+        public Move first;
+        public Move second;
     }
 
     public struct Move {
