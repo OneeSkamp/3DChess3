@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using inspector;
@@ -6,7 +5,7 @@ using chess;
 using board;
 using option;
 using move;
-using collections;
+using movements;
 
 namespace controller {
     public class ChessController : MonoBehaviour {
@@ -34,101 +33,8 @@ namespace controller {
         private RaycastHit hit;
 
         private List<GameObject> possibleMoveList;
-        private List<Movement> bishopMovement = new List<Movement> {
-            new Movement {
-                linear = new LinearMovement {
-                    dir = new Vector2Int(1, 1)
-                }
-            },
-            new Movement {
-                linear = new LinearMovement {
-                    dir = new Vector2Int(-1, 1)
-                }
-            },
-            new Movement {
-                linear = new LinearMovement {
-                    dir = new Vector2Int(1, -1)
-                }
-            },
-            new Movement {
-                linear = new LinearMovement {
-                    dir = new Vector2Int(-1, -1)
-                }
-            }
-        };
-
-        private List<Movement> rookMovement = new List<Movement> {
-            new Movement {
-                linear = new LinearMovement {
-                    dir = new Vector2Int(1, 0)
-                }
-            },
-            new Movement {
-                linear = new LinearMovement {
-                    dir = new Vector2Int(0, 1)
-                }
-            },
-            new Movement {
-                linear = new LinearMovement {
-                    dir = new Vector2Int(0, -1)
-                }
-            },
-            new Movement {
-                linear = new LinearMovement {
-                    dir = new Vector2Int(-1, 0)
-                }
-            }
-        };
-
-        private List<Movement> knightMovemetn = new List<Movement> {
-            new Movement {
-                square = new SquareMovement {
-                    side = 5
-                }
-            }
-        };
-
-        private List<Movement> kingMovement = new List<Movement> {
-            new Movement {
-                square = new SquareMovement {
-                    side = 3
-                }
-            }
-        };
-
-        private List<Movement> queenMovement = new List<Movement>();
-        private List<Movement> allMovement = new List<Movement>();
-
-        public Dictionary<FigureType, List<Movement>> movements;
-
-        public Dictionary<CastlingType, bool> castlings;
-
-
-        public BindableList<string> list = new BindableList<string>();
-
 
         private void Awake() {
-            queenMovement.AddRange(bishopMovement);
-            queenMovement.AddRange(rookMovement);
-
-            allMovement.AddRange(queenMovement);
-            allMovement.AddRange(knightMovemetn);
-
-            movements =  new Dictionary<FigureType, List<Movement>> {
-                {FigureType.Bishop, bishopMovement},
-                {FigureType.Rook, rookMovement},
-                {FigureType.Queen, queenMovement},
-                {FigureType.Knight, knightMovemetn},
-                {FigureType.Pawn, queenMovement},
-                {FigureType.King, kingMovement}
-            };
-
-            castlings = new Dictionary<CastlingType, bool>() {
-                {CastlingType.BLongCastling, true},
-                {CastlingType.BShortCastling, true},
-                {CastlingType.WLongCastling, true},
-                {CastlingType.WShortCastling, true}
-            };
 
             boardMap[0, 0] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Rook));
             boardMap[0, 7] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Rook));
@@ -166,6 +72,7 @@ namespace controller {
         private void Update() {
 
             if (Input.GetMouseButtonDown(0)) {
+                var movements = Movements.GetMovements();
 
                 ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
@@ -186,7 +93,8 @@ namespace controller {
                         }
 
                         if (figOpt.IsSome() && figOpt.Peel().white == whiteMove) {
-                            var movement = movements[figOpt.Peel().type];
+                            var movement = movements
+                            [figOpt.Peel().type];
                             figPos = new Vector2Int(x, y);
 
                             possibleMoves.Clear();
@@ -207,9 +115,9 @@ namespace controller {
                             }
 
                             if (whiteMove) {
-                                ChessInspector.CheckKing(whiteKingPos, movements, boardMap);
+                                ChessInspector.IsUnderAttackPos(whiteKingPos, boardMap);
                             } else {
-                                ChessInspector.CheckKing(blackKingPos, movements, boardMap);
+                                ChessInspector.IsUnderAttackPos(blackKingPos, boardMap);
                             }
 
                             possibleMoves.Clear();
@@ -243,9 +151,6 @@ namespace controller {
 
         private void Relocation (Move move, Option<Fig>[,] board) {
             var fig = board[move.from.x, move.from.y].Peel();
-
-            MoveEngine.UpdateCastlingValues(castlings, move, boardMap);
-
             var moveRes = MoveEngine.MoveFigure(move, board);
             var posFrom = move.from;
             var posTo = move.to;

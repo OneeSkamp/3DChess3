@@ -166,95 +166,49 @@ namespace move {
             board[posFrom.x, posFrom.y] = Option<Fig>.None();
 
             var figure = board[move.to.x, move.to.y].Peel();
+            figure.counter++;
             board[move.to.x, move.to.y] = Option<Fig>.Some(figure);
 
             return moveRes;
         }
 
         public static CastlingInfo GetCastlingInfo(
-            Dictionary<CastlingType, bool> castlings,
-            bool whiteMove,
+            Vector2Int kingPos,
             Option<Fig>[,] board
         ) {
             var castlingRes = new CastlingInfo();
-            var castlingMoves = new List<Move>();
-            var kingPos = new Vector2Int();
-            //var kingPos = KingController.FindKingPos(whiteMove, board);
+            var leftDir = new Vector2Int(0, -1);
+            var rightDir = new Vector2Int(0, 1);
+
+            var leftLength = BoardEngine.GetLinearLength(kingPos, leftDir, board);
+            var rightLength = BoardEngine.GetLinearLength(kingPos, rightDir, board);
+
+            var leftPath = BoardEngine.GetLinearPath(kingPos, leftDir, leftLength, board);
+            var rightPath = BoardEngine.GetLinearPath(kingPos, rightDir, rightLength, board);
+
             var king = board[kingPos.x, kingPos.y].Peel();
+            if (king.counter == 0) {
+                if (leftPath.Count > 0) {
+                    var lastPos = leftPath[leftPath.Count - 1];
+                    var last = board[lastPos.x, lastPos.y].Peel();
 
-            var right1 = board[kingPos.x, 5].IsNone();
-            var right2 = board[kingPos.x, 6].IsNone();
-            var left1 = board[kingPos.x, 3].IsNone();
-            var left2 = board[kingPos.x, 2].IsNone();
-            var left3 = board[kingPos.x, 1].IsNone();
-            var move = new Move();
-            var rookPos = new Vector2Int();
-            move.from = kingPos;
+                    if (last.type == FigureType.Rook
+                        && last.white == king.white
+                        && last.counter == 0
+                    ) {
+                        return castlingRes;
+                    }
 
-            if (king.white) {
-                if (right1 && right2 && castlings[CastlingType.WShortCastling]) {
-                    move.to = new Vector2Int(kingPos.x, 6);
-                    rookPos = new Vector2Int(kingPos.x, 7);
-                    castlingMoves.Add(move);
-                }
-
-                if (left1 && left2 && left3 && castlings[CastlingType.WLongCastling]) {
-                    move.to = new Vector2Int(kingPos.x, 2);
-                    rookPos = new Vector2Int(kingPos.x, 0);
-                    castlingMoves.Add(move);
-                }
-
-            } else {
-                if (right1 && right2 && castlings[CastlingType.BShortCastling]) {
-                    move.to = new Vector2Int(kingPos.x, 6);
-                    rookPos = new Vector2Int(kingPos.x, 7);
-                    castlingMoves.Add(move);
-                }
-
-                if (left1 && left2 && left3 && castlings[CastlingType.BLongCastling]) {
-                    move.to = new Vector2Int(kingPos.x, 2);
-                    rookPos = new Vector2Int(kingPos.x, 0);
-                    castlingMoves.Add(move);
+                    if (last.type == FigureType.Rook
+                        && last.white == king.white
+                        && last.counter == 0
+                    ) {
+                        return castlingRes;
+                    }
                 }
             }
-            castlingRes.rookPos = rookPos;
-            castlingRes.castlingMoves = castlingMoves;
 
             return castlingRes;
-        }
-
-        public static void UpdateCastlingValues(
-            Dictionary<CastlingType, bool> castlings,
-            Move move,
-            Option<Fig>[,] board
-        ) {
-            var fig = board[move.from.x, move.from.y].Peel();
-
-            if (fig.type == FigureType.King) {
-                if (fig.white) {
-                    castlings[CastlingType.WLongCastling] = false;
-                    castlings[CastlingType.WShortCastling] = false;
-                } else {
-                    castlings[CastlingType.BLongCastling] = false;
-                    castlings[CastlingType.BShortCastling] = false;
-                }
-            }
-
-            if (fig.type == FigureType.Rook) {
-                if (fig.white) {
-                    if (move.from.y == 7) {
-                        castlings[CastlingType.WShortCastling] = false;
-                    } else {
-                        castlings[CastlingType.WLongCastling] = false;
-                    }
-                } else {
-                    if (move.from.y == 7) {
-                        castlings[CastlingType.BShortCastling] = false;
-                    } else {
-                        castlings[CastlingType.BLongCastling] = false;
-                    }
-                }
-            }
         }
 
         public static bool IsCastlingMove (Move move, List<Move> castlingMoves) {

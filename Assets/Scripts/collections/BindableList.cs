@@ -4,8 +4,10 @@ using System.Collections;
 namespace collections {
     public class Element<T> {
         public T value;
+
         public Element<T> previous;
         public Element<T> next;
+
         public static Element<T> Mk(T value) {
             return new Element<T> {
                 value = value

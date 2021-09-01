@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using board;
 using UnityEngine;
 using option;
@@ -15,6 +14,7 @@ namespace chess {
 
     public struct Fig {
         public bool white;
+        public int counter;
         public FigureType type;
 
         public static Fig CreateFig(bool white, FigureType type) {

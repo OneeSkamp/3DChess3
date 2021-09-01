@@ -2,33 +2,28 @@ using UnityEngine;
 using System.Collections.Generic;
 using option;
 using chess;
-using board;
 using move;
+using movements;
 
 namespace inspector {
     public class ChessInspector : MonoBehaviour {
-        public static bool CheckKing(
-            Vector2Int pos,
-            Dictionary<FigureType, List<Movement>> movements,
-            Option<Fig>[,] board
-        ) {
-            var posFromKing = new List<Move>();
+        public static bool IsUnderAttackPos(Vector2Int pos, Option<Fig>[,] board) {
+            var movesFromPos = new List<Move>();
             var figMoves = new List<Move>();
-
+            var movements = Movements.GetMovements();
             var queenMoves = MoveEngine.GetFigureMoves(pos, movements[FigureType.Queen], board);
             var knightMoves = MoveEngine.GetFigureMoves(pos, movements[FigureType.Knight], board);
 
-            posFromKing.AddRange(queenMoves);
-            posFromKing.AddRange(knightMoves);
+            movesFromPos.AddRange(queenMoves);
+            movesFromPos.AddRange(knightMoves);
 
-            foreach (var move in posFromKing) {
+            foreach (var move in movesFromPos) {
                 var figOpt = board[move.to.x, move.to.y];
 
                 if (figOpt.IsSome()) {
                     var fig = figOpt.Peel();
                     var moves = MoveEngine.GetFigureMoves(move.to, movements[fig.type], board);
                     figMoves.AddRange(moves);
-
                 }
             }
 
@@ -40,7 +35,6 @@ namespace inspector {
 
             return false;
         }
-
     }
 }
 
