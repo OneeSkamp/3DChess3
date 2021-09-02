@@ -8,6 +8,11 @@ using move;
 using movements;
 
 namespace controller {
+    public enum State {
+        None,
+        FigureSelected
+    }
+
     public class ChessController : MonoBehaviour {
         public Option<Fig>[,] boardMap = new Option<Fig>[8, 8];
 
@@ -28,6 +33,7 @@ namespace controller {
         private Vector2Int figPos;
 
         private const float CONST = 5.25f;
+        private State state;
 
         private Ray ray;
         private RaycastHit hit;
@@ -82,7 +88,6 @@ namespace controller {
                     x = Mathf.Abs((int)((localHit.x - 6f) / 1.5f));
                     y = Mathf.Abs((int)((localHit.z - 6f) / 1.5f));
                     var size = new Vector2Int(boardMap.GetLength(0), boardMap.GetLength(1));
-
                     if (BoardEngine.IsOnBoard(new Vector2Int(x, y), size)) {
                         var figOpt = boardMap[x, y];
 
@@ -93,34 +98,55 @@ namespace controller {
                         }
 
                         if (figOpt.IsSome() && figOpt.Peel().white == whiteMove) {
-                            var movement = movements
-                            [figOpt.Peel().type];
-                            figPos = new Vector2Int(x, y);
+                            state = State.FigureSelected;
+                        }
 
-                            possibleMoves.Clear();
-                            possibleMoves = MoveEngine.GetFigureMoves(figPos, movement, boardMap);
-                            possibleMoveList = CreatingPossibleMoves(possibleMoves);
+                        switch (state) {
+                            case State.FigureSelected:
+                                var movement = movements[figOpt.Peel().type];
+                                figPos = new Vector2Int(x, y);
 
-                        } else {
-                            var move = new Move {
-                                from = figPos,
-                                to = new Vector2Int(x, y)
-                            };
-
-                            foreach (DoubleMove possMove in possibleMoves) {
-                                if (Equals(move, possMove.first)) {
-                                    Relocation(move, boardMap);
-                                    break;
+                                possibleMoves.Clear();
+                                possibleMoves = MoveEngine.GetFigureMoves(
+                                    figPos,
+                                    movement,
+                                    boardMap
+                                );
+                                var kingPos = blackKingPos;
+                                if (whiteMove) {
+                                    kingPos = whiteKingPos;
                                 }
-                            }
 
-                            if (whiteMove) {
-                                ChessInspector.IsUnderAttackPos(whiteKingPos, boardMap);
-                            } else {
-                                ChessInspector.IsUnderAttackPos(blackKingPos, boardMap);
-                            }
+                                possibleMoves = ChessInspector.GetFigurePossibleMoves(possibleMoves, kingPos, boardMap);
 
-                            possibleMoves.Clear();
+                                possibleMoveList = CreatingPossibleMoves(possibleMoves);
+                                state = State.None;
+                                break;
+                            case State.None:
+                                var move = new Move {
+                                    from = figPos,
+                                    to = new Vector2Int(x, y)
+                                };
+
+                                foreach (DoubleMove possMove in possibleMoves) {
+                                    if (Equals(move, possMove.first)) {
+                                        Relocation(move, boardMap);
+
+                                        if (possMove.second.HasValue) {
+                                            Relocation(possMove.second.Value, boardMap);
+                                        }
+                                        break;
+                                    }
+                                }
+
+                                kingPos = blackKingPos;
+                                if (whiteMove) {
+                                    kingPos = whiteKingPos;
+                                }
+
+                                ChessInspector.IsUnderAttackPos(kingPos, boardMap);
+                                possibleMoves.Clear();
+                                break;
                         }
                     }
                 }
@@ -130,8 +156,8 @@ namespace controller {
             var possibleMovesObj = new List<GameObject>();
 
             foreach (DoubleMove move in possibleMoves) {
-                var posX = move.first.to.x;
-                var posY = move.first.to.y;
+                var posX = move.first.Value.to.x;
+                var posY = move.first.Value.to.y;
 
                 var objPos = new Vector3(CONST - posX * 1.5f, 0.01f, CONST - posY * 1.5f);
 
@@ -172,25 +198,6 @@ namespace controller {
 
             var newPos = new Vector3(CONST - posTo.x * 1.5f, 0.0f, CONST - posTo.y * 1.5f);
             figuresMap[posTo.x, posTo.y].transform.position = newPos;
-            whiteMove = !whiteMove;
-        }
-
-        private void Castling(CastlingInfo castlingInfo, Move kingMove) {
-            Relocation(kingMove, boardMap);
-            var rookMove = new Move();
-            //var kingPos = KingController.FindKingPos(!whiteMove, boardMap);
-            var kingPos = new Vector2Int();
-
-            if (castlingInfo.rookPos.y == 0) {
-                rookMove.from = new Vector2Int(kingPos.x, 0);
-                rookMove.to = new Vector2Int(kingPos.x, kingPos.y + 1);
-            }
-
-            if (castlingInfo.rookPos.y == 7) {
-                rookMove.from = new Vector2Int(kingPos.x, 7);
-                rookMove.to = new Vector2Int(kingPos.x, kingPos.y - 1); 
-            }
-            Relocation(rookMove, boardMap);
             whiteMove = !whiteMove;
         }
     }

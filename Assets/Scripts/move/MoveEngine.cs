@@ -1,4 +1,3 @@
-using System.Threading;
 using System.Collections.Generic;
 using UnityEngine;
 using chess;
@@ -17,12 +16,6 @@ namespace move {
         public Vector2Int pos;
         public MoveError error;
 
-    }
-
-    public struct CastlingInfo {
-        public Vector2Int rookPos;
-        public Vector2Int newRookPos;
-        public List<Move> castlingMoves;
     }
 
     public static class MoveEngine {
@@ -45,7 +38,7 @@ namespace move {
                     possMoves.Add(doubleMove);
                 }
 
-                var move2 = new Move();
+                possMoves.AddRange(GetCastlingMoves(start, board));
             }
             return possMoves;
         }
@@ -171,47 +164,8 @@ namespace move {
             return moveRes;
         }
 
-        public static CastlingInfo GetCastlingInfo(
-            Vector2Int kingPos,
-            Option<Fig>[,] board
-        ) {
-            var castlingRes = new CastlingInfo();
-            var leftDir = new Vector2Int(0, -1);
-            var rightDir = new Vector2Int(0, 1);
-
-            var leftLength = BoardEngine.GetLinearLength(kingPos, leftDir, board);
-            var rightLength = BoardEngine.GetLinearLength(kingPos, rightDir, board);
-
-            var leftPath = BoardEngine.GetLinearPath(kingPos, leftDir, leftLength, board);
-            var rightPath = BoardEngine.GetLinearPath(kingPos, rightDir, rightLength, board);
-
-            var king = board[kingPos.x, kingPos.y].Peel();
-            if (king.counter == 0) {
-                if (leftPath.Count > 0) {
-                    var lastPos = leftPath[leftPath.Count - 1];
-                    var last = board[lastPos.x, lastPos.y].Peel();
-
-                    if (last.type == FigureType.Rook
-                        && last.white == king.white
-                        && last.counter == 0
-                    ) {
-                        return castlingRes;
-                    }
-
-                    if (last.type == FigureType.Rook
-                        && last.white == king.white
-                        && last.counter == 0
-                    ) {
-                        return castlingRes;
-                    }
-                }
-            }
-
-            return castlingRes;
-        }
-
-        public static List<Move> GetCastlingMoves(Vector2Int kingPos, Option<Fig>[,] board) {
-            var castlingMoves = new List<Move>();
+        public static List<DoubleMove> GetCastlingMoves(Vector2Int kingPos, Option<Fig>[,] board) {
+            var castlingMoves = new List<DoubleMove>();
             var leftDir = new Vector2Int(0, -1);
             var rightDir = new Vector2Int(0, 1);
 
@@ -224,7 +178,7 @@ namespace move {
             var leftPos = new Vector2Int();
             var rightPos = new Vector2Int();
 
-            var move = new Move();
+            var move = new DoubleMove();
 
             if (leftPath.Count > 0) {
                 leftPos = leftPath[leftPath.Count - 1];
@@ -234,37 +188,32 @@ namespace move {
                 rightPos = rightPath[rightPath.Count - 1];
             }
 
-            var king = board[kingPos.x, kingPos.y].Peel();
+            var fig = board[kingPos.x, kingPos.y].Peel();
 
-            if (king.counter == 0) {
+            if (fig.type == FigureType.King && fig.counter == 0) {
                 var leftFig = board[leftPos.x, leftPos.y].Peel();
                 var rightFig = board[rightPos.x, rightPos.y].Peel();
 
                 if (leftFig.type == FigureType.Rook && leftFig.counter == 0) {
-                    move.from = leftPos;
-                    move.to = new Vector2Int(kingPos.x, kingPos.y - 1);
+                    move = DoubleMove.Mk(
+                        Move.Mk(kingPos, new Vector2Int(kingPos.x, kingPos.y - 2)),
+                        Move.Mk(leftPos, new Vector2Int(kingPos.x, kingPos.y - 1))
+                    );
+
                     castlingMoves.Add(move);
                 }
 
                 if (rightFig.type == FigureType.Rook && rightFig.counter == 0) {
-                    move.from = rightPos;
-                    move.to = new Vector2Int(kingPos.x, kingPos.y + 1);
+                    move = DoubleMove.Mk(
+                        Move.Mk(kingPos, new Vector2Int(kingPos.x, kingPos.y + 2)),
+                        Move.Mk(rightPos, new Vector2Int(kingPos.x, kingPos.y + 1))
+                    );
+
                     castlingMoves.Add(move);
                 }
             }
 
             return castlingMoves;
         }
-
-        public static bool IsCastlingMove (Move move, List<Move> castlingMoves) {
-            foreach (Move castlMove in castlingMoves) {
-                if (Equals(castlMove, move)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
     }
 }
-
