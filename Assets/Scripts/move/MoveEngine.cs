@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Collections.Generic;
 using UnityEngine;
 using chess;
@@ -18,15 +19,9 @@ namespace move {
 
     }
 
-    public enum CastlingType {
-        WShortCastling,
-        WLongCastling,
-        BShortCastling,
-        BLongCastling
-    }
-
     public struct CastlingInfo {
         public Vector2Int rookPos;
+        public Vector2Int newRookPos;
         public List<Move> castlingMoves;
     }
 
@@ -49,6 +44,8 @@ namespace move {
                     doubleMove.first = move;
                     possMoves.Add(doubleMove);
                 }
+
+                var move2 = new Move();
             }
             return possMoves;
         }
@@ -84,6 +81,7 @@ namespace move {
                     if (fig.Peel().type == FigureType.King) {
                         square = BoardEngine.RemoveSquareParts(squarePath, 0, 0);
                     }
+
                     var list = new List<Vector2Int>();
                     foreach (var i in square) {
                         list.Add(i.value);
@@ -210,6 +208,52 @@ namespace move {
             }
 
             return castlingRes;
+        }
+
+        public static List<Move> GetCastlingMoves(Vector2Int kingPos, Option<Fig>[,] board) {
+            var castlingMoves = new List<Move>();
+            var leftDir = new Vector2Int(0, -1);
+            var rightDir = new Vector2Int(0, 1);
+
+            var leftLength = BoardEngine.GetLinearLength(kingPos, leftDir, board);
+            var rightLength = BoardEngine.GetLinearLength(kingPos, rightDir, board);
+
+            var leftPath = BoardEngine.GetLinearPath(kingPos, leftDir, leftLength, board);
+            var rightPath = BoardEngine.GetLinearPath(kingPos, rightDir, rightLength, board);
+
+            var leftPos = new Vector2Int();
+            var rightPos = new Vector2Int();
+
+            var move = new Move();
+
+            if (leftPath.Count > 0) {
+                leftPos = leftPath[leftPath.Count - 1];
+            }
+
+            if (rightPath.Count > 0) {
+                rightPos = rightPath[rightPath.Count - 1];
+            }
+
+            var king = board[kingPos.x, kingPos.y].Peel();
+
+            if (king.counter == 0) {
+                var leftFig = board[leftPos.x, leftPos.y].Peel();
+                var rightFig = board[rightPos.x, rightPos.y].Peel();
+
+                if (leftFig.type == FigureType.Rook && leftFig.counter == 0) {
+                    move.from = leftPos;
+                    move.to = new Vector2Int(kingPos.x, kingPos.y - 1);
+                    castlingMoves.Add(move);
+                }
+
+                if (rightFig.type == FigureType.Rook && rightFig.counter == 0) {
+                    move.from = rightPos;
+                    move.to = new Vector2Int(kingPos.x, kingPos.y + 1);
+                    castlingMoves.Add(move);
+                }
+            }
+
+            return castlingMoves;
         }
 
         public static bool IsCastlingMove (Move move, List<Move> castlingMoves) {
