@@ -49,11 +49,15 @@ namespace inspector {
                 savePos = figMove;
                 var to = figMove.first.Value.to;
                 var from = figMove.first.Value.from;
+                var kPos = kingPos;
+                if (board[from.x, from.y].Peel().type == FigureType.King) {
+                    kPos = to;
+                }
 
                 if (boardClone[to.x, to.y].IsNone()) {
                     boardClone[to.x, to.y] = boardClone[from.x, from.y];
                     boardClone[from.x, from.y] = Option<Fig>.None();
-                    if (!IsUnderAttackPos(kingPos, boardClone)) {
+                    if (!IsUnderAttackPos(kPos, boardClone)) {
                         figPossMoves.Add(figMove);
                     }
 
@@ -65,13 +69,14 @@ namespace inspector {
                     var fig = boardClone[to.x, to.y];
                     boardClone[to.x, to.y] = boardClone[from.x, from.y];
                     boardClone[from.x, from.y] = Option<Fig>.None();
-                    if (!IsUnderAttackPos(kingPos, boardClone)) {
+                    if (!IsUnderAttackPos(kPos, boardClone)) {
                         figPossMoves.Add(figMove);
                     }
 
                     boardClone[from.x, from.y] = boardClone[to.x, to.y];
                     boardClone[figMove.first.Value.to.x, figMove.first.Value.to.y] = fig;
                 }
+                kPos = kingPos;
             }
 
             return figPossMoves;

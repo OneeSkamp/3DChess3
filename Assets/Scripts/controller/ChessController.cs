@@ -101,6 +101,11 @@ namespace controller {
                             state = State.FigureSelected;
                         }
 
+                        ////
+                        if (ChessInspector.IsUnderAttackPos(new Vector2Int(4, 0), boardMap)) {
+                            Debug.Log("+");
+                        }
+
                         switch (state) {
                             case State.FigureSelected:
                                 var movement = movements[figOpt.Peel().type];
