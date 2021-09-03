@@ -135,6 +135,7 @@ namespace controller {
                                 foreach (DoubleMove possMove in possibleMoves) {
                                     if (Equals(move, possMove.first)) {
                                         Relocation(move, boardMap);
+                                        whiteMove = !whiteMove;
 
                                         if (possMove.second.HasValue) {
                                             Relocation(possMove.second.Value, boardMap);
@@ -202,7 +203,6 @@ namespace controller {
 
             var newPos = new Vector3(CONST - posTo.x * 1.5f, 0.0f, CONST - posTo.y * 1.5f);
             figuresMap[posTo.x, posTo.y].transform.position = newPos;
-            whiteMove = !whiteMove;
         }
     }
 }
