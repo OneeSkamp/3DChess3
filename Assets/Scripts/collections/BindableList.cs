@@ -61,14 +61,15 @@ namespace collections {
 
         IEnumerator<Element<T>> IEnumerable<Element<T>>.GetEnumerator() {
             var node = root;
+            if (node != null) {
+                while (node != root.previous) {
+                    yield return node;
 
-            while (node != root.previous) {
+                    node = node.next;
+                }
+
                 yield return node;
-
-                node = node.next;
             }
-
-            yield return node;
         }
     }
 }

@@ -6,6 +6,7 @@ using board;
 using option;
 using move;
 using movements;
+using collections;
 
 namespace controller {
     public enum State {
@@ -41,7 +42,6 @@ namespace controller {
         private List<GameObject> possibleMoveList;
 
         private void Awake() {
-
             boardMap[0, 0] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Rook));
             boardMap[0, 7] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Rook));
 
@@ -117,7 +117,11 @@ namespace controller {
                                     kingPos = whiteKingPos;
                                 }
 
-                                possibleMoves = ChessInspector.GetFigurePossibleMoves(possibleMoves, kingPos, boardMap);
+                                possibleMoves = ChessInspector.GetFigurePossibleMoves(
+                                    possibleMoves,
+                                    kingPos,
+                                    boardMap
+                                );
 
                                 possibleMoveList = CreatingPossibleMoves(possibleMoves);
                                 state = State.None;
