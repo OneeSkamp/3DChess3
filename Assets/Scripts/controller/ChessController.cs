@@ -6,7 +6,6 @@ using board;
 using option;
 using move;
 using movements;
-using collections;
 
 namespace controller {
     public enum State {
@@ -98,16 +97,11 @@ namespace controller {
                         }
 
                         if (figOpt.IsSome() && figOpt.Peel().white == whiteMove) {
-                            state = State.FigureSelected;
-                        }
-
-                        ////
-                        if (ChessInspector.IsUnderAttackPos(new Vector2Int(4, 0), boardMap)) {
-                            Debug.Log("+");
+                            state = State.None;
                         }
 
                         switch (state) {
-                            case State.FigureSelected:
+                            case State.None:
                                 var movement = movements[figOpt.Peel().type];
                                 figPos = new Vector2Int(x, y);
 
@@ -129,9 +123,9 @@ namespace controller {
                                 );
 
                                 possibleMoveList = CreatingPossibleMoves(possibleMoves);
-                                state = State.None;
+                                state = State.FigureSelected;
                                 break;
-                            case State.None:
+                            case State.FigureSelected:
                                 var move = new Move {
                                     from = figPos,
                                     to = new Vector2Int(x, y)
@@ -139,11 +133,11 @@ namespace controller {
 
                                 foreach (DoubleMove possMove in possibleMoves) {
                                     if (Equals(move, possMove.first)) {
-                                        Relocation(move, boardMap);
+                                        Relocate(move, boardMap);
                                         whiteMove = !whiteMove;
 
                                         if (possMove.second.HasValue) {
-                                            Relocation(possMove.second.Value, boardMap);
+                                            Relocate(possMove.second.Value, boardMap);
                                         }
                                         break;
                                     }
@@ -154,7 +148,6 @@ namespace controller {
                                     kingPos = whiteKingPos;
                                 }
 
-                                ChessInspector.IsUnderAttackPos(kingPos, boardMap);
                                 possibleMoves.Clear();
                                 break;
                         }
@@ -185,7 +178,7 @@ namespace controller {
             return possibleMovesObj;
         }
 
-        private void Relocation (Move move, Option<Fig>[,] board) {
+        private void Relocate(Move move, Option<Fig>[,] board) {
             var fig = board[move.from.x, move.from.y].Peel();
             var moveRes = MoveEngine.MoveFigure(move, board);
             var posFrom = move.from;

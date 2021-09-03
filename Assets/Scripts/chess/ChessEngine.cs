@@ -30,6 +30,7 @@ namespace chess {
     public struct DoubleMove {
         public Move? first;
         public Move? second;
+    
         public static DoubleMove Mk(Move? first, Move? second) {
             return new DoubleMove { first = first, second = second };
         }
@@ -38,6 +39,7 @@ namespace chess {
     public struct Move {
         public Vector2Int from;
         public Vector2Int to;
+    
         public static Move Mk(Vector2Int from, Vector2Int to) {
             return new Move { from = from, to = to};
         }
