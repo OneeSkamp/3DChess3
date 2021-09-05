@@ -9,7 +9,7 @@ namespace inspector {
     public class ChessInspector : MonoBehaviour {
         public static bool IsUnderAttackPos(Vector2Int pos, Option<Fig>[,] board) {
             var figMoves = new List<DoubleMove>();
-            var movements = Movements.GetMovements();
+            var movements = Movements.movements;
             var moves = MoveEngine.GetFigureMoves(pos, movements[FigureType.Queen], board);
             moves.AddRange(MoveEngine.GetFigureMoves(pos, movements[FigureType.Knight], board));
 

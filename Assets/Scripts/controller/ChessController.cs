@@ -75,84 +75,86 @@ namespace controller {
         }
 
         private void Update() {
+            if (!Input.GetMouseButtonDown(0)) {
+                return;
+            }
 
-            if (Input.GetMouseButtonDown(0)) {
-                var movements = Movements.GetMovements();
+            var movements = Movements.movements;
 
-                ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
-                if (Physics.Raycast(ray, out hit)) {
-                    var localHit = figureSpawner.boardTransform.InverseTransformPoint(hit.point);
+            if (!Physics.Raycast(ray, out hit)) {
+                return;
+            }
 
-                    x = Mathf.Abs((int)((localHit.x - 6f) / 1.5f));
-                    y = Mathf.Abs((int)((localHit.z - 6f) / 1.5f));
-                    var size = new Vector2Int(boardMap.GetLength(0), boardMap.GetLength(1));
-                    if (BoardEngine.IsOnBoard(new Vector2Int(x, y), size)) {
-                        var figOpt = boardMap[x, y];
+            var localHit = figureSpawner.boardTransform.InverseTransformPoint(hit.point);
 
-                        if (possibleMoveList != null) {
-                            foreach (GameObject cell in possibleMoveList) {
-                                Destroy(cell);
+            x = Mathf.Abs((int)((localHit.x - 6f) / 1.5f));
+            y = Mathf.Abs((int)((localHit.z - 6f) / 1.5f));
+            var size = new Vector2Int(boardMap.GetLength(0), boardMap.GetLength(1));
+
+            if (!BoardEngine.IsOnBoard(new Vector2Int(x, y), size)) {
+                return;
+            }
+
+            var figOpt = boardMap[x, y];
+
+            if (possibleMoveList != null) {
+                foreach (GameObject cell in possibleMoveList) {
+                    Destroy(cell);
+                }
+            }
+
+            if (figOpt.IsSome() && figOpt.Peel().white == whiteMove) {
+                state = State.None;
+            }
+
+            switch (state) {
+                case State.None:
+                    var movement = movements[figOpt.Peel().type];
+                    figPos = new Vector2Int(x, y);
+
+                    possibleMoves.Clear();
+                    possibleMoves = MoveEngine.GetFigureMoves(figPos, movement, boardMap);
+                    var kingPos = blackKingPos;
+                    if (whiteMove) {
+                        kingPos = whiteKingPos;
+                    }
+
+                    possibleMoves = ChessInspector.GetFigurePossibleMoves(
+                        possibleMoves,
+                        kingPos,
+                        boardMap
+                    );
+
+                    possibleMoveList = CreatingPossibleMoves(possibleMoves);
+                    state = State.FigureSelected;
+                    break;
+                case State.FigureSelected:
+                    var move = new Move {
+                        from = figPos,
+                        to = new Vector2Int(x, y)
+                    };
+
+                    foreach (DoubleMove possMove in possibleMoves) {
+                        if (Equals(move, possMove.first)) {
+                            Relocate(move, boardMap);
+                            whiteMove = !whiteMove;
+
+                            if (possMove.second.HasValue) {
+                                Relocate(possMove.second.Value, boardMap);
                             }
-                        }
-
-                        if (figOpt.IsSome() && figOpt.Peel().white == whiteMove) {
-                            state = State.None;
-                        }
-
-                        switch (state) {
-                            case State.None:
-                                var movement = movements[figOpt.Peel().type];
-                                figPos = new Vector2Int(x, y);
-
-                                possibleMoves.Clear();
-                                possibleMoves = MoveEngine.GetFigureMoves(
-                                    figPos,
-                                    movement,
-                                    boardMap
-                                );
-                                var kingPos = blackKingPos;
-                                if (whiteMove) {
-                                    kingPos = whiteKingPos;
-                                }
-
-                                possibleMoves = ChessInspector.GetFigurePossibleMoves(
-                                    possibleMoves,
-                                    kingPos,
-                                    boardMap
-                                );
-
-                                possibleMoveList = CreatingPossibleMoves(possibleMoves);
-                                state = State.FigureSelected;
-                                break;
-                            case State.FigureSelected:
-                                var move = new Move {
-                                    from = figPos,
-                                    to = new Vector2Int(x, y)
-                                };
-
-                                foreach (DoubleMove possMove in possibleMoves) {
-                                    if (Equals(move, possMove.first)) {
-                                        Relocate(move, boardMap);
-                                        whiteMove = !whiteMove;
-
-                                        if (possMove.second.HasValue) {
-                                            Relocate(possMove.second.Value, boardMap);
-                                        }
-                                        break;
-                                    }
-                                }
-
-                                kingPos = blackKingPos;
-                                if (whiteMove) {
-                                    kingPos = whiteKingPos;
-                                }
-
-                                possibleMoves.Clear();
-                                break;
+                            break;
                         }
                     }
-                }
+
+                    kingPos = blackKingPos;
+                    if (whiteMove) {
+                        kingPos = whiteKingPos;
+                    }
+
+                    possibleMoves.Clear();
+                    break;
             }
         }
         private List<GameObject> CreatingPossibleMoves(List<DoubleMove> possibleMoves) {
