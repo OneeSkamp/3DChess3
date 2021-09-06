@@ -3,32 +3,70 @@ using System.Collections.Generic;
 using option;
 using chess;
 using move;
+using board;
 using movements;
 
 namespace inspector {
     public class ChessInspector : MonoBehaviour {
-        public static bool IsUnderAttackPos(Vector2Int pos, Option<Fig>[,] board) {
+        public static bool IsAttack(Vector2Int pos, bool white, Option<Fig>[,] board) {
             var figMoves = new List<DoubleMove>();
-            var movements = Movements.movements;
-            var moves = MoveEngine.GetFigureMoves(pos, movements[FigureType.Queen], board);
-            moves.AddRange(MoveEngine.GetFigureMoves(pos, movements[FigureType.Knight], board));
+            var movements = Movements.movements[FigureType.Queen];
+            movements.AddRange(Movements.movements[FigureType.Knight]);
+            var moves = MoveEngine.GetFigureMoves(pos, movements, board);
+            Debug.Log(moves.Count);
 
             foreach (var move in moves) {
-                var figOpt = board[move.first.Value.to.x, move.first.Value.to.y];
+                var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
+                var toX = move.first.Value.to.x;
+                var toY = move.first.Value.to.y;
+                if (BoardEngine.IsOnBoard(new Vector2Int(toX, toY), size)) {
+                    var figOpt = board[toX, toY];
 
-                if (figOpt.IsSome()) {
-                    var fig = figOpt.Peel();
-                    var dmoves = MoveEngine.GetFigureMoves(
-                        move.first.Value.to,
-                        movements[fig.type],
-                        board
-                    );
-                    figMoves.AddRange(dmoves);
+                    if (figOpt.IsSome() && figOpt.Peel().white != white) {
+                        var dmoves = MoveEngine.GetFigureMoves(
+                            move.first.Value.to,
+                            movements,
+                            board);
+                        figMoves.AddRange(dmoves);
+                    }
                 }
             }
 
             foreach (var move in figMoves) {
-                if (Equals(move.first.Value.to, pos)) {
+                if (move.first.Value.to == pos) {
+                    Debug.Log("asd");
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        public static bool IsUnderAttackPos(Vector2Int pos, Option<Fig>[,] board) {
+            var figMoves = new List<DoubleMove>();
+            var movements = Movements.movements[FigureType.Queen];
+            movements.AddRange(Movements.movements[FigureType.Knight]);
+            var moves = MoveEngine.GetFigureMoves(pos, movements, board);
+
+            foreach (var move in moves) {
+                var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
+                var toX = move.first.Value.to.x;
+                var toY = move.first.Value.to.y;
+                if (BoardEngine.IsOnBoard(new Vector2Int(toX, toY), size)) {
+                    var figOpt = board[toX, toY];
+
+                    if (figOpt.IsSome()) {
+                        var fig = figOpt.Peel();
+                        var dmoves = MoveEngine.GetFigureMoves(
+                            move.first.Value.to,
+                            movements,
+                            board);
+                        figMoves.AddRange(dmoves);
+                    }
+                }
+            }
+
+            foreach (var move in figMoves) {
+                if (move.first.Value.to == pos) {
                     return true;
                 }
             }

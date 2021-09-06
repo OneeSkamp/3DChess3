@@ -30,7 +30,7 @@ namespace controller {
         private Vector2Int blackKingPos = new Vector2Int(0, 4);
  
         private List<DoubleMove> possibleMoves = new List<DoubleMove>();
-        private Vector2Int figPos;
+        private Vector2Int selectedFigPos;
 
         private const float CONST = 5.25f;
         private State state;
@@ -92,6 +92,8 @@ namespace controller {
             x = Mathf.Abs((int)((localHit.x - 6f) / 1.5f));
             y = Mathf.Abs((int)((localHit.z - 6f) / 1.5f));
             var size = new Vector2Int(boardMap.GetLength(0), boardMap.GetLength(1));
+            ///
+            ChessInspector.IsAttack(new Vector2Int(4,2), true, boardMap);
 
             if (!BoardEngine.IsOnBoard(new Vector2Int(x, y), size)) {
                 return;
@@ -112,10 +114,10 @@ namespace controller {
             switch (state) {
                 case State.None:
                     var movement = movements[figOpt.Peel().type];
-                    figPos = new Vector2Int(x, y);
+                    selectedFigPos = new Vector2Int(x, y);
 
                     possibleMoves.Clear();
-                    possibleMoves = MoveEngine.GetFigureMoves(figPos, movement, boardMap);
+                    possibleMoves = MoveEngine.GetFigureMoves(selectedFigPos, movement, boardMap);
                     var kingPos = blackKingPos;
                     if (whiteMove) {
                         kingPos = whiteKingPos;
@@ -132,12 +134,17 @@ namespace controller {
                     break;
                 case State.FigureSelected:
                     var move = new Move {
-                        from = figPos,
+                        from = selectedFigPos,
                         to = new Vector2Int(x, y)
                     };
 
                     foreach (DoubleMove possMove in possibleMoves) {
-                        if (Equals(move, possMove.first)) {
+                        if (!possMove.first.HasValue) {
+                            continue;
+                        }
+
+                        var firstMove = possMove.first.Value;
+                        if (move.to == firstMove.to && move.from == firstMove.from) {
                             Relocate(move, boardMap);
                             whiteMove = !whiteMove;
 

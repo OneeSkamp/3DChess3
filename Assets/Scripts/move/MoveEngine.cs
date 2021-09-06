@@ -4,6 +4,7 @@ using chess;
 using board;
 using option;
 using collections;
+using movements;
 
 namespace move {
     public enum MoveError {
