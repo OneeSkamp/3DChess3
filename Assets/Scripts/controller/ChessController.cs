@@ -148,12 +148,12 @@ namespace controller {
 
                         var firstMove = possMove.first.Value;
                         if (move.to == firstMove.to && move.from == firstMove.from) {
-                            Relocate(move, boardMap);
-                            whiteMove = !whiteMove;
                             if (IsPromotionMove(move)) {
                                 changePawnUi.SetActive(!changePawnUi.activeSelf);
                                 this.enabled = !this.enabled;
                             }
+                            Relocate(move, boardMap);
+                            whiteMove = !whiteMove;
 
                             if (possMove.second.HasValue) {
                                 Relocate(possMove.second.Value, boardMap);
@@ -216,16 +216,19 @@ namespace controller {
         }
 
         private bool IsPromotionMove(Move move) {
-            var fig = boardMap[move.from.x, move.from.y].Peel();
+            var figOpt = boardMap[move.from.x, move.from.y];
+            if (figOpt.IsSome()) {
+                var fig = boardMap[move.from.x, move.from.y].Peel();
 
-            if (fig.type == FigureType.Pawn && move.to.x == 0) {
-                promotionPawnPos = new Vector2Int(move.to.x, move.to.y);
-                return true;
-            }
+                if (fig.type == FigureType.Pawn && move.to.x == 0) {
+                    promotionPawnPos = new Vector2Int(move.to.x, move.to.y);
+                    return true;
+                }
 
-            if (fig.type == FigureType.Pawn && move.to.x == 7) {
-                promotionPawnPos = new Vector2Int(move.to.x, move.to.y);
-                return true;
+                if (fig.type == FigureType.Pawn && move.to.x == 7) {
+                    promotionPawnPos = new Vector2Int(move.to.x, move.to.y);
+                    return true;
+                }
             }
 
             return false;
