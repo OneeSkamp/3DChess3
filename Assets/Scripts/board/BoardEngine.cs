@@ -81,6 +81,7 @@ namespace board {
                 nextPos = new Vector2Int(startPos.x - i, startPos.y);
                 squareMoves.Add(nextPos);
             }
+
             return squareMoves;
         }
 

@@ -9,8 +9,8 @@ using movements;
 
 namespace controller {
     public enum State {
-        FigureSelected,
-        None
+        None,
+        FigureSelected
     }
 
     public struct Map {
@@ -116,10 +116,8 @@ namespace controller {
                 return;
             }
 
-            if (possibleMoves != null) {
-                foreach (Transform cell in highlight.transform) {
-                    Destroy(cell.gameObject);
-                }
+            foreach (Transform cell in highlight.transform) {
+                Destroy(cell.gameObject);
             }
 
             var figOpt = map.board[pos.x, pos.y];
@@ -130,7 +128,12 @@ namespace controller {
             var fig = figOpt.Peel();
 
             switch (state) {
+                default:
+                
                 case State.None:
+                    if (figOpt.Peel().white != whiteMove) {
+                        break;
+                    }
                     var movement = movements[figOpt.Peel().type];
                     selectFigurePos = pos;
 
@@ -141,7 +144,7 @@ namespace controller {
                         kingPos = this.kingPos.white;
                     }
 
-                    possibleMoves = ChessInspector.SelectionPossibleMoves(
+                    possibleMoves = ChessInspector.GetPossibleMoves(
                         selectFigurePos,
                         kingPos,
                         map.board

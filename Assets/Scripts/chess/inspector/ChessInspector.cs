@@ -54,7 +54,7 @@ namespace inspector {
             return false;
         }
 
-        public static List<DoubleMove> SelectionPossibleMoves(
+        public static List<DoubleMove> GetPossibleMoves(
             Vector2Int pos,
             Vector2Int kingPos,
             Option<Fig>[,] board
@@ -63,7 +63,7 @@ namespace inspector {
             var savePos = new DoubleMove();
             var movements= Movements.movements[board[pos.x, pos.y].Peel().type];
             var figMoves = MoveEngine.GetFigureMoves(pos, movements, board);
-            Option<Fig>[,] boardClone = (Option<Fig>[,])board.Clone();
+            var boardClone = BoardEngine.CopyBoard(board);
 
             foreach (var figMove in figMoves) {
                 savePos = figMove;
