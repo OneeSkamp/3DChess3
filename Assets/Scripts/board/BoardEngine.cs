@@ -111,6 +111,17 @@ namespace board {
             return square;
         }
 
+        public static Option<T>[,] CopyBoard<T>(Option<T>[,] board) {
+            var clone = new Option<T>[board.GetLength(0), board.GetLength(1)];
+            for (int i = 0; i < board.GetLength(0); i++) {
+                for (int j = 0; j < board.GetLength(1); j++) {
+                    clone[i, j] = board[i, j];
+                }
+            }
+
+            return clone;
+        }
+
         public static bool IsOnBoard(Vector2Int pos, Vector2Int size) {
             if (pos.x < 0 || pos.y < 0 || pos.x >= size.x || pos.y >= size.y) {
                 return false;

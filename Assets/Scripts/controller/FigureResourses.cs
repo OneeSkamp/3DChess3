@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class FigureResurses : MonoBehaviour {
+public class FigureResourses : MonoBehaviour {
     public GameObject blueBacklight;
     public GameObject redBacklight;
     public GameObject wPawn;

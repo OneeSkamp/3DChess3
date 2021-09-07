@@ -9,7 +9,7 @@ namespace ui {
     public class UiController : MonoBehaviour {
         public GameObject MenuUi;
 
-        public FigureResurses figCont;
+        public FigureResourses figCont;
 
         public Button menuBut;
         public Button newGameBut;

@@ -25,7 +25,7 @@ namespace movements {
 
 
         public static readonly List<Movement> kingMovement = new List<Movement> {
-                new Movement { square = new SquareMovement { side = 3 } }
+            new Movement { square = new SquareMovement { side = 3 } }
         };
 
         public static readonly List<Movement> queenMovement = new List<Movement>() {
@@ -40,14 +40,14 @@ namespace movements {
         };
 
         public static readonly Dictionary<FigureType, List<Movement>> movements =
-        new Dictionary<FigureType, List<Movement>> {
-            { FigureType.Bishop, bishopMovement },
-            { FigureType.Rook, rookMovement },
-            { FigureType.Queen, queenMovement },
-            { FigureType.Knight, knightMovemetn },
-            { FigureType.Pawn, queenMovement },
-            { FigureType.King, kingMovement }
-        };
+            new Dictionary<FigureType, List<Movement>> {
+                { FigureType.Bishop, bishopMovement },
+                { FigureType.Rook, rookMovement },
+                { FigureType.Queen, queenMovement },
+                { FigureType.Knight, knightMovemetn },
+                { FigureType.Pawn, queenMovement },
+                { FigureType.King, kingMovement }
+            };
     }
 }
 

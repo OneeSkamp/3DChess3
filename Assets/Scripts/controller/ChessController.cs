@@ -13,24 +13,28 @@ namespace controller {
         None
     }
 
-    public class ChessController : MonoBehaviour {
-        public Option<Fig>[,] boardMap = new Option<Fig>[8, 8];
+    public struct Map {
+        public Option<Fig>[,] board;
+        public GameObject[,] figures;
+    }
 
+    public struct KingPos {
+        public Vector2Int white;
+        public Vector2Int black;
+    }
+
+    public class ChessController : MonoBehaviour {
+        public Map map;
         public bool whiteMove = true;
 
-        public GameObject[,] figuresMap = new GameObject[8, 8];
         public GameObject highlight;
 
         public GameObject changePawnUi;
 
         public FigureSpawner figureSpawner;
-        public FigureResurses figCont;
+        public FigureResourses figContent;
 
-        private int x;
-        private int y;
-
-        private Vector2Int whiteKingPos = new Vector2Int(7, 4);
-        private Vector2Int blackKingPos = new Vector2Int(0, 4);
+        public KingPos kingPos;
  
         private List<DoubleMove> possibleMoves = new List<DoubleMove>();
 
@@ -43,36 +47,46 @@ namespace controller {
         private List<GameObject> possibleMoveList;
 
         private void Awake() {
-            boardMap[0, 0] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Rook));
-            boardMap[0, 7] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Rook));
+            kingPos = new KingPos {
+                white = new Vector2Int(7, 4),
+                black = new Vector2Int(0, 4)
+            };
 
-            boardMap[0, 1] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Knight));
-            boardMap[0, 6] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Knight));
+            map = new Map {
+                board = new Option<Fig>[8, 8],
+                figures = new GameObject[8, 8]
+            };
 
-            boardMap[0, 2] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Bishop));
-            boardMap[0, 5] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Bishop));
+            map.board[0, 0] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Rook));
+            map.board[0, 7] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Rook));
 
-            boardMap[0, 3] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Queen));
-            boardMap[0, 4] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.King));
+            map.board[0, 1] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Knight));
+            map.board[0, 6] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Knight));
+
+            map.board[0, 2] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Bishop));
+            map.board[0, 5] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Bishop));
+
+            map.board[0, 3] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Queen));
+            map.board[0, 4] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.King));
 
             for (int x = 0; x <= 7; x++) {
-               boardMap[1, x] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Pawn));
+               map.board[1, x] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Pawn));
             }
 
-            boardMap[7, 0] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Rook));
-            boardMap[7, 7] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Rook));
+            map.board[7, 0] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Rook));
+            map.board[7, 7] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Rook));
 
-            boardMap[7, 1] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Knight));
-            boardMap[7, 6] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Knight));
+            map.board[7, 1] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Knight));
+            map.board[7, 6] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Knight));
 
-            boardMap[7, 2] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Bishop));
-            boardMap[7, 5] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Bishop));
+            map.board[7, 2] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Bishop));
+            map.board[7, 5] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Bishop));
 
-            boardMap[7, 3] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Queen));
-            boardMap[7, 4] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.King));
+            map.board[7, 3] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Queen));
+            map.board[7, 4] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.King));
 
             for (int x = 0; x <= 7; x++) {
-               boardMap[6, x] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Pawn));
+               map.board[6, x] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Pawn));
             }
         }
 
@@ -92,15 +106,15 @@ namespace controller {
 
             var localHit = figureSpawner.boardTransform.InverseTransformPoint(hit.point);
 
-            x = Mathf.Abs((int)((localHit.x - 6f) / 1.5f));
-            y = Mathf.Abs((int)((localHit.z - 6f) / 1.5f));
-            var size = new Vector2Int(boardMap.GetLength(0), boardMap.GetLength(1));
+            var pos = new Vector2Int (
+                Mathf.Abs((int)((localHit.x - 6f) / 1.5f)),
+                Mathf.Abs((int)((localHit.z - 6f) / 1.5f))
+            );
 
-            if (!BoardEngine.IsOnBoard(new Vector2Int(x, y), size)) {
+            var size = new Vector2Int(map.board.GetLength(0), map.board.GetLength(1));
+            if (!BoardEngine.IsOnBoard(pos, size)) {
                 return;
             }
-
-            var figOpt = boardMap[x, y];
 
             if (possibleMoves != null) {
                 foreach (Transform cell in highlight.transform) {
@@ -108,6 +122,7 @@ namespace controller {
                 }
             }
 
+            var figOpt = map.board[pos.x, pos.y];
             if (figOpt.IsSome() && figOpt.Peel().white == whiteMove) {
                 state = State.None;
             }
@@ -117,19 +132,19 @@ namespace controller {
             switch (state) {
                 case State.None:
                     var movement = movements[figOpt.Peel().type];
-                    selectFigurePos = new Vector2Int(x, y);
+                    selectFigurePos = pos;
 
                     possibleMoves.Clear();
 
-                    var kingPos = blackKingPos;
+                    var kingPos = this.kingPos.black;
                     if (whiteMove) {
-                        kingPos = whiteKingPos;
+                        kingPos = this.kingPos.white;
                     }
 
                     possibleMoves = ChessInspector.SelectionPossibleMoves(
                         selectFigurePos,
                         kingPos,
-                        boardMap
+                        map.board
                     );
 
                     CreatingHighlight();
@@ -138,7 +153,7 @@ namespace controller {
                 case State.FigureSelected:
                     var move = new Move {
                         from = selectFigurePos,
-                        to = new Vector2Int(x, y)
+                        to = pos
                     };
 
                     foreach (DoubleMove possMove in possibleMoves) {
@@ -152,19 +167,19 @@ namespace controller {
                                 changePawnUi.SetActive(!changePawnUi.activeSelf);
                                 this.enabled = !this.enabled;
                             }
-                            Relocate(move, boardMap);
+                            Relocate(move, map.board);
                             whiteMove = !whiteMove;
 
                             if (possMove.second.HasValue) {
-                                Relocate(possMove.second.Value, boardMap);
+                                Relocate(possMove.second.Value, map.board);
                             }
                             break;
                         }
                     }
 
-                    kingPos = blackKingPos;
+                    kingPos = this.kingPos.black;
                     if (whiteMove) {
-                        kingPos = whiteKingPos;
+                        kingPos = this.kingPos.white;
                     }
 
                     possibleMoves.Clear();
@@ -180,7 +195,7 @@ namespace controller {
                 var objPos = new Vector3(CONST - posX * 1.5f, 0.01f, CONST - posY * 1.5f);
 
                 var obj = Instantiate(
-                    figCont.blueBacklight,
+                    figContent.blueBacklight,
                     objPos,
                     Quaternion.Euler(90, 0, 0),
                     highlight.transform
@@ -197,28 +212,28 @@ namespace controller {
             var posTo = move.to;
 
             if (fig.type == FigureType.King) {
+
+                kingPos.black = posTo;
                 if (fig.white) {
-                    whiteKingPos = posTo;
-                } else {
-                    blackKingPos = posTo;
+                    kingPos.white = posTo;
                 }
             }
 
             if (moveRes.error == MoveError.MoveOnFigure) {
-                Destroy(figuresMap[moveRes.pos.x, moveRes.pos.y]);
+                Destroy(map.figures[moveRes.pos.x, moveRes.pos.y]);
             }
 
-            figuresMap[posTo.x, posTo.y] = figuresMap[posFrom.x, posFrom.y];
-            figuresMap[posFrom.x, posFrom.y] = null;
+            map.figures[posTo.x, posTo.y] = map.figures[posFrom.x, posFrom.y];
+            map.figures[posFrom.x, posFrom.y] = null;
 
             var newPos = new Vector3(CONST - posTo.x * 1.5f, 0.0f, CONST - posTo.y * 1.5f);
-            figuresMap[posTo.x, posTo.y].transform.localPosition = newPos;
+            map.figures[posTo.x, posTo.y].transform.localPosition = newPos;
         }
 
         private bool IsPromotionMove(Move move) {
-            var figOpt = boardMap[move.from.x, move.from.y];
+            var figOpt = map.board[move.from.x, move.from.y];
             if (figOpt.IsSome()) {
-                var fig = boardMap[move.from.x, move.from.y].Peel();
+                var fig = map.board[move.from.x, move.from.y].Peel();
 
                 if (fig.type == FigureType.Pawn && move.to.x == 0) {
                     promotionPawnPos = new Vector2Int(move.to.x, move.to.y);
@@ -240,10 +255,10 @@ namespace controller {
 
             if (posX == 0) {
                 var fig = Fig.CreateFig(true, type);
-                boardMap[posX, posY] = Option<Fig>.Some(fig);
-                Destroy(figuresMap[posX, posY]);
+                map.board[posX, posY] = Option<Fig>.Some(fig);
+                Destroy(map.figures[posX, posY]);
 
-                figuresMap[posX, posY] = Instantiate(
+                map.figures[posX, posY] = Instantiate(
                     wFig,
                     newPos,
                     Quaternion.Euler(0, 90, 0),
@@ -253,10 +268,10 @@ namespace controller {
 
             if (posX == 7) {
                 var fig = Fig.CreateFig(false, type);
-                boardMap[posX, posY] = Option<Fig>.Some(fig);
-                Destroy(figuresMap[posX, posY]);
+                map.board[posX, posY] = Option<Fig>.Some(fig);
+                Destroy(map.figures[posX, posY]);
 
-                figuresMap[posX, posY] = Instantiate(
+                map.figures[posX, posY] = Instantiate(
                     bFig,
                     newPos,
                     Quaternion.Euler(0, 90, 0),
@@ -264,7 +279,7 @@ namespace controller {
                 );
             }
 
-            figuresMap[posX, posY].transform.localPosition = newPos;
+            map.figures[posX, posY].transform.localPosition = newPos;
             changePawnUi.SetActive(!changePawnUi.activeSelf);
             this.enabled = !this.enabled;
         }
