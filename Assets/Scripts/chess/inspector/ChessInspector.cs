@@ -1,12 +1,10 @@
-using System.IO;
-using System;
 using UnityEngine;
 using System.Collections.Generic;
 using option;
 using chess;
 using move;
-using movements;
 using board;
+using movements;
 
 namespace inspector {
     public class ChessInspector : MonoBehaviour {
@@ -29,16 +27,15 @@ namespace inspector {
                 var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
                 var toX = move.first.Value.to.x;
                 var toY = move.first.Value.to.y;
-
                 if (BoardEngine.IsOnBoard(new Vector2Int(toX, toY), size)) {
                     var figOpt = board[toX, toY];
+
                     if (figOpt.IsSome()) {
                         var fig = figOpt.Peel();
                         var dmoves = MoveEngine.GetFigureMoves(
                             move.first.Value.to,
-                            movements[fig.type],
-                            board
-                        );
+                            movements[board[toX, toY].Peel().type],
+                            board);
                         figMoves.AddRange(dmoves);
                     }
                 }

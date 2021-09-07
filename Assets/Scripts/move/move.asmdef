@@ -5,7 +5,8 @@
         "chess",
         "board",
         "coderiftel.option.runtime",
-        "collections"
+        "collections",
+        "movements"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
