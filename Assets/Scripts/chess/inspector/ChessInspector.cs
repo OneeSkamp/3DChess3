@@ -1,48 +1,71 @@
+using System.IO;
+using System;
 using UnityEngine;
 using System.Collections.Generic;
 using option;
 using chess;
 using move;
 using movements;
+using board;
 
 namespace inspector {
     public class ChessInspector : MonoBehaviour {
-        public static bool IsUnderAttackPos(Vector2Int pos, Option<Fig>[,] board) {
+        public static bool IsUnderAttackPos(Vector2Int pos, bool white, Option<Fig>[,] board) {
             var figMoves = new List<DoubleMove>();
+            var hasFig = true;
             var movements = Movements.movements;
+
+            if (board[pos.x, pos.y].IsNone()) {
+                var fig = Fig.CreateFig(white, FigureType.Knight);
+                hasFig = false;
+                board[pos.x, pos.y] = Option<Fig>.Some(fig);
+            }
+
             var moves = MoveEngine.GetFigureMoves(pos, movements[FigureType.Queen], board);
             moves.AddRange(MoveEngine.GetFigureMoves(pos, movements[FigureType.Knight], board));
 
-            foreach (var move in moves) {
-                var figOpt = board[move.first.Value.to.x, move.first.Value.to.y];
 
-                if (figOpt.IsSome()) {
-                    var fig = figOpt.Peel();
-                    var dmoves = MoveEngine.GetFigureMoves(
-                        move.first.Value.to,
-                        movements[fig.type],
-                        board
-                    );
-                    figMoves.AddRange(dmoves);
+            foreach (var move in moves) {
+                var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
+                var toX = move.first.Value.to.x;
+                var toY = move.first.Value.to.y;
+
+                if (BoardEngine.IsOnBoard(new Vector2Int(toX, toY), size)) {
+                    var figOpt = board[toX, toY];
+                    if (figOpt.IsSome()) {
+                        var fig = figOpt.Peel();
+                        var dmoves = MoveEngine.GetFigureMoves(
+                            move.first.Value.to,
+                            movements[fig.type],
+                            board
+                        );
+                        figMoves.AddRange(dmoves);
+                    }
                 }
             }
 
             foreach (var move in figMoves) {
-                if (Equals(move.first.Value.to, pos)) {
+                if (move.first.Value.to == pos) {
                     return true;
                 }
+            }
+
+            if (!hasFig) {
+                board[pos.x, pos.y] = Option<Fig>.None();
             }
 
             return false;
         }
 
-        public static List<DoubleMove> GetFigurePossibleMoves(
-            List<DoubleMove> figMoves,
+        public static List<DoubleMove> SelectionPossibleMoves(
+            Vector2Int pos,
             Vector2Int kingPos,
             Option<Fig>[,] board
         ) {
             var figPossMoves = new List<DoubleMove>();
             var savePos = new DoubleMove();
+            var movements= Movements.movements[board[pos.x, pos.y].Peel().type];
+            var figMoves = MoveEngine.GetFigureMoves(pos, movements, board);
             Option<Fig>[,] boardClone = (Option<Fig>[,])board.Clone();
 
             foreach (var figMove in figMoves) {
@@ -57,7 +80,7 @@ namespace inspector {
                 if (boardClone[to.x, to.y].IsNone()) {
                     boardClone[to.x, to.y] = boardClone[from.x, from.y];
                     boardClone[from.x, from.y] = Option<Fig>.None();
-                    if (!IsUnderAttackPos(kPos, boardClone)) {
+                    if (!IsUnderAttackPos(kPos, true, boardClone)) {
                         figPossMoves.Add(figMove);
                     }
 
@@ -69,7 +92,7 @@ namespace inspector {
                     var fig = boardClone[to.x, to.y];
                     boardClone[to.x, to.y] = boardClone[from.x, from.y];
                     boardClone[from.x, from.y] = Option<Fig>.None();
-                    if (!IsUnderAttackPos(kPos, boardClone)) {
+                    if (!IsUnderAttackPos(kPos, true, boardClone)) {
                         figPossMoves.Add(figMove);
                     }
 

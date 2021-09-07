@@ -18,11 +18,7 @@ namespace board {
     }
 
     public static class BoardEngine {
-        public static int GetLinearLength<T>(
-            Vector2Int pos,
-            Vector2Int dir,
-            Option<T>[,] board
-        ) {
+        public static int GetLinearLength<T>(Vector2Int pos, Vector2Int dir, Option<T>[,] board) {
             var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
 
             var length = 0;
@@ -93,13 +89,13 @@ namespace board {
             int start,
             int skipValue
         ) {
-            var pointer = square.root;
+            var pointer = square.head;
 
             for (int i = 0; i < start; i++) {
                 pointer = pointer.next;
             }
 
-            square.root = pointer;
+            square.head = pointer;
             var count = 0;
 
             foreach (var i in square) {

@@ -9,8 +9,8 @@ using movements;
 
 namespace controller {
     public enum State {
-        None,
-        FigureSelected
+        FigureSelected,
+        None
     }
 
     public class ChessController : MonoBehaviour {
@@ -19,6 +19,9 @@ namespace controller {
         public bool whiteMove = true;
 
         public GameObject[,] figuresMap = new GameObject[8, 8];
+        public GameObject highlight;
+
+        public GameObject changePawnUi;
 
         public FigureSpawner figureSpawner;
         public FigureResurses figCont;
@@ -30,13 +33,12 @@ namespace controller {
         private Vector2Int blackKingPos = new Vector2Int(0, 4);
  
         private List<DoubleMove> possibleMoves = new List<DoubleMove>();
-        private Vector2Int figPos;
+
+        private Vector2Int selectFigurePos;
+        private Vector2Int promotionPawnPos;
 
         private const float CONST = 5.25f;
         private State state;
-
-        private Ray ray;
-        private RaycastHit hit;
 
         private List<GameObject> possibleMoveList;
 
@@ -81,7 +83,8 @@ namespace controller {
 
             var movements = Movements.movements;
 
-            ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
 
             if (!Physics.Raycast(ray, out hit)) {
                 return;
@@ -99,9 +102,9 @@ namespace controller {
 
             var figOpt = boardMap[x, y];
 
-            if (possibleMoveList != null) {
-                foreach (GameObject cell in possibleMoveList) {
-                    Destroy(cell);
+            if (possibleMoves != null) {
+                foreach (Transform cell in highlight.transform) {
+                    Destroy(cell.gameObject);
                 }
             }
 
@@ -109,37 +112,48 @@ namespace controller {
                 state = State.None;
             }
 
+            var fig = figOpt.Peel();
+
             switch (state) {
                 case State.None:
                     var movement = movements[figOpt.Peel().type];
-                    figPos = new Vector2Int(x, y);
+                    selectFigurePos = new Vector2Int(x, y);
 
                     possibleMoves.Clear();
-                    possibleMoves = MoveEngine.GetFigureMoves(figPos, movement, boardMap);
+
                     var kingPos = blackKingPos;
                     if (whiteMove) {
                         kingPos = whiteKingPos;
                     }
 
-                    possibleMoves = ChessInspector.GetFigurePossibleMoves(
-                        possibleMoves,
+                    possibleMoves = ChessInspector.SelectionPossibleMoves(
+                        selectFigurePos,
                         kingPos,
                         boardMap
                     );
 
-                    possibleMoveList = CreatingPossibleMoves(possibleMoves);
+                    CreatingHighlight();
                     state = State.FigureSelected;
                     break;
                 case State.FigureSelected:
                     var move = new Move {
-                        from = figPos,
+                        from = selectFigurePos,
                         to = new Vector2Int(x, y)
                     };
 
                     foreach (DoubleMove possMove in possibleMoves) {
-                        if (Equals(move, possMove.first)) {
+                        if (!possMove.first.HasValue) {
+                            continue;
+                        }
+
+                        var firstMove = possMove.first.Value;
+                        if (move.to == firstMove.to && move.from == firstMove.from) {
                             Relocate(move, boardMap);
                             whiteMove = !whiteMove;
+                            if (IsPromotionMove(move)) {
+                                changePawnUi.SetActive(!changePawnUi.activeSelf);
+                                this.enabled = !this.enabled;
+                            }
 
                             if (possMove.second.HasValue) {
                                 Relocate(possMove.second.Value, boardMap);
@@ -157,9 +171,8 @@ namespace controller {
                     break;
             }
         }
-        private List<GameObject> CreatingPossibleMoves(List<DoubleMove> possibleMoves) {
-            var possibleMovesObj = new List<GameObject>();
 
+        private void CreatingHighlight() {
             foreach (DoubleMove move in possibleMoves) {
                 var posX = move.first.Value.to.x;
                 var posY = move.first.Value.to.y;
@@ -170,14 +183,11 @@ namespace controller {
                     figCont.blueBacklight,
                     objPos,
                     Quaternion.Euler(90, 0, 0),
-                    figureSpawner.boardTransform
+                    highlight.transform
                 );
 
                 obj.transform.localPosition = objPos;
-                possibleMovesObj.Add(obj);
             }
-
-            return possibleMovesObj;
         }
 
         private void Relocate(Move move, Option<Fig>[,] board) {
@@ -202,7 +212,59 @@ namespace controller {
             figuresMap[posFrom.x, posFrom.y] = null;
 
             var newPos = new Vector3(CONST - posTo.x * 1.5f, 0.0f, CONST - posTo.y * 1.5f);
-            figuresMap[posTo.x, posTo.y].transform.position = newPos;
+            figuresMap[posTo.x, posTo.y].transform.localPosition = newPos;
         }
+
+        private bool IsPromotionMove(Move move) {
+            var fig = boardMap[move.from.x, move.from.y].Peel();
+
+            if (fig.type == FigureType.Pawn && move.to.x == 0) {
+                promotionPawnPos = new Vector2Int(move.to.x, move.to.y);
+                return true;
+            }
+
+            if (fig.type == FigureType.Pawn && move.to.x == 7) {
+                promotionPawnPos = new Vector2Int(move.to.x, move.to.y);
+                return true;
+            }
+
+            return false;
+        }
+        public void PromotionPawn(GameObject wFig, GameObject bFig, FigureType type) {
+            var posX = promotionPawnPos.x;
+            var posY = promotionPawnPos.y;
+            var newPos = new Vector3(CONST - posX * 1.5f, 0.0f, CONST - posY * 1.5f);
+
+            if (posX == 0) {
+                var fig = Fig.CreateFig(true, type);
+                boardMap[posX, posY] = Option<Fig>.Some(fig);
+                Destroy(figuresMap[posX, posY]);
+
+                figuresMap[posX, posY] = Instantiate(
+                    wFig,
+                    newPos,
+                    Quaternion.Euler(0, 90, 0),
+                    figureSpawner.boardTransform
+                );
+            }
+
+            if (posX == 7) {
+                var fig = Fig.CreateFig(false, type);
+                boardMap[posX, posY] = Option<Fig>.Some(fig);
+                Destroy(figuresMap[posX, posY]);
+
+                figuresMap[posX, posY] = Instantiate(
+                    bFig,
+                    newPos,
+                    Quaternion.Euler(0, 90, 0),
+                    figureSpawner.boardTransform
+                );
+            }
+
+            figuresMap[posX, posY].transform.localPosition = newPos;
+            changePawnUi.SetActive(!changePawnUi.activeSelf);
+            this.enabled = !this.enabled;
+        }
+
     }
 }

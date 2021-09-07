@@ -957,7 +957,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1014368085}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: highlight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -971,7 +971,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1014368084}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 5.175, y: 0, z: 5.199}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 1298991955}
@@ -1806,6 +1806,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   whiteMove: 1
+  highlight: {fileID: 1014368084}
+  changePawnUi: {fileID: 1881648331}
   figureSpawner: {fileID: 1564542936}
   figCont: {fileID: 1564542934}
 --- !u!114 &1564542934
@@ -1847,6 +1849,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   MenuUi: {fileID: 464284370}
+  figCont: {fileID: 1564542934}
   menuBut: {fileID: 310482973}
   newGameBut: {fileID: 1672406728}
   newGameMenuBut: {fileID: 1377633295}

@@ -16,42 +16,42 @@ namespace collections {
     }
 
     public class BindableList<T> : IEnumerable<Element<T>> {
-        public Element<T> root;
+        public Element<T> head;
+        public Element<T> tail;
+
         public int count;
+
+    public BindableList() {
+        head = new Element<T>();
+        tail = new Element<T>();
+
+        head.next = tail;
+        tail.previous = head;
+    }
 
         public void Add(T value) {
             var node = Element<T>.Mk(value);
 
-            if (count == 0) {
-                root = node;
-                root.previous = root;
-            } else {
-                root.previous.next = node;
-                node.previous = root.previous;
-                root.previous = node;
-                node.next = root;
-            }
+            tail.previous.next = node;
+            node.previous = tail.previous;
+            node.next = tail;
+            tail.previous = node;
+
             count++;
         }
 
         public void Remove(Element<T> node) {
             var current = node;
 
-            if (count != 1) {
-                if (current == root) {
-                    root = current.next;
-                }
+            current.next.previous = current.previous;
+            current.previous.next = current.next;
 
-                current.next.previous = current.previous;
-                current.previous.next = current.next;
-            } else {
-                root = null;
-            }
             count--;
         }
 
         public void Clear() {
-            root = null;
+            head = null;
+            tail = null;
             count = 0;
         }
 
@@ -60,9 +60,9 @@ namespace collections {
         }
 
         IEnumerator<Element<T>> IEnumerable<Element<T>>.GetEnumerator() {
-            var node = root;
+            var node = head.next;
             if (node != null) {
-                while (node != root.previous) {
+                while (node != tail.previous) {
                     yield return node;
 
                     node = node.next;

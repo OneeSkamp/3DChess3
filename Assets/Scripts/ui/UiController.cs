@@ -3,10 +3,13 @@ using UnityEngine.UI;
 using UnityEngine;
 using controller;
 using parse;
+using chess;
 
 namespace ui {
     public class UiController : MonoBehaviour {
         public GameObject MenuUi;
+
+        public FigureResurses figCont;
 
         public Button menuBut;
         public Button newGameBut;
@@ -32,6 +35,31 @@ namespace ui {
         private Action changeOnKnight;
 
         private void Awake() {
+            var queen = FigureType.Queen;
+            var bishop = FigureType.Bishop;
+            var rook = FigureType.Rook;
+            var knight = FigureType.Knight;
+
+            changeOnQueen += () => chessController.PromotionPawn(
+                figCont.wQueen, 
+                figCont.bQueen, 
+                queen
+            );
+            changeOnBishop += () => chessController.PromotionPawn(
+                figCont.wBishop, 
+                figCont.bBishop, 
+                bishop
+            );
+            changeOnRook += () => chessController.PromotionPawn(
+                figCont.wRook, 
+                figCont.bRook, 
+                rook
+            );
+            changeOnKnight += () => chessController.PromotionPawn(
+                figCont.wKnight, 
+                figCont.bKnight, 
+                knight
+            );
 
             openMenu += OpenMenu;
 
