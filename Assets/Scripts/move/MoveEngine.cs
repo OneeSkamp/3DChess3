@@ -34,8 +34,16 @@ namespace move {
                 };
 
                 if (ChessEngine.IsPossibleMove(move, board)) {
+                    var fig = board[move.from.x, move.from.y].Peel();
+                    if (fig.type == FigureType.Pawn) {
+                        if (move.to.x == 0 || move.to.x == 7) {
+                            move.promotionPos = move.to;
+                        }
+                    }
+
                     if (board[move.to.x, move.to.y].IsSome()) {
                         move.destroyPos = move.to;
+
                         possMoves.Add(DoubleMove.Mk(move, null));
                         continue;
                     }

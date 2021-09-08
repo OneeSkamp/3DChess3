@@ -32,6 +32,7 @@ namespace controller {
     public class ChessController : MonoBehaviour {
         public Transform empty1;
         public Transform empty2;
+        public Transform boardTransform;
 
         public Cell cell;
 
@@ -42,7 +43,6 @@ namespace controller {
 
         public GameObject changePawnUi;
 
-        public FigureSpawner figureSpawner;
         public FigureResourses figContent;
 
         public KingPos kingPos;
@@ -50,7 +50,6 @@ namespace controller {
         private List<DoubleMove> possibleMoves = new List<DoubleMove>();
 
         private Vector2Int selectFigurePos;
-        private Vector2Int promotionPawnPos;
 
         private State state;
 
@@ -119,7 +118,7 @@ namespace controller {
                 return;
             }
 
-            var localHit = figureSpawner.boardTransform.InverseTransformPoint(hit.point);
+            var localHit = boardTransform.InverseTransformPoint(hit.point);
 
             var pos = new Vector2Int (
                 Mathf.Abs((int)((localHit.x - empty1.position.x) / cell.size)),
@@ -179,12 +178,15 @@ namespace controller {
 
                         var firstMove = possMove.first.Value;
                         if (move.to == firstMove.to && move.from == firstMove.from) {
-                            if (IsPromotionMove(move)) {
+                            Relocate(possMove.first.Value, map.board);
+                            selectFigurePos = move.to;
+                            whiteMove = !whiteMove;
+
+                            if (possMove.first.Value.promotionPos.HasValue) {
+                                Debug.Log(possMove.first.Value.promotionPos);
                                 changePawnUi.SetActive(!changePawnUi.activeSelf);
                                 this.enabled = !this.enabled;
                             }
-                            Relocate(possMove.first.Value, map.board);
-                            whiteMove = !whiteMove;
 
                             if (possMove.second.HasValue) {
                                 Relocate(possMove.second.Value, map.board);
@@ -253,27 +255,9 @@ namespace controller {
             map.figures[posTo.x, posTo.y].transform.localPosition = newPos;
         }
 
-        private bool IsPromotionMove(Move move) {
-            var figOpt = map.board[move.from.x, move.from.y];
-            if (figOpt.IsSome()) {
-                var fig = map.board[move.from.x, move.from.y].Peel();
-
-                if (fig.type == FigureType.Pawn && move.to.x == 0) {
-                    promotionPawnPos = new Vector2Int(move.to.x, move.to.y);
-                    return true;
-                }
-
-                if (fig.type == FigureType.Pawn && move.to.x == 7) {
-                    promotionPawnPos = new Vector2Int(move.to.x, move.to.y);
-                    return true;
-                }
-            }
-
-            return false;
-        }
         public void PromotionPawn(GameObject wFig, GameObject bFig, FigureType type) {
-            var posX = promotionPawnPos.x;
-            var posY = promotionPawnPos.y;
+            var posX = selectFigurePos.x;
+            var posY = selectFigurePos.y;
 
             var newX = cell.offset - posX * cell.size;
             var newY = cell.offset - posY * cell.size;
@@ -288,7 +272,7 @@ namespace controller {
                     wFig,
                     newPos,
                     Quaternion.Euler(0, 90, 0),
-                    figureSpawner.boardTransform
+                    boardTransform
                 );
             }
 
@@ -301,7 +285,7 @@ namespace controller {
                     bFig,
                     newPos,
                     Quaternion.Euler(0, 90, 0),
-                    figureSpawner.boardTransform
+                    boardTransform
                 );
             }
 
@@ -309,6 +293,5 @@ namespace controller {
             changePawnUi.SetActive(!changePawnUi.activeSelf);
             this.enabled = !this.enabled;
         }
-
     }
 }

@@ -40,6 +40,7 @@ namespace chess {
         public Vector2Int from;
         public Vector2Int to;
         public Vector2Int? destroyPos;
+        public Vector2Int? promotionPos;
 
         public static Move Mk(Vector2Int from, Vector2Int to) {
             return new Move { from = from, to = to};
