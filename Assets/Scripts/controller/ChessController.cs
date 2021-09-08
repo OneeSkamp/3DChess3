@@ -23,7 +23,18 @@ namespace controller {
         public Vector2Int black;
     }
 
+    public struct Cell {
+        public int count;
+        public float size;
+        public float offset;
+    }
+
     public class ChessController : MonoBehaviour {
+        public Transform empty1;
+        public Transform empty2;
+
+        public Cell cell;
+
         public Map map;
         public bool whiteMove = true;
 
@@ -41,12 +52,16 @@ namespace controller {
         private Vector2Int selectFigurePos;
         private Vector2Int promotionPawnPos;
 
-        private const float CONST = 5.25f;
         private State state;
 
-        private List<GameObject> possibleMoveList;
-
         private void Awake() {
+            var emp1PosX = empty1.localPosition.x;
+            var emp2PosX = empty2.localPosition.x;
+
+            cell.count = 8;
+            cell.size = (Mathf.Abs(emp1PosX) + Mathf.Abs(emp2PosX)) / cell.count;
+            cell.offset = empty1.position.x - cell.size / 2;
+
             kingPos = new KingPos {
                 white = new Vector2Int(7, 4),
                 black = new Vector2Int(0, 4)
@@ -107,8 +122,8 @@ namespace controller {
             var localHit = figureSpawner.boardTransform.InverseTransformPoint(hit.point);
 
             var pos = new Vector2Int (
-                Mathf.Abs((int)((localHit.x - 6f) / 1.5f)),
-                Mathf.Abs((int)((localHit.z - 6f) / 1.5f))
+                Mathf.Abs((int)((localHit.x - empty1.position.x) / cell.size)),
+                Mathf.Abs((int)((localHit.z - empty1.position.x) / cell.size))
             );
 
             var size = new Vector2Int(map.board.GetLength(0), map.board.GetLength(1));
@@ -128,8 +143,6 @@ namespace controller {
             var fig = figOpt.Peel();
 
             switch (state) {
-                default:
-                
                 case State.None:
                     if (figOpt.Peel().white != whiteMove) {
                         break;
@@ -170,7 +183,7 @@ namespace controller {
                                 changePawnUi.SetActive(!changePawnUi.activeSelf);
                                 this.enabled = !this.enabled;
                             }
-                            Relocate(move, map.board);
+                            Relocate(possMove.first.Value, map.board);
                             whiteMove = !whiteMove;
 
                             if (possMove.second.HasValue) {
@@ -195,7 +208,9 @@ namespace controller {
                 var posX = move.first.Value.to.x;
                 var posY = move.first.Value.to.y;
 
-                var objPos = new Vector3(CONST - posX * 1.5f, 0.01f, CONST - posY * 1.5f);
+                var newX = cell.offset - posX * cell.size;
+                var newY = cell.offset - posY * cell.size;
+                var objPos = new Vector3(newX, 0.01f, newY);
 
                 var obj = Instantiate(
                     figContent.blueBacklight,
@@ -222,14 +237,19 @@ namespace controller {
                 }
             }
 
-            if (moveRes.error == MoveError.MoveOnFigure) {
-                Destroy(map.figures[moveRes.pos.x, moveRes.pos.y]);
+            if (move.destroyPos != null) {
+                var posX = move.destroyPos.Value.x;
+                var posY = move.destroyPos.Value.y;
+                Destroy(map.figures[posX, posY]);
             }
 
             map.figures[posTo.x, posTo.y] = map.figures[posFrom.x, posFrom.y];
             map.figures[posFrom.x, posFrom.y] = null;
 
-            var newPos = new Vector3(CONST - posTo.x * 1.5f, 0.0f, CONST - posTo.y * 1.5f);
+            var newX = cell.offset - posTo.x * cell.size;
+            var newY = cell.offset - posTo.y * cell.size;
+            var newPos = new Vector3(newX, 0.0f, newY);
+
             map.figures[posTo.x, posTo.y].transform.localPosition = newPos;
         }
 
@@ -254,7 +274,10 @@ namespace controller {
         public void PromotionPawn(GameObject wFig, GameObject bFig, FigureType type) {
             var posX = promotionPawnPos.x;
             var posY = promotionPawnPos.y;
-            var newPos = new Vector3(CONST - posX * 1.5f, 0.0f, CONST - posY * 1.5f);
+
+            var newX = cell.offset - posX * cell.size;
+            var newY = cell.offset - posY * cell.size;
+            var newPos = new Vector3(newX, 0.0f, newY);
 
             if (posX == 0) {
                 var fig = Fig.CreateFig(true, type);

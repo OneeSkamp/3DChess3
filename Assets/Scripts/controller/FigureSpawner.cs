@@ -6,15 +6,16 @@ namespace controller {
     public class FigureSpawner : MonoBehaviour {
         public Transform boardTransform;
 
-        private const float CONST = 5.25f;
 
         public FigureResourses figCont;
         public ChessController chessController;
 
+        private float offset;
+        private float cellSize;
 
         public void CreatingFiguresOnBoard(Option<Fig>[,] board) {
-            float xPos = CONST;
-            float yPos = CONST;
+            float xPos = offset;
+            float yPos = offset;
 
             for (int i = 0; i < board.GetLength(0); i++) {
 
@@ -135,16 +136,19 @@ namespace controller {
                             chessController.map.figures[i, j].transform.localPosition = pos;
                         }
 
-                        yPos -= 1.5f;
+                        yPos -= cellSize;
                     }
 
                 }
-                yPos = CONST;
-                xPos -= 1.5f;
+                yPos = offset;
+                xPos -= cellSize;
             }
         }
 
         private void Start() {
+            offset = chessController.cell.offset;
+            cellSize = chessController.cell.size;
+
             CreatingFiguresOnBoard(chessController.map.board);
         }
     }

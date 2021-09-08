@@ -20,6 +20,7 @@ namespace inspector {
             }
 
             var moves = MoveEngine.GetFigureMoves(pos, movements[FigureType.Queen], board);
+            
             moves.AddRange(MoveEngine.GetFigureMoves(pos, movements[FigureType.Knight], board));
 
 
@@ -63,6 +64,7 @@ namespace inspector {
             var savePos = new DoubleMove();
             var movements= Movements.movements[board[pos.x, pos.y].Peel().type];
             var figMoves = MoveEngine.GetFigureMoves(pos, movements, board);
+            
             var boardClone = BoardEngine.CopyBoard(board);
 
             foreach (var figMove in figMoves) {
@@ -98,7 +100,11 @@ namespace inspector {
                 }
                 kPos = kingPos;
             }
-
+            // foreach(var a in figPossMoves) {
+            //             if(a.first.Value.destroyPos != null) {
+            //                 Debug.Log("+");
+            //             }
+            //         }
             return figPossMoves;
         }
     }

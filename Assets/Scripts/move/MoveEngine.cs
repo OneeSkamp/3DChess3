@@ -34,12 +34,19 @@ namespace move {
                 };
 
                 if (ChessEngine.IsPossibleMove(move, board)) {
+                    if (board[move.to.x, move.to.y].IsSome()) {
+                        move.destroyPos = move.to;
+                        possMoves.Add(DoubleMove.Mk(move, null));
+                        continue;
+                    }
+
                     doubleMove.first = move;
                     possMoves.Add(doubleMove);
                 }
-
-                possMoves.AddRange(GetCastlingMoves(start, board));
             }
+            possMoves.AddRange(GetCastlingMoves(start, board));
+            possMoves.AddRange(GetEnPassantMoves(start, board));
+
             return possMoves;
         }
 
@@ -152,6 +159,13 @@ namespace move {
                 if (figToOpt.IsSome()) {
                     moveRes.error = MoveError.MoveOnFigure;
                 }
+
+                if (move.destroyPos != null) {
+                    var posX = move.destroyPos.Value.x;
+                    var posY = move.destroyPos.Value.y;
+
+                    board[posX, posY] = Option<Fig>.None();
+                }
             }
 
             board[posTo.x, posTo.y] = board[posFrom.x, posFrom.y];
@@ -214,6 +228,88 @@ namespace move {
             }
 
             return castlingMoves;
+        }
+
+        public static List<DoubleMove> GetEnPassantMoves(Vector2Int pawnPos, Option<Fig>[,] board) {
+            var enPassantMoves = new List<DoubleMove>();
+            var leftDir = new Vector2Int(0, -1);
+            var rightDir = new Vector2Int(0, 1);
+
+            var leftLength = BoardEngine.GetLinearLength(pawnPos, leftDir, board);
+            var rightLength = BoardEngine.GetLinearLength(pawnPos, rightDir, board);
+
+            var leftPath = BoardEngine.GetLinearPath(pawnPos, leftDir, leftLength, board);
+            var rightPath = BoardEngine.GetLinearPath(pawnPos, rightDir, rightLength, board);
+
+            var leftPos = new Vector2Int();
+            var rightPos = new Vector2Int();
+
+            var move = new DoubleMove();
+
+            if (leftPath.Count == 1) {
+                leftPos = leftPath[0];
+            }
+
+            if (rightPath.Count == 1) {
+                rightPos = rightPath[0];
+            }
+
+            var fig = board[pawnPos.x, pawnPos.y].Peel();
+            if (fig.type == FigureType.Pawn && fig.white && pawnPos.x == 3) {
+                var leftFig = board[leftPos.x, leftPos.y].Peel();
+                var rightFig = board[rightPos.x, rightPos.y].Peel();
+
+                if (leftFig.type == FigureType.Pawn && leftFig.white != fig.white
+                    && leftFig.counter == 1
+                ) {
+                    move = DoubleMove.Mk(
+                        Move.Mk(pawnPos, new Vector2Int(leftPos.x - 1, leftPos.y)),
+                        null
+                    );
+
+                    enPassantMoves.Add(move);
+                }
+
+                if (rightFig.type == FigureType.Pawn && rightFig.white != fig.white
+                    && rightFig.counter == 1
+                ) {
+                    move = DoubleMove.Mk(
+                        Move.Mk(pawnPos, new Vector2Int(rightPos.x - 1, rightPos.y)),
+                        null
+                    );
+
+                    enPassantMoves.Add(move);
+                }
+            }
+
+            if (fig.type == FigureType.Pawn && !fig.white && pawnPos.x == 4) {
+                var leftFig = board[leftPos.x, leftPos.y].Peel();
+                var rightFig = board[rightPos.x, rightPos.y].Peel();
+
+                if (leftFig.type == FigureType.Pawn && leftFig.white != fig.white
+                    && leftFig.counter == 1
+                ) {
+                    move = DoubleMove.Mk(
+                        Move.Mk(pawnPos, new Vector2Int(leftPos.x + 1, leftPos.y)),
+                        null
+                    );
+
+                    enPassantMoves.Add(move);
+                }
+
+                if (rightFig.type == FigureType.Pawn && rightFig.white != fig.white
+                    && rightFig.counter == 1
+                ) {
+                    move = DoubleMove.Mk(
+                        Move.Mk(pawnPos, new Vector2Int(rightPos.x + 1, rightPos.y)),
+                        null
+                    );
+
+                    enPassantMoves.Add(move);
+                }
+            }
+
+            return enPassantMoves;
         }
     }
 }
