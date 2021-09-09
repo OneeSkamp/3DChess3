@@ -40,6 +40,7 @@ namespace controller {
         public bool whiteMove = true;
 
         public GameObject highlight;
+        public GameObject checkHighlight;
 
         public GameObject changePawnUi;
 
@@ -162,7 +163,7 @@ namespace controller {
                         map.board
                     );
 
-                    CreatingHighlight();
+                    CreateHighlight();
                     state = State.FigureSelected;
                     break;
                 case State.FigureSelected:
@@ -196,12 +197,17 @@ namespace controller {
                         kingPos = this.kingPos.white;
                     }
 
+                    Destroy(checkHighlight);
+                    if (ChessInspector.IsUnderAttackPos(kingPos, whiteMove, map.board)) {
+                        CreateCheckHighlight(kingPos);
+                    }
+
                     possibleMoves.Clear();
                     break;
             }
         }
 
-        private void CreatingHighlight() {
+        private void CreateHighlight() {
             foreach (var move in possibleMoves) {
                 var posX = move.first.Value.to.x;
                 var posY = move.first.Value.to.y;
@@ -219,6 +225,21 @@ namespace controller {
 
                 obj.transform.localPosition = objPos;
             }
+        }
+
+        private void CreateCheckHighlight(Vector2Int kingPos) {
+            var newX = cell.offset - kingPos.x * cell.size;
+            var newY = cell.offset - kingPos.y * cell.size;
+            var objPos = new Vector3(newX, 0.01f, newY);
+
+            checkHighlight = Instantiate(
+                figContent.redBacklight,
+                objPos,
+                Quaternion.Euler(90, 0, 0),
+                boardTransform
+            );
+
+            checkHighlight.transform.localPosition = objPos;
         }
 
         private void Relocate(Move move, Option<Fig>[,] board) {
