@@ -251,6 +251,7 @@ namespace move {
 
             var leftPos = new Vector2Int();
             var rightPos = new Vector2Int();
+            var prop = 0;
 
             var move = new DoubleMove();
 
@@ -263,61 +264,36 @@ namespace move {
             }
 
             var fig = board[pawnPos.x, pawnPos.y].Peel();
-            if (fig.type == FigureType.Pawn && fig.white && pawnPos.x == 3) {
-                var leftFig = board[leftPos.x, leftPos.y].Peel();
-                var rightFig = board[rightPos.x, rightPos.y].Peel();
 
-                if (leftFig.type == FigureType.Pawn && leftFig.white != fig.white
-                    && leftFig.counter == 1
-                ) {
-                    var newPos = new Vector2Int(leftPos.x - 1, leftPos.y);
-                    move = DoubleMove.Mk(
-                        Move.Mk(pawnPos, newPos, leftPos),
-                        null
-                    );
-
-                    enPassantMoves.Add(move);
+            if (fig.type == FigureType.Pawn) {
+                if (fig.white && pawnPos.x == 3) {
+                    prop = -1;
                 }
 
-                if (rightFig.type == FigureType.Pawn && rightFig.white != fig.white
-                    && rightFig.counter == 1
-                ) {
-                    var newPos = new Vector2Int(rightPos.x - 1, rightPos.y);
-                    move = DoubleMove.Mk(
-                        Move.Mk(pawnPos, newPos, rightPos),
-                        null
-                    );
-
-                    enPassantMoves.Add(move);
-                }
-            }
-
-            if (fig.type == FigureType.Pawn && !fig.white && pawnPos.x == 4) {
-                var leftFig = board[leftPos.x, leftPos.y].Peel();
-                var rightFig = board[rightPos.x, rightPos.y].Peel();
-
-                if (leftFig.type == FigureType.Pawn && leftFig.white != fig.white
-                    && leftFig.counter == 1
-                ) {
-                    var newPos = new Vector2Int(leftPos.x + 1, leftPos.y);
-                    move = DoubleMove.Mk(
-                        Move.Mk(pawnPos, newPos, leftPos),
-                        null
-                    );
-
-                    enPassantMoves.Add(move);
+                if (!fig.white && pawnPos.x == 4) {
+                    prop = 1;
                 }
 
-                if (rightFig.type == FigureType.Pawn && rightFig.white != fig.white
-                    && rightFig.counter == 1
-                ) {
-                    var newPos = new Vector2Int(rightPos.x + 1, rightPos.y);
-                    move = DoubleMove.Mk(
-                        Move.Mk(pawnPos, newPos, rightPos),
-                        null
-                    );
+                if (prop == 1 || prop == -1) {
+                    var leftFig = board[leftPos.x, leftPos.y].Peel();
+                    var rightFig = board[rightPos.x, rightPos.y].Peel();
+                    if (leftFig.type == FigureType.Pawn && leftFig.white != fig.white
+                        && leftFig.counter == 1
+                    ) {
+                        var newPos = new Vector2Int(leftPos.x + prop, leftPos.y);
+                        move = DoubleMove.Mk(Move.Mk(pawnPos, newPos, leftPos), null);
 
-                    enPassantMoves.Add(move);
+                        enPassantMoves.Add(move);
+                    }
+
+                    if (rightFig.type == FigureType.Pawn && rightFig.white != fig.white
+                        && rightFig.counter == 1
+                    ) {
+                        var newPos = new Vector2Int(rightPos.x + prop, rightPos.y);
+                        move = DoubleMove.Mk(Move.Mk(pawnPos, newPos, rightPos), null);
+
+                        enPassantMoves.Add(move);
+                    }
                 }
             }
 
