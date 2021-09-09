@@ -270,8 +270,9 @@ namespace move {
                 if (leftFig.type == FigureType.Pawn && leftFig.white != fig.white
                     && leftFig.counter == 1
                 ) {
+                    var newPos = new Vector2Int(leftPos.x - 1, leftPos.y);
                     move = DoubleMove.Mk(
-                        Move.Mk(pawnPos, new Vector2Int(leftPos.x - 1, leftPos.y)),
+                        Move.Mk(pawnPos, newPos, leftPos),
                         null
                     );
 
@@ -281,8 +282,9 @@ namespace move {
                 if (rightFig.type == FigureType.Pawn && rightFig.white != fig.white
                     && rightFig.counter == 1
                 ) {
+                    var newPos = new Vector2Int(rightPos.x - 1, rightPos.y);
                     move = DoubleMove.Mk(
-                        Move.Mk(pawnPos, new Vector2Int(rightPos.x - 1, rightPos.y)),
+                        Move.Mk(pawnPos, newPos, rightPos),
                         null
                     );
 
@@ -297,8 +299,9 @@ namespace move {
                 if (leftFig.type == FigureType.Pawn && leftFig.white != fig.white
                     && leftFig.counter == 1
                 ) {
+                    var newPos = new Vector2Int(leftPos.x + 1, leftPos.y);
                     move = DoubleMove.Mk(
-                        Move.Mk(pawnPos, new Vector2Int(leftPos.x + 1, leftPos.y)),
+                        Move.Mk(pawnPos, newPos, leftPos),
                         null
                     );
 
@@ -308,8 +311,9 @@ namespace move {
                 if (rightFig.type == FigureType.Pawn && rightFig.white != fig.white
                     && rightFig.counter == 1
                 ) {
+                    var newPos = new Vector2Int(rightPos.x + 1, rightPos.y);
                     move = DoubleMove.Mk(
-                        Move.Mk(pawnPos, new Vector2Int(rightPos.x + 1, rightPos.y)),
+                        Move.Mk(pawnPos, newPos, rightPos),
                         null
                     );
 

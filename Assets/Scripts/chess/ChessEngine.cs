@@ -1,5 +1,3 @@
-using System.Collections.Specialized;
-using System;
 using board;
 using UnityEngine;
 using option;
@@ -43,7 +41,11 @@ namespace chess {
         public Vector2Int? promotionPos;
 
         public static Move Mk(Vector2Int from, Vector2Int to) {
-            return new Move { from = from, to = to};
+            return new Move { from = from, to = to };
+        }
+
+        public static Move Mk(Vector2Int from, Vector2Int to, Vector2Int destroyPos) {
+            return new Move { from = from, to = to, destroyPos = destroyPos };
         }
     }
 
