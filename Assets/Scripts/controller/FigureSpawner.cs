@@ -146,8 +146,8 @@ namespace controller {
         }
 
         private void Start() {
-            offset = chessController.cell.offset;
-            cellSize = chessController.cell.size;
+            offset = chessController.cellInfo.offset;
+            cellSize = chessController.cellInfo.size;
 
             CreatingFiguresOnBoard(chessController.map.board);
         }

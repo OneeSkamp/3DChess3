@@ -8,9 +8,9 @@ using move;
 using movements;
 
 namespace controller {
-    public enum State {
-        None,
-        FigureSelected
+    public enum PlayerAction {
+        Select,
+        Move
     }
 
     public struct Map {
@@ -18,25 +18,31 @@ namespace controller {
         public GameObject[,] figures;
     }
 
-    public struct KingPos {
+    public struct KingsPos {
         public Vector2Int white;
         public Vector2Int black;
     }
 
-    public struct Cell {
+    [System.Serializable]
+    public struct BoardInfo {
+        public Transform leftTop;
+        public Transform rightBottom;
+    }
+
+    public struct CellInfo {
         public int count;
         public float size;
         public float offset;
     }
 
     public class ChessController : MonoBehaviour {
-        public Transform empty1;
-        public Transform empty2;
+
         public Transform boardTransform;
 
-        public Cell cell;
+        public CellInfo cellInfo;
 
         public Map map;
+        public BoardInfo boardInfo;
         public bool whiteMove = true;
 
         public GameObject highlight;
@@ -46,23 +52,23 @@ namespace controller {
 
         public FigureResourses figContent;
 
-        public KingPos kingPos;
+        public KingsPos kingsPos;
  
         private List<DoubleMove> possibleMoves = new List<DoubleMove>();
 
         private Vector2Int selectFigurePos;
 
-        private State state;
+        private PlayerAction playerAction;
 
         private void Awake() {
-            var emp1PosX = empty1.localPosition.x;
-            var emp2PosX = empty2.localPosition.x;
+            var emp1PosX = boardInfo.leftTop.localPosition.x;
+            var emp2PosX = boardInfo.rightBottom.localPosition.x;
 
-            cell.count = 8;
-            cell.size = (Mathf.Abs(emp1PosX) + Mathf.Abs(emp2PosX)) / cell.count;
-            cell.offset = empty1.position.x - cell.size / 2;
+            cellInfo.count = 8;
+            cellInfo.size = (Mathf.Abs(emp1PosX) + Mathf.Abs(emp2PosX)) / cellInfo.count;
+            cellInfo.offset = boardInfo.leftTop.position.x - cellInfo.size / 2;
 
-            kingPos = new KingPos {
+            kingsPos = new KingsPos {
                 white = new Vector2Int(7, 4),
                 black = new Vector2Int(0, 4)
             };
@@ -122,8 +128,8 @@ namespace controller {
             var localHit = boardTransform.InverseTransformPoint(hit.point);
 
             var pos = new Vector2Int (
-                Mathf.Abs((int)((localHit.x - empty1.position.x) / cell.size)),
-                Mathf.Abs((int)((localHit.z - empty1.position.x) / cell.size))
+                Mathf.Abs((int)((localHit.x - boardInfo.leftTop.position.x) / cellInfo.size)),
+                Mathf.Abs((int)((localHit.z - boardInfo.leftTop.position.x) / cellInfo.size))
             );
 
             var size = new Vector2Int(map.board.GetLength(0), map.board.GetLength(1));
@@ -137,24 +143,22 @@ namespace controller {
 
             var figOpt = map.board[pos.x, pos.y];
             if (figOpt.IsSome() && figOpt.Peel().white == whiteMove) {
-                state = State.None;
+                playerAction = PlayerAction.Select;
             }
 
             var fig = figOpt.Peel();
 
-            switch (state) {
-                case State.None:
+            switch (playerAction) {
+                case PlayerAction.Select:
                     if (figOpt.Peel().white != whiteMove) {
                         break;
                     }
                     var movement = movements[figOpt.Peel().type];
                     selectFigurePos = pos;
 
-                    possibleMoves.Clear();
-
-                    var kingPos = this.kingPos.black;
+                    var kingPos = kingsPos.black;
                     if (whiteMove) {
-                        kingPos = this.kingPos.white;
+                        kingPos = kingsPos.white;
                     }
 
                     possibleMoves = ChessInspector.GetPossibleMoves(
@@ -164,9 +168,9 @@ namespace controller {
                     );
 
                     CreateHighlight();
-                    state = State.FigureSelected;
+                    playerAction = PlayerAction.Move;
                     break;
-                case State.FigureSelected:
+                case PlayerAction.Move:
                     var move = Move.Mk(selectFigurePos, pos);
 
                     foreach (DoubleMove possMove in possibleMoves) {
@@ -192,9 +196,9 @@ namespace controller {
                         }
                     }
 
-                    kingPos = this.kingPos.black;
+                    kingPos = this.kingsPos.black;
                     if (whiteMove) {
-                        kingPos = this.kingPos.white;
+                        kingPos = this.kingsPos.white;
                     }
 
                     Destroy(checkHighlight);
@@ -212,8 +216,8 @@ namespace controller {
                 var posX = move.first.Value.to.x;
                 var posY = move.first.Value.to.y;
 
-                var newX = cell.offset - posX * cell.size;
-                var newY = cell.offset - posY * cell.size;
+                var newX = cellInfo.offset - posX * cellInfo.size;
+                var newY = cellInfo.offset - posY * cellInfo.size;
                 var objPos = new Vector3(newX, 0.01f, newY);
 
                 var obj = Instantiate(
@@ -228,8 +232,8 @@ namespace controller {
         }
 
         private void CreateCheckHighlight(Vector2Int kingPos) {
-            var newX = cell.offset - kingPos.x * cell.size;
-            var newY = cell.offset - kingPos.y * cell.size;
+            var newX = cellInfo.offset - kingPos.x * cellInfo.size;
+            var newY = cellInfo.offset - kingPos.y * cellInfo.size;
             var objPos = new Vector3(newX, 0.01f, newY);
 
             checkHighlight = Instantiate(
@@ -250,9 +254,9 @@ namespace controller {
 
             if (fig.type == FigureType.King) {
 
-                kingPos.black = posTo;
+                kingsPos.black = posTo;
                 if (fig.white) {
-                    kingPos.white = posTo;
+                    kingsPos.white = posTo;
                 }
             }
 
@@ -265,8 +269,8 @@ namespace controller {
             map.figures[posTo.x, posTo.y] = map.figures[posFrom.x, posFrom.y];
             map.figures[posFrom.x, posFrom.y] = null;
 
-            var newX = cell.offset - posTo.x * cell.size;
-            var newY = cell.offset - posTo.y * cell.size;
+            var newX = cellInfo.offset - posTo.x * cellInfo.size;
+            var newY = cellInfo.offset - posTo.y * cellInfo.size;
             var newPos = new Vector3(newX, 0.0f, newY);
 
             map.figures[posTo.x, posTo.y].transform.localPosition = newPos;
@@ -278,8 +282,8 @@ namespace controller {
             var posX = selectFigurePos.x;
             var posY = selectFigurePos.y;
 
-            var newX = cell.offset - posX * cell.size;
-            var newY = cell.offset - posY * cell.size;
+            var newX = cellInfo.offset - posX * cellInfo.size;
+            var newY = cellInfo.offset - posY * cellInfo.size;
             var newPos = new Vector3(newX, 0.0f, newY);
 
             if (posX == 0) {
