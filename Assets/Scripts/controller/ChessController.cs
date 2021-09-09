@@ -183,7 +183,6 @@ namespace controller {
                             whiteMove = !whiteMove;
 
                             if (possMove.first.Value.promotionPos.HasValue) {
-                                Debug.Log(possMove.first.Value.promotionPos);
                                 changePawnUi.SetActive(!changePawnUi.activeSelf);
                                 this.enabled = !this.enabled;
                             }
@@ -256,6 +255,8 @@ namespace controller {
         }
 
         public void PromotionPawn(GameObject wFig, GameObject bFig, FigureType type) {
+            var figObj = bFig;
+            var fig = Fig.CreateFig(false, type);
             var posX = selectFigurePos.x;
             var posY = selectFigurePos.y;
 
@@ -264,30 +265,18 @@ namespace controller {
             var newPos = new Vector3(newX, 0.0f, newY);
 
             if (posX == 0) {
-                var fig = Fig.CreateFig(true, type);
-                map.board[posX, posY] = Option<Fig>.Some(fig);
-                Destroy(map.figures[posX, posY]);
-
-                map.figures[posX, posY] = Instantiate(
-                    wFig,
-                    newPos,
-                    Quaternion.Euler(0, 90, 0),
-                    boardTransform
-                );
+                fig = Fig.CreateFig(true, type);
+                figObj = wFig;
             }
 
-            if (posX == 7) {
-                var fig = Fig.CreateFig(false, type);
-                map.board[posX, posY] = Option<Fig>.Some(fig);
-                Destroy(map.figures[posX, posY]);
-
-                map.figures[posX, posY] = Instantiate(
-                    bFig,
-                    newPos,
-                    Quaternion.Euler(0, 90, 0),
-                    boardTransform
-                );
-            }
+            map.board[posX, posY] = Option<Fig>.Some(fig);
+            Destroy(map.figures[posX, posY]);
+            map.figures[posX, posY] = Instantiate(
+                figObj,
+                newPos,
+                Quaternion.Euler(0, 90, 0),
+                boardTransform
+            );
 
             map.figures[posX, posY].transform.localPosition = newPos;
             changePawnUi.SetActive(!changePawnUi.activeSelf);

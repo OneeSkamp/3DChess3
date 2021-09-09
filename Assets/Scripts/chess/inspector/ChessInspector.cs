@@ -100,11 +100,6 @@ namespace inspector {
                 }
                 kPos = kingPos;
             }
-            // foreach(var a in figPossMoves) {
-            //             if(a.first.Value.destroyPos != null) {
-            //                 Debug.Log("+");
-            //             }
-            //         }
             return figPossMoves;
         }
     }
