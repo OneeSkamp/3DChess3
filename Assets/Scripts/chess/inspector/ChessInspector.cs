@@ -20,9 +20,7 @@ namespace inspector {
             }
 
             var moves = MoveEngine.GetFigureMoves(pos, movements[FigureType.Queen], board);
-            
             moves.AddRange(MoveEngine.GetFigureMoves(pos, movements[FigureType.Knight], board));
-
 
             foreach (var move in moves) {
                 var size = new Vector2Int(board.GetLength(0), board.GetLength(1));

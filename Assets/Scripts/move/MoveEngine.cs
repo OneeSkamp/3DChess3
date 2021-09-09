@@ -15,7 +15,6 @@ namespace move {
     public struct MoveRes {
         public Vector2Int pos;
         public MoveError error;
-
     }
 
     public static class MoveEngine {
@@ -25,13 +24,9 @@ namespace move {
             Option<Fig>[,] board
         ) {
             var possMoves = new List<DoubleMove>();
-            var doubleMove = new DoubleMove();
 
             foreach (var cell in movePath) {
-                var move = new Move {
-                    from = start,
-                    to = cell
-                };
+                var move = Move.Mk(start, cell);
 
                 if (ChessEngine.IsPossibleMove(move, board)) {
                     var fig = board[move.from.x, move.from.y].Peel();
@@ -48,8 +43,7 @@ namespace move {
                         continue;
                     }
 
-                    doubleMove.first = move;
-                    possMoves.Add(doubleMove);
+                    possMoves.Add(DoubleMove.Mk(move, null));
                 }
             }
             possMoves.AddRange(GetCastlingMoves(start, board));
@@ -200,8 +194,6 @@ namespace move {
             var leftPos = new Vector2Int();
             var rightPos = new Vector2Int();
 
-            var move = new DoubleMove();
-
             if (leftPath.Count > 0) {
                 leftPos = leftPath[leftPath.Count - 1];
             }
@@ -217,7 +209,7 @@ namespace move {
                 var rightFig = board[rightPos.x, rightPos.y].Peel();
 
                 if (leftFig.type == FigureType.Rook && leftFig.counter == 0) {
-                    move = DoubleMove.Mk(
+                    var move = DoubleMove.Mk(
                         Move.Mk(kingPos, new Vector2Int(kingPos.x, kingPos.y - 2)),
                         Move.Mk(leftPos, new Vector2Int(kingPos.x, kingPos.y - 1))
                     );
@@ -226,7 +218,7 @@ namespace move {
                 }
 
                 if (rightFig.type == FigureType.Rook && rightFig.counter == 0) {
-                    move = DoubleMove.Mk(
+                    var move = DoubleMove.Mk(
                         Move.Mk(kingPos, new Vector2Int(kingPos.x, kingPos.y + 2)),
                         Move.Mk(rightPos, new Vector2Int(kingPos.x, kingPos.y + 1))
                     );
@@ -252,8 +244,6 @@ namespace move {
             var leftPos = new Vector2Int();
             var rightPos = new Vector2Int();
             var prop = 0;
-
-            var move = new DoubleMove();
 
             if (leftPath.Count == 1) {
                 leftPos = leftPath[0];
@@ -281,7 +271,7 @@ namespace move {
                         && leftFig.counter == 1
                     ) {
                         var newPos = new Vector2Int(leftPos.x + prop, leftPos.y);
-                        move = DoubleMove.Mk(Move.Mk(pawnPos, newPos, leftPos), null);
+                        var move = DoubleMove.Mk(Move.Mk(pawnPos, newPos, leftPos), null);
 
                         enPassantMoves.Add(move);
                     }
@@ -290,7 +280,7 @@ namespace move {
                         && rightFig.counter == 1
                     ) {
                         var newPos = new Vector2Int(rightPos.x + prop, rightPos.y);
-                        move = DoubleMove.Mk(Move.Mk(pawnPos, newPos, rightPos), null);
+                        var move = DoubleMove.Mk(Move.Mk(pawnPos, newPos, rightPos), null);
 
                         enPassantMoves.Add(move);
                     }

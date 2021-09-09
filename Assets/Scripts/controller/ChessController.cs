@@ -166,10 +166,7 @@ namespace controller {
                     state = State.FigureSelected;
                     break;
                 case State.FigureSelected:
-                    var move = new Move {
-                        from = selectFigurePos,
-                        to = pos
-                    };
+                    var move = Move.Mk(selectFigurePos, pos);
 
                     foreach (DoubleMove possMove in possibleMoves) {
                         if (!possMove.first.HasValue) {
@@ -205,7 +202,7 @@ namespace controller {
         }
 
         private void CreatingHighlight() {
-            foreach (DoubleMove move in possibleMoves) {
+            foreach (var move in possibleMoves) {
                 var posX = move.first.Value.to.x;
                 var posY = move.first.Value.to.y;
 
