@@ -18,12 +18,14 @@ namespace move {
     }
 
     public static class MoveEngine {
-        public static List<DoubleMove> GetPossibleMoves(
+        public static List<MoveInfo> GetPossibleMoves(
             Vector2Int start,
             List<Vector2Int> movePath,
+            MoveInfo lastMove,
             Option<Fig>[,] board
         ) {
-            var possMoves = new List<DoubleMove>();
+            var possMoves = new List<MoveInfo>();
+            var moveInfo = new MoveInfo();
 
             foreach (var cell in movePath) {
                 var move = Move.Mk(start, cell);
@@ -32,43 +34,43 @@ namespace move {
                     var fig = board[move.from.x, move.from.y].Peel();
                     if (fig.type == FigureType.Pawn) {
                         if (move.to.x == 0 || move.to.x == 7) {
-                            move.promotionPos = move.to;
+                            moveInfo.promote = move.to;
                         }
                     }
 
                     if (board[move.to.x, move.to.y].IsSome()) {
-                        move.destroyPos = move.to;
-
-                        possMoves.Add(DoubleMove.Mk(move, null));
-                        continue;
+                        moveInfo.sentenced = move.to;
                     }
 
-                    possMoves.Add(DoubleMove.Mk(move, null));
+                    moveInfo.move = DoubleMove.Mk(move, null);
+                    possMoves.Add(moveInfo);
                 }
             }
-            possMoves.AddRange(GetCastlingMoves(start, board));
-            possMoves.AddRange(GetEnPassantMoves(start, board));
+            possMoves.AddRange(GetCastlingMoves(start, lastMove, board));
+            possMoves.AddRange(GetEnPassantMoves(start, lastMove, board));
 
             return possMoves;
         }
 
-        public static List<DoubleMove> GetPossibleLinearMoves(
+        public static List<MoveInfo> GetPossibleLinearMoves(
             Vector2Int start,
             LinearMovement linear,
+            MoveInfo lastMove,
             int length,
             Option<Fig>[,] board
         ) {
             var linearPath = BoardEngine.GetLinearPath<Fig>(start, linear.dir, length, board);
 
-            return GetPossibleMoves(start, linearPath, board);
+            return GetPossibleMoves(start, linearPath, lastMove, board);
         }
 
-        public static List<DoubleMove> GetFigureMoves(
+        public static List<MoveInfo> GetFigureMoves(
             Vector2Int pos,
             List<Movement> movements,
+            MoveInfo lastMove,
             Option<Fig>[,] board
         ) {
-            var figMoves = new List<DoubleMove>();
+            var figMoves = new List<MoveInfo>();
             var fig = board[pos.x, pos.y];
 
             foreach (Movement type in movements) {
@@ -89,17 +91,23 @@ namespace move {
                         list.Add(i.value);
                     }
 
-                    figMoves.AddRange(GetPossibleMoves(pos, list, board));
+                    figMoves.AddRange(GetPossibleMoves(pos, list, lastMove, board));
 
                 } else {
                     if (fig.Peel().type == FigureType.Pawn) {
-                        figMoves.AddRange(GetPawnMoves(pos, board));
+                        figMoves.AddRange(GetPawnMoves(pos, lastMove, board));
 
                     } else {
                         var linear = type.linear.Value;
                         var length = BoardEngine.GetLinearLength(pos, linear.dir, board);
 
-                        figMoves.AddRange(GetPossibleLinearMoves(pos, linear, length, board));
+                        figMoves.AddRange(GetPossibleLinearMoves(
+                            pos,
+                            linear,
+                            lastMove,
+                            length,
+                            board
+                        ));
                     }
                 }
             }
@@ -107,8 +115,11 @@ namespace move {
             return figMoves;
         }
 
-        public static List<DoubleMove> GetPawnMoves(Vector2Int pos, Option<Fig>[,] board) {
-            var pawnMoves = new List<DoubleMove>();
+        public static List<MoveInfo> GetPawnMoves(
+            Vector2Int pos,
+            MoveInfo lastMove,
+            Option<Fig>[,] board
+        ) {
             var pawnPath = new List<Vector2Int>();
             var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
             var pawn = board[pos.x, pos.y].Peel();
@@ -143,32 +154,12 @@ namespace move {
                 pawnPath.Add(leftPos);
             }
 
-            return GetPossibleMoves(pos, pawnPath, board);
+            return GetPossibleMoves(pos, pawnPath, lastMove, board);
         }
 
-        public static MoveRes MoveFigure(Move move, Option<Fig>[,] board) {
-            var moveRes = new MoveRes();
+        public static void MoveFigure(Move move, Option<Fig>[,] board) {
             var posTo = move.to;
             var posFrom = move.from;
-            var figToOpt = board[posTo.x, posTo.y];
-
-            moveRes.pos = posTo;
-            moveRes.error = MoveError.ImpossibleMove;
-
-            if (ChessEngine.IsPossibleMove(move, board)) {
-                moveRes.error = MoveError.None;
-
-                if (figToOpt.IsSome()) {
-                    moveRes.error = MoveError.MoveOnFigure;
-                }
-
-                if (move.destroyPos != null) {
-                    var posX = move.destroyPos.Value.x;
-                    var posY = move.destroyPos.Value.y;
-
-                    board[posX, posY] = Option<Fig>.None();
-                }
-            }
 
             board[posTo.x, posTo.y] = board[posFrom.x, posFrom.y];
             board[posFrom.x, posFrom.y] = Option<Fig>.None();
@@ -176,12 +167,32 @@ namespace move {
             var figure = board[move.to.x, move.to.y].Peel();
             figure.counter++;
             board[move.to.x, move.to.y] = Option<Fig>.Some(figure);
-
-            return moveRes;
         }
 
-        public static List<DoubleMove> GetCastlingMoves(Vector2Int kingPos, Option<Fig>[,] board) {
-            var castlingMoves = new List<DoubleMove>();
+        public static MoveInfo GetMoveInfo(MoveInfo moveInfo, Option<Fig>[,] board) {
+            if (moveInfo.sentenced.HasValue) {
+                var sentenced = moveInfo.sentenced.Value;
+                board[sentenced.x, sentenced.y] = Option<Fig>.None();
+            }
+
+            if (moveInfo.move.first.HasValue) {
+                MoveFigure(moveInfo.move.first.Value, board);
+            }
+
+            if (moveInfo.move.second.HasValue) {
+                MoveFigure(moveInfo.move.second.Value, board);
+            }
+
+            return moveInfo;
+        }
+
+        public static List<MoveInfo> GetCastlingMoves(
+            Vector2Int kingPos,
+            MoveInfo lastMove,
+            Option<Fig>[,] board
+        ) {
+            var castlingMoves = new List<MoveInfo>();
+
             var leftDir = new Vector2Int(0, -1);
             var rightDir = new Vector2Int(0, 1);
 
@@ -214,7 +225,7 @@ namespace move {
                         Move.Mk(leftPos, new Vector2Int(kingPos.x, kingPos.y - 1))
                     );
 
-                    castlingMoves.Add(move);
+                    castlingMoves.Add(new MoveInfo { move = move });
                 }
 
                 if (rightFig.type == FigureType.Rook && rightFig.counter == 0) {
@@ -223,15 +234,19 @@ namespace move {
                         Move.Mk(rightPos, new Vector2Int(kingPos.x, kingPos.y + 1))
                     );
 
-                    castlingMoves.Add(move);
+                    castlingMoves.Add(new MoveInfo { move = move });
                 }
             }
 
             return castlingMoves;
         }
 
-        public static List<DoubleMove> GetEnPassantMoves(Vector2Int pawnPos, Option<Fig>[,] board) {
-            var enPassantMoves = new List<DoubleMove>();
+        public static List<MoveInfo> GetEnPassantMoves(
+        Vector2Int pawnPos,
+        MoveInfo lastMove,
+        Option<Fig>[,] board
+        ) {
+            var enPassantMoves = new List<MoveInfo>();
             var leftDir = new Vector2Int(0, -1);
             var rightDir = new Vector2Int(0, 1);
 
@@ -268,21 +283,21 @@ namespace move {
                     var leftFig = board[leftPos.x, leftPos.y].Peel();
                     var rightFig = board[rightPos.x, rightPos.y].Peel();
                     if (leftFig.type == FigureType.Pawn && leftFig.white != fig.white
-                        && leftFig.counter == 1
+                        && leftFig.counter == 1 && lastMove.move.first.Value.to == leftPos
                     ) {
                         var newPos = new Vector2Int(leftPos.x + prop, leftPos.y);
-                        var move = DoubleMove.Mk(Move.Mk(pawnPos, newPos, leftPos), null);
+                        var move = DoubleMove.Mk(Move.Mk(pawnPos, newPos), null);
 
-                        enPassantMoves.Add(move);
+                        enPassantMoves.Add(new MoveInfo { move = move, sentenced = leftPos });
                     }
 
                     if (rightFig.type == FigureType.Pawn && rightFig.white != fig.white
-                        && rightFig.counter == 1
+                        && rightFig.counter == 1 && lastMove.move.first.Value.to == rightPos
                     ) {
                         var newPos = new Vector2Int(rightPos.x + prop, rightPos.y);
-                        var move = DoubleMove.Mk(Move.Mk(pawnPos, newPos, rightPos), null);
+                        var move = DoubleMove.Mk(Move.Mk(pawnPos, newPos), null);
 
-                        enPassantMoves.Add(move);
+                        enPassantMoves.Add(new MoveInfo { move = move, sentenced = rightPos });
                     }
                 }
             }

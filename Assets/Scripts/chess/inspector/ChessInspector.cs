@@ -8,8 +8,13 @@ using movements;
 
 namespace inspector {
     public class ChessInspector : MonoBehaviour {
-        public static bool IsUnderAttackPos(Vector2Int pos, bool white, Option<Fig>[,] board) {
-            var figMoves = new List<DoubleMove>();
+        public static bool IsUnderAttackPos(
+            Vector2Int pos,
+            bool white,
+            MoveInfo lastMove,
+            Option<Fig>[,] board
+        ) {
+            var figMoves = new List<MoveInfo>();
             var hasFig = true;
             var movements = Movements.movements;
 
@@ -18,30 +23,33 @@ namespace inspector {
                 hasFig = false;
                 board[pos.x, pos.y] = Option<Fig>.Some(fig);
             }
-
-            var moves = MoveEngine.GetFigureMoves(pos, movements[FigureType.Queen], board);
-            moves.AddRange(MoveEngine.GetFigureMoves(pos, movements[FigureType.Knight], board));
+            var queen = movements[FigureType.Queen];
+            var knight = movements[FigureType.Knight];
+            var moves = MoveEngine.GetFigureMoves(pos, queen, lastMove, board);
+            moves.AddRange(MoveEngine.GetFigureMoves(pos, knight, lastMove, board));
 
             foreach (var move in moves) {
                 var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
-                var toX = move.first.Value.to.x;
-                var toY = move.first.Value.to.y;
+                var toX = move.move.first.Value.to.x;
+                var toY = move.move.first.Value.to.y;
                 if (BoardEngine.IsOnBoard(new Vector2Int(toX, toY), size)) {
                     var figOpt = board[toX, toY];
 
                     if (figOpt.IsSome()) {
                         var fig = figOpt.Peel();
                         var dmoves = MoveEngine.GetFigureMoves(
-                            move.first.Value.to,
+                            move.move.first.Value.to,
                             movements[board[toX, toY].Peel().type],
-                            board);
+                            lastMove,
+                            board
+                        );
                         figMoves.AddRange(dmoves);
                     }
                 }
             }
 
             foreach (var move in figMoves) {
-                if (move.first.Value.to == pos) {
+                if (move.move.first.Value.to == pos) {
                     return true;
                 }
             }
@@ -53,22 +61,21 @@ namespace inspector {
             return false;
         }
 
-        public static List<DoubleMove> GetPossibleMoves(
+        public static List<MoveInfo> GetPossibleMoves(
             Vector2Int pos,
             Vector2Int kingPos,
+            MoveInfo lastMove,
             Option<Fig>[,] board
         ) {
-            var figPossMoves = new List<DoubleMove>();
-            var savePos = new DoubleMove();
-            var movements= Movements.movements[board[pos.x, pos.y].Peel().type];
-            var figMoves = MoveEngine.GetFigureMoves(pos, movements, board);
-            
+            var figPossMoves = new List<MoveInfo>();
+            var movements = Movements.movements[board[pos.x, pos.y].Peel().type];
+            var figMoves = MoveEngine.GetFigureMoves(pos, movements, lastMove, board);
+
             var boardClone = BoardEngine.CopyBoard(board);
 
             foreach (var figMove in figMoves) {
-                savePos = figMove;
-                var to = figMove.first.Value.to;
-                var from = figMove.first.Value.from;
+                var to = figMove.move.first.Value.to;
+                var from = figMove.move.first.Value.from;
                 var kPos = kingPos;
                 if (board[from.x, from.y].Peel().type == FigureType.King) {
                     kPos = to;
@@ -77,7 +84,7 @@ namespace inspector {
                 if (boardClone[to.x, to.y].IsNone()) {
                     boardClone[to.x, to.y] = boardClone[from.x, from.y];
                     boardClone[from.x, from.y] = Option<Fig>.None();
-                    if (!IsUnderAttackPos(kPos, true, boardClone)) {
+                    if (!IsUnderAttackPos(kPos, true, lastMove, boardClone)) {
                         figPossMoves.Add(figMove);
                     }
 
@@ -89,12 +96,12 @@ namespace inspector {
                     var fig = boardClone[to.x, to.y];
                     boardClone[to.x, to.y] = boardClone[from.x, from.y];
                     boardClone[from.x, from.y] = Option<Fig>.None();
-                    if (!IsUnderAttackPos(kPos, true, boardClone)) {
+                    if (!IsUnderAttackPos(kPos, true, lastMove, boardClone)) {
                         figPossMoves.Add(figMove);
                     }
 
                     boardClone[from.x, from.y] = boardClone[to.x, to.y];
-                    boardClone[figMove.first.Value.to.x, figMove.first.Value.to.y] = fig;
+                    boardClone[figMove.move.first.Value.to.x, figMove.move.first.Value.to.y] = fig;
                 }
                 kPos = kingPos;
             }

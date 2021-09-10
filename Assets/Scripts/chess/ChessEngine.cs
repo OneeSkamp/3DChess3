@@ -25,6 +25,12 @@ namespace chess {
         }
     }
 
+    public struct MoveInfo {
+        public DoubleMove move;
+        public Vector2Int? sentenced;
+        public Vector2Int? promote;
+    }
+
     public struct DoubleMove {
         public Move? first;
         public Move? second;
@@ -37,15 +43,9 @@ namespace chess {
     public struct Move {
         public Vector2Int from;
         public Vector2Int to;
-        public Vector2Int? destroyPos;
-        public Vector2Int? promotionPos;
 
         public static Move Mk(Vector2Int from, Vector2Int to) {
             return new Move { from = from, to = to };
-        }
-
-        public static Move Mk(Vector2Int from, Vector2Int to, Vector2Int destroyPos) {
-            return new Move { from = from, to = to, destroyPos = destroyPos };
         }
     }
 

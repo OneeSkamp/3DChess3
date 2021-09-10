@@ -49,23 +49,25 @@ namespace controller {
         public GameObject checkHighlight;
 
         public GameObject changePawnUi;
+        public GameObject checkMateUi;
 
         public FigureResourses figContent;
 
         public KingsPos kingsPos;
+        public MoveInfo lastMove;
  
-        private List<DoubleMove> possibleMoves = new List<DoubleMove>();
+        private List<MoveInfo> possibleMoves = new List<MoveInfo>();
 
         private Vector2Int selectFigurePos;
 
         private PlayerAction playerAction;
 
         private void Awake() {
-            var emp1PosX = boardInfo.leftTop.localPosition.x;
-            var emp2PosX = boardInfo.rightBottom.localPosition.x;
+            var leftTopX = boardInfo.leftTop.localPosition.x;
+            var rightBottomX = boardInfo.rightBottom.localPosition.x;
 
             cellInfo.count = 8;
-            cellInfo.size = (Mathf.Abs(emp1PosX) + Mathf.Abs(emp2PosX)) / cellInfo.count;
+            cellInfo.size = (Mathf.Abs(leftTopX) + Mathf.Abs(rightBottomX)) / cellInfo.count;
             cellInfo.offset = boardInfo.leftTop.position.x - cellInfo.size / 2;
 
             kingsPos = new KingsPos {
@@ -146,14 +148,21 @@ namespace controller {
                 playerAction = PlayerAction.Select;
             }
 
-            var fig = figOpt.Peel();
-
             switch (playerAction) {
                 case PlayerAction.Select:
-                    if (figOpt.Peel().white != whiteMove) {
-                        break;
+                    if (figOpt.IsNone()) {
+                        Debug.LogError("No figure clicked, but we are trying to select");
+                        return;
                     }
-                    var movement = movements[figOpt.Peel().type];
+
+                    var fig = figOpt.Peel();
+
+                    if (fig.white != whiteMove) {
+                        Debug.LogError("Wrong figure color, not your turn!");
+                        return;
+                    }
+
+                    var movement = movements[fig.type];
                     selectFigurePos = pos;
 
                     var kingPos = kingsPos.black;
@@ -164,69 +173,54 @@ namespace controller {
                     possibleMoves = ChessInspector.GetPossibleMoves(
                         selectFigurePos,
                         kingPos,
+                        lastMove,
                         map.board
                     );
 
-                    CreateHighlight();
+                    CreatePossibleHighlight();
                     playerAction = PlayerAction.Move;
                     break;
                 case PlayerAction.Move:
                     var move = Move.Mk(selectFigurePos, pos);
 
-                    foreach (DoubleMove possMove in possibleMoves) {
-                        if (!possMove.first.HasValue) {
-                            continue;
-                        }
-
-                        var firstMove = possMove.first.Value;
+                    foreach (MoveInfo possMove in possibleMoves) {
+                        var firstMove = possMove.move.first.Value;
                         if (move.to == firstMove.to && move.from == firstMove.from) {
-                            Relocate(possMove.first.Value, map.board);
-                            selectFigurePos = move.to;
-                            whiteMove = !whiteMove;
-
-                            if (possMove.first.Value.promotionPos.HasValue) {
-                                changePawnUi.SetActive(!changePawnUi.activeSelf);
-                                this.enabled = !this.enabled;
-                            }
-
-                            if (possMove.second.HasValue) {
-                                Relocate(possMove.second.Value, map.board);
-                            }
+                            MoveEngine.GetMoveInfo(possMove, map.board);
+                            HandleMoveInfo(possMove, map.board);
                             break;
                         }
                     }
 
-                    kingPos = this.kingsPos.black;
+                    kingPos = kingsPos.black;
                     if (whiteMove) {
-                        kingPos = this.kingsPos.white;
+                        kingPos = kingsPos.white;
                     }
 
                     Destroy(checkHighlight);
-                    if (ChessInspector.IsUnderAttackPos(kingPos, whiteMove, map.board)) {
+                    if (ChessInspector.IsUnderAttackPos(kingPos, whiteMove, lastMove, map.board)) {
                         CreateCheckHighlight(kingPos);
                     }
 
-                    possibleMoves.Clear();
+                    var allMoves = GetAllPossibleMoves(kingPos);
+                    if (allMoves == null) {
+                        checkMateUi.SetActive(!changePawnUi.activeSelf);
+                    }
+
                     break;
             }
         }
 
-        private void CreateHighlight() {
+        private void CreatePossibleHighlight() {
             foreach (var move in possibleMoves) {
-                var posX = move.first.Value.to.x;
-                var posY = move.first.Value.to.y;
+                var pos = (Vector2)move.move.first.Value.to;
+                var cellOff = new Vector2(cellInfo.offset, cellInfo.offset);
 
-                var newX = cellInfo.offset - posX * cellInfo.size;
-                var newY = cellInfo.offset - posY * cellInfo.size;
-                var objPos = new Vector3(newX, 0.01f, newY);
+                var newPos = cellOff - pos * cellInfo.size;
+                var objPos = new Vector3(newPos.x, 0.01f, newPos.y);
 
-                var obj = Instantiate(
-                    figContent.blueBacklight,
-                    objPos,
-                    Quaternion.Euler(90, 0, 0),
-                    highlight.transform
-                );
-
+                var obj = Instantiate(figContent.blueBacklight);
+                obj.transform.parent = highlight.transform;
                 obj.transform.localPosition = objPos;
             }
         }
@@ -248,22 +242,14 @@ namespace controller {
 
         private void Relocate(Move move, Option<Fig>[,] board) {
             var fig = board[move.from.x, move.from.y].Peel();
-            var moveRes = MoveEngine.MoveFigure(move, board);
             var posFrom = move.from;
             var posTo = move.to;
 
             if (fig.type == FigureType.King) {
-
                 kingsPos.black = posTo;
                 if (fig.white) {
                     kingsPos.white = posTo;
                 }
-            }
-
-            if (move.destroyPos != null) {
-                var posX = move.destroyPos.Value.x;
-                var posY = move.destroyPos.Value.y;
-                Destroy(map.figures[posX, posY]);
             }
 
             map.figures[posTo.x, posTo.y] = map.figures[posFrom.x, posFrom.y];
@@ -276,11 +262,35 @@ namespace controller {
             map.figures[posTo.x, posTo.y].transform.localPosition = newPos;
         }
 
+        private void HandleMoveInfo(MoveInfo moveInfo, Option<Fig>[,] board) {
+            if (moveInfo.sentenced.HasValue) {
+                var sentenced = moveInfo.sentenced.Value;
+                Destroy(map.figures[sentenced.x, sentenced.y]);
+            }
+
+            if (moveInfo.move.first.HasValue) {
+                Relocate(moveInfo.move.first.Value, board);
+            }
+
+            if (moveInfo.move.second.HasValue) {
+                Relocate(moveInfo.move.second.Value, board);
+            }
+
+            if (moveInfo.promote.HasValue) {
+                changePawnUi.SetActive(!changePawnUi.activeSelf);
+                this.enabled = !this.enabled;
+            }
+
+            lastMove = moveInfo;
+
+            whiteMove = !whiteMove;
+        }
+
         public void PromotionPawn(GameObject wFig, GameObject bFig, FigureType type) {
             var figObj = bFig;
             var fig = Fig.CreateFig(false, type);
-            var posX = selectFigurePos.x;
-            var posY = selectFigurePos.y;
+            var posX = lastMove.promote.Value.x;
+            var posY = lastMove.promote.Value.y;
 
             var newX = cellInfo.offset - posX * cellInfo.size;
             var newY = cellInfo.offset - posY * cellInfo.size;
@@ -303,6 +313,22 @@ namespace controller {
             map.figures[posX, posY].transform.localPosition = newPos;
             changePawnUi.SetActive(!changePawnUi.activeSelf);
             this.enabled = !this.enabled;
+        }
+
+        public List<MoveInfo> GetAllPossibleMoves(Vector2Int kingPos) {
+            var allMoves = new List<MoveInfo>();
+            for (int i = 0; i < map.board.GetLength(0); i++) {
+                for (int j = 0; j < map.board.GetLength(1); i++) {
+                    var moves = ChessInspector.GetPossibleMoves(
+                        new Vector2Int(i, j),
+                        kingPos,
+                        lastMove,
+                        map.board
+                    );
+                    allMoves.AddRange(moves);
+                }
+            }
+            return allMoves;
         }
     }
 }
