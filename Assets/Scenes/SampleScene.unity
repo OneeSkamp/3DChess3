@@ -333,7 +333,7 @@ GameObject:
   m_Component:
   - component: {fileID: 248618017}
   m_Layer: 0
-  m_Name: empty1
+  m_Name: leftTop
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1700,7 +1700,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 
+  m_Text: CHECKMATE
 --- !u!222 &1518301338
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1843,6 +1843,7 @@ MonoBehaviour:
   highlight: {fileID: 1014368084}
   checkHighlight: {fileID: 0}
   changePawnUi: {fileID: 1881648331}
+  checkMateUi: {fileID: 1221478575}
   figContent: {fileID: 1564542934}
 --- !u!114 &1564542934
 MonoBehaviour:
@@ -2539,7 +2540,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2030261330}
   m_Layer: 0
-  m_Name: empty2
+  m_Name: rightBottom
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
