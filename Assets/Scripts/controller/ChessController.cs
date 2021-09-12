@@ -18,11 +18,6 @@ namespace controller {
         public GameObject[,] figures;
     }
 
-    public struct KingsPos {
-        public Vector2Int white;
-        public Vector2Int black;
-    }
-
     [System.Serializable]
     public struct BoardInfo {
         public Transform leftTop;
@@ -53,7 +48,6 @@ namespace controller {
 
         public FigureResourses figContent;
 
-        public KingsPos kingsPos;
         public MoveInfo lastMove;
  
         private List<MoveInfo> possibleMoves = new List<MoveInfo>();
@@ -69,11 +63,6 @@ namespace controller {
             cellInfo.count = 8;
             cellInfo.size = (Mathf.Abs(leftTopX) + Mathf.Abs(rightBottomX)) / cellInfo.count;
             cellInfo.offset = boardInfo.leftTop.position.x - cellInfo.size / 2;
-
-            kingsPos = new KingsPos {
-                white = new Vector2Int(7, 4),
-                black = new Vector2Int(0, 4)
-            };
 
             map = new Map {
                 board = new Option<Fig>[8, 8],
@@ -148,6 +137,7 @@ namespace controller {
                 playerAction = PlayerAction.Select;
             }
 
+
             switch (playerAction) {
                 case PlayerAction.Select:
                     if (figOpt.IsNone()) {
@@ -165,6 +155,7 @@ namespace controller {
                     var movement = movements[fig.type];
                     selectFigurePos = pos;
 
+                    var kingsPos = ChessInspector.GetKingsPos(map.board);
                     var kingPos = kingsPos.black;
                     if (whiteMove) {
                         kingPos = kingsPos.white;
@@ -182,7 +173,6 @@ namespace controller {
                     break;
                 case PlayerAction.Move:
                     var move = Move.Mk(selectFigurePos, pos);
-
                     foreach (MoveInfo possMove in possibleMoves) {
                         var firstMove = possMove.move.first.Value;
                         if (move.to == firstMove.to && move.from == firstMove.from) {
@@ -192,21 +182,22 @@ namespace controller {
                         }
                     }
 
+                    kingsPos = ChessInspector.GetKingsPos(map.board);
                     kingPos = kingsPos.black;
                     if (whiteMove) {
                         kingPos = kingsPos.white;
+                    }
+
+                    var allMoves = GetAllPossibleMoves(kingPos);
+                    if (allMoves.Count == 0) {
+                        checkMateUi.SetActive(!changePawnUi.activeSelf);
                     }
 
                     Destroy(checkHighlight);
                     if (ChessInspector.IsUnderAttackPos(kingPos, whiteMove, lastMove, map.board)) {
                         CreateCheckHighlight(kingPos);
                     }
-
-                    var allMoves = GetAllPossibleMoves(kingPos);
-                    if (allMoves == null) {
-                        checkMateUi.SetActive(!changePawnUi.activeSelf);
-                    }
-
+                    playerAction = PlayerAction.Select;
                     break;
             }
         }
@@ -226,17 +217,12 @@ namespace controller {
         }
 
         private void CreateCheckHighlight(Vector2Int kingPos) {
-            var newX = cellInfo.offset - kingPos.x * cellInfo.size;
-            var newY = cellInfo.offset - kingPos.y * cellInfo.size;
-            var objPos = new Vector3(newX, 0.01f, newY);
+            var cellOff = new Vector2(cellInfo.offset, cellInfo.offset);
+            var newPos = cellOff - (Vector2)kingPos * cellInfo.size;
+            var objPos = new Vector3(newPos.x, 0.01f, newPos.y);
 
-            checkHighlight = Instantiate(
-                figContent.redBacklight,
-                objPos,
-                Quaternion.Euler(90, 0, 0),
-                boardTransform
-            );
-
+            checkHighlight = Instantiate(figContent.redBacklight);
+            checkHighlight.transform.parent = boardTransform;
             checkHighlight.transform.localPosition = objPos;
         }
 
@@ -244,13 +230,6 @@ namespace controller {
             var fig = board[move.from.x, move.from.y].Peel();
             var posFrom = move.from;
             var posTo = move.to;
-
-            if (fig.type == FigureType.King) {
-                kingsPos.black = posTo;
-                if (fig.white) {
-                    kingsPos.white = posTo;
-                }
-            }
 
             map.figures[posTo.x, posTo.y] = map.figures[posFrom.x, posFrom.y];
             map.figures[posFrom.x, posFrom.y] = null;
@@ -289,28 +268,23 @@ namespace controller {
         public void PromotionPawn(GameObject wFig, GameObject bFig, FigureType type) {
             var figObj = bFig;
             var fig = Fig.CreateFig(false, type);
-            var posX = lastMove.promote.Value.x;
-            var posY = lastMove.promote.Value.y;
+            var cellOff = new Vector2(cellInfo.offset, cellInfo.offset);
+            var prom = (Vector2)lastMove.promote.Value;
 
-            var newX = cellInfo.offset - posX * cellInfo.size;
-            var newY = cellInfo.offset - posY * cellInfo.size;
-            var newPos = new Vector3(newX, 0.0f, newY);
+            var pos = cellOff - prom * cellInfo.size;
+            var newPos = new Vector3(prom.x, 0.0f, prom.y);
 
-            if (posX == 0) {
+            if (prom.x == 0) {
                 fig = Fig.CreateFig(true, type);
                 figObj = wFig;
             }
 
-            map.board[posX, posY] = Option<Fig>.Some(fig);
-            Destroy(map.figures[posX, posY]);
-            map.figures[posX, posY] = Instantiate(
-                figObj,
-                newPos,
-                Quaternion.Euler(0, 90, 0),
-                boardTransform
-            );
+            map.board[(int)prom.x, (int)prom.y] = Option<Fig>.Some(fig);
+            Destroy(map.figures[(int)prom.x, (int)prom.y]);
+            map.figures[(int)prom.x, (int)prom.y] = Instantiate(figObj);
+            map.figures[(int)prom.x, (int)prom.y].transform.parent = boardTransform;
 
-            map.figures[posX, posY].transform.localPosition = newPos;
+            map.figures[(int)prom.x, (int)prom.x].transform.localPosition = newPos;
             changePawnUi.SetActive(!changePawnUi.activeSelf);
             this.enabled = !this.enabled;
         }
@@ -318,14 +292,16 @@ namespace controller {
         public List<MoveInfo> GetAllPossibleMoves(Vector2Int kingPos) {
             var allMoves = new List<MoveInfo>();
             for (int i = 0; i < map.board.GetLength(0); i++) {
-                for (int j = 0; j < map.board.GetLength(1); i++) {
-                    var moves = ChessInspector.GetPossibleMoves(
-                        new Vector2Int(i, j),
-                        kingPos,
-                        lastMove,
-                        map.board
-                    );
-                    allMoves.AddRange(moves);
+                for (int j = 0; j < map.board.GetLength(1); j++) {
+                    if (map.board[i, j].IsSome() && map.board[i, j].Peel().white == map.board[kingPos.x, kingPos.y].Peel().white) {
+                        var moves = ChessInspector.GetPossibleMoves(
+                            new Vector2Int(i, j),
+                            kingPos,
+                            lastMove,
+                            map.board
+                        );
+                        allMoves.AddRange(moves);
+                    }
                 }
             }
             return allMoves;

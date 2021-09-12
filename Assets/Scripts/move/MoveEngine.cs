@@ -88,7 +88,9 @@ namespace move {
 
                     var list = new List<Vector2Int>();
                     foreach (var i in square) {
-                        list.Add(i.value);
+                        if (i != null) {
+                            list.Add(i.value);
+                        }
                     }
 
                     figMoves.AddRange(GetPossibleMoves(pos, list, lastMove, board));
@@ -143,6 +145,7 @@ namespace move {
             foreach (var cell in forwardPath) {
                 if (BoardEngine.IsOnBoard(cell, size) && board[cell.x, cell.y].IsNone()) {
                     pawnPath.Add(cell);
+                    continue;
                 }
             }
 

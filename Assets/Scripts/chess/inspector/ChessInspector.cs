@@ -7,6 +7,10 @@ using board;
 using movements;
 
 namespace inspector {
+    public struct KingsPos {
+        public Vector2Int white;
+        public Vector2Int black;
+    }
     public class ChessInspector : MonoBehaviour {
         public static bool IsUnderAttackPos(
             Vector2Int pos,
@@ -106,6 +110,28 @@ namespace inspector {
                 kPos = kingPos;
             }
             return figPossMoves;
+        }
+
+        public static KingsPos GetKingsPos(Option<Fig>[,] board) {
+            var kingsPos = new KingsPos();
+            for (int i = 0; i < board.GetLength(0); i++) {
+                for (int j = 0; j < board.GetLength(1); j++) {
+                    var figOpt = board[i, j];
+                    if (figOpt.IsSome()) {
+                        var fig = figOpt.Peel();
+                        if (fig.type == FigureType.King) {
+                            if (fig.white) {
+                                kingsPos.white = new Vector2Int(i, j);
+                            }
+                            if (!fig.white) {
+                                kingsPos.black = new Vector2Int(i, j);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return kingsPos;
         }
     }
 }
