@@ -987,7 +987,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1014368085}
   m_Layer: 0
-  m_Name: highlight
+  m_Name: highlights
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1836,14 +1836,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   boardTransform: {fileID: 1298991955}
+  popupUi:
+    changePawn: {fileID: 1881648331}
+    checkMate: {fileID: 1221478575}
   boardInfo:
     leftTop: {fileID: 248618017}
     rightBottom: {fileID: 2030261330}
   whiteMove: 1
-  highlight: {fileID: 1014368084}
-  checkHighlight: {fileID: 0}
-  changePawnUi: {fileID: 1881648331}
-  checkMateUi: {fileID: 1221478575}
+  highlights:
+    blue: {fileID: 1014368084}
+    red: {fileID: 0}
   figContent: {fileID: 1564542934}
 --- !u!114 &1564542934
 MonoBehaviour:
