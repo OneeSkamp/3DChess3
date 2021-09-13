@@ -9,6 +9,7 @@ using movements;
 
 namespace controller {
     public enum PlayerAction {
+        None,
         Select,
         Move
     }
@@ -137,7 +138,6 @@ namespace controller {
                 playerAction = PlayerAction.Select;
             }
 
-
             switch (playerAction) {
                 case PlayerAction.Select:
                     if (figOpt.IsNone()) {
@@ -168,7 +168,7 @@ namespace controller {
                         map.board
                     );
 
-                    CreatePossibleHighlight();
+                    CreatePossibleHighlights(possibleMoves);
                     playerAction = PlayerAction.Move;
                     break;
                 case PlayerAction.Move:
@@ -177,7 +177,7 @@ namespace controller {
                         var firstMove = possMove.move.first.Value;
                         if (move.to == firstMove.to && move.from == firstMove.from) {
                             MoveEngine.GetMoveInfo(possMove, map.board);
-                            HandleMoveInfo(possMove, map.board);
+                            HandleMove(possMove, map.board);
                             break;
                         }
                     }
@@ -197,13 +197,17 @@ namespace controller {
                     if (ChessInspector.IsUnderAttackPos(kingPos, whiteMove, lastMove, map.board)) {
                         CreateCheckHighlight(kingPos);
                     }
-                    playerAction = PlayerAction.Select;
+                    playerAction = PlayerAction.None;
                     break;
             }
         }
 
-        private void CreatePossibleHighlight() {
+        private void CreatePossibleHighlights(List<MoveInfo> possibleMoves) {
             foreach (var move in possibleMoves) {
+                if (!move.move.first.HasValue) {
+                    continue;
+                }
+
                 var pos = (Vector2)move.move.first.Value.to;
                 var cellOff = new Vector2(cellInfo.offset, cellInfo.offset);
 
@@ -241,7 +245,7 @@ namespace controller {
             map.figures[posTo.x, posTo.y].transform.localPosition = newPos;
         }
 
-        private void HandleMoveInfo(MoveInfo moveInfo, Option<Fig>[,] board) {
+        private void HandleMove(MoveInfo moveInfo, Option<Fig>[,] board) {
             if (moveInfo.sentenced.HasValue) {
                 var sentenced = moveInfo.sentenced.Value;
                 Destroy(map.figures[sentenced.x, sentenced.y]);
@@ -265,8 +269,9 @@ namespace controller {
             whiteMove = !whiteMove;
         }
 
-        public void PromotionPawn(GameObject wFig, GameObject bFig, FigureType type) {
-            var figObj = bFig;
+        public void PromotionPawn(FigureType type) {
+            var white = false;
+            var figObj = new GameObject();
             var fig = Fig.CreateFig(false, type);
             var pos = lastMove.promote.Value;
             var cellOffset = new Vector2(cellInfo.offset, cellInfo.offset);
@@ -276,7 +281,34 @@ namespace controller {
 
             if (pos.x == 0) {
                 fig = Fig.CreateFig(true, type);
-                figObj = wFig;
+                white = true;
+            }
+
+            switch (type) {
+                case FigureType.Knight:
+                    figObj = figContent.bKnight;
+                    if (white) {
+                        figObj = figContent.wKnight;
+                    }
+                    break;
+                case FigureType.Bishop:
+                    figObj = figContent.bBishop;
+                    if (white) {
+                        figObj = figContent.wBishop;
+                    }
+                    break;
+                case FigureType.Rook:
+                    figObj = figContent.bRook;
+                    if (white) {
+                        figObj = figContent.wRook;
+                    }
+                    break;
+                case FigureType.Queen:
+                    figObj = figContent.bQueen;
+                    if (white) {
+                        figObj = figContent.wQueen;
+                    }
+                    break;
             }
 
             map.board[pos.x, pos.y] = Option<Fig>.Some(fig);

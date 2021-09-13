@@ -29,50 +29,30 @@ namespace ui {
         private Action newGame;
         private Action saveGame;
         private Action loadGame;
-        private Action changeOnQueen;
-        private Action changeOnBishop;
-        private Action changeOnRook;
-        private Action changeOnKnight;
+
+        public void PromoteOnQueen() {
+            chessController.PromotionPawn(FigureType.Queen);
+        }
+
+        public void PromoteOnBishop() {
+            chessController.PromotionPawn(FigureType.Bishop);
+        }
+
+        public void PromoteOnRook() {
+            chessController.PromotionPawn(FigureType.Rook);
+        }
+
+        public void PromoteOnKnight() {
+            chessController.PromotionPawn(FigureType.Knight);
+        }
 
         private void Awake() {
-            var queen = FigureType.Queen;
-            var bishop = FigureType.Bishop;
-            var rook = FigureType.Rook;
-            var knight = FigureType.Knight;
-
-            changeOnQueen += () => chessController.PromotionPawn(
-                figCont.wQueen, 
-                figCont.bQueen, 
-                queen
-            );
-            changeOnBishop += () => chessController.PromotionPawn(
-                figCont.wBishop, 
-                figCont.bBishop, 
-                bishop
-            );
-            changeOnRook += () => chessController.PromotionPawn(
-                figCont.wRook, 
-                figCont.bRook, 
-                rook
-            );
-            changeOnKnight += () => chessController.PromotionPawn(
-                figCont.wKnight, 
-                figCont.bKnight, 
-                knight
-            );
-
             openMenu += OpenMenu;
-
             menuBut.onClick.AddListener(() => openMenu());
             saveGameBut.onClick.AddListener(() => saveGame());
             newGameBut.onClick.AddListener(() => newGame());
             newGameMenuBut.onClick.AddListener(() => newGame());
             loadGameBut.onClick.AddListener(() => loadGame());
-
-            queenBut.onClick.AddListener(() => changeOnQueen());
-            bishopBut.onClick.AddListener(() => changeOnBishop());
-            rookBut.onClick.AddListener(() => changeOnRook());
-            knightBut.onClick.AddListener(() => changeOnKnight());
         }
 
         private void OpenMenu() {

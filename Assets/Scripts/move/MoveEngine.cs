@@ -87,9 +87,11 @@ namespace move {
                     }
 
                     var list = new List<Vector2Int>();
-                    foreach (var i in square) {
-                        if (i != null) {
-                            list.Add(i.value);
+                    if (list != null) {
+                        foreach (var i in square) {
+                            if (i != null) {
+                                list.Add(i.value);
+                            }
                         }
                     }
 
@@ -136,13 +138,17 @@ namespace move {
             var leftPos = new Vector2Int(pos.x + prop, pos.y - prop);
             var rightPos = new Vector2Int(pos.x + prop, pos.y + prop);
 
-            if (pawn.white && pos.x == 6 || !pawn.white && pos.x == 1) {
+            if (pawn.counter == 0) {
                 length = 2;
             }
 
             var forwardPath = BoardEngine.GetLinearPath(pos, forwardDir, length, board);
 
             foreach (var cell in forwardPath) {
+                if (BoardEngine.IsOnBoard(cell, size) && board[cell.x, cell.y].IsSome()) {
+                    break;
+                }
+
                 if (BoardEngine.IsOnBoard(cell, size) && board[cell.x, cell.y].IsNone()) {
                     pawnPath.Add(cell);
                     continue;

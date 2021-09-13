@@ -1,19 +1,42 @@
 using UnityEngine;
 using chess;
-using controller;
 using option;
+using jonson;
+using jonson.reflect;
 
 namespace parse {
+    public struct Board {
+        public Option<Fig> board;
+        public bool whiteMove;
+
+        public static Board Mk(Option<Fig> board, bool whiteMove) {
+            return new Board { board = board, whiteMove = whiteMove };
+        }
+    }
     public class ParseJson : MonoBehaviour{
-        public string filepathBoard;
-        public string filepathBoardMap;
+        // private void Awake() {
 
-        public ChessController chessController;
 
-        private string[,] jsonBoardMap;
-        private string jsonBoard;
-        private string jsonAll;
+        //     // JSONType personType = Reflect.ToJSON(person, false);
+        //     // string output = Jonson.Generate(personType);
 
+        // }
+
+        // public string filepathBoard;
+        // public string filepathBoardMap;
+
+        // private string[,] jsonBoardMap;
+        // private string jsonBoard;
+        // private string jsonAll;
+
+        // public static void ToJson(bool whiteMove, Option<Fig>[,] board) {
+
+        //     var b = Board.Mk(board[1,1], whiteMove);
+        //     JSONType personType = Reflect.ToJSON(b, false);
+        //     string output = Jonson.Generate(personType);
+
+        //     Debug.Log(output);
+        // }
 
         // public void ToJson(Option<Fig>[,] boardmap) {
         //     jsonBoardMap = new string[8,8];
