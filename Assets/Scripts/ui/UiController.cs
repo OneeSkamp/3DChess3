@@ -4,13 +4,13 @@ using UnityEngine;
 using controller;
 using parse;
 using chess;
+using board;
+using option;
 
 namespace ui {
     public class UiController : MonoBehaviour {
         public GameObject MenuUi;
-
-        public FigureResourses figCont;
-
+        public GameObject ChackMateUi;
         public Button menuBut;
         public Button newGameBut;
         public Button newGameMenuBut;
@@ -23,12 +23,6 @@ namespace ui {
 
         public ChessController chessController;
         public FigureSpawner figureSpawner;
-        public ParseJson parseJson;
-
-        private Action openMenu;
-        private Action newGame;
-        private Action saveGame;
-        private Action loadGame;
 
         public void PromoteOnQueen() {
             chessController.PromotionPawn(FigureType.Queen);
@@ -46,18 +40,21 @@ namespace ui {
             chessController.PromotionPawn(FigureType.Knight);
         }
 
-        private void Awake() {
-            openMenu += OpenMenu;
-            menuBut.onClick.AddListener(() => openMenu());
-            saveGameBut.onClick.AddListener(() => saveGame());
-            newGameBut.onClick.AddListener(() => newGame());
-            newGameMenuBut.onClick.AddListener(() => newGame());
-            loadGameBut.onClick.AddListener(() => loadGame());
-        }
-
         private void OpenMenu() {
             MenuUi.SetActive(!MenuUi.activeSelf);
             chessController.enabled = !chessController.enabled;
+        }
+
+        public void NewGame() {
+            foreach (var fig in chessController.map.figures) {
+                Destroy(fig);
+            }
+
+            chessController.whiteMove = true;
+            Destroy(chessController.highlights.red);
+            chessController.map.board = BoardEngine.CopyBoard(chessController.map.startBoard);
+            figureSpawner.CreateFiguresOnBoard(chessController.map.startBoard);
+            ChackMateUi.SetActive(!ChackMateUi.activeSelf);
         }
 
         public void SaveGame() {

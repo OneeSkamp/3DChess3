@@ -4,6 +4,7 @@ using chess;
 using board;
 using option;
 using collections;
+using movements;
 
 namespace move {
     public enum MoveError {
@@ -234,7 +235,10 @@ namespace move {
                         Move.Mk(leftPos, new Vector2Int(kingPos.x, kingPos.y - 1))
                     );
 
-                    castlingMoves.Add(new MoveInfo { move = move });
+                    if (!IsUnderAttackPos(move.first.Value.to, fig.white, lastMove, board) 
+                        && !IsUnderAttackPos(move.second.Value.to, fig.white, lastMove, board)) {
+                            castlingMoves.Add(new MoveInfo { move = move });
+                        }
                 }
 
                 if (rightFig.type == FigureType.Rook && rightFig.counter == 0) {
@@ -243,7 +247,10 @@ namespace move {
                         Move.Mk(rightPos, new Vector2Int(kingPos.x, kingPos.y + 1))
                     );
 
-                    castlingMoves.Add(new MoveInfo { move = move });
+                    if (!IsUnderAttackPos(move.first.Value.to, fig.white, lastMove, board) 
+                        && !IsUnderAttackPos(move.second.Value.to, fig.white, lastMove, board)) {
+                            castlingMoves.Add(new MoveInfo { move = move });
+                    }
                 }
             }
 
@@ -312,6 +319,59 @@ namespace move {
             }
 
             return enPassantMoves;
+        }
+
+        public static bool IsUnderAttackPos(
+            Vector2Int pos,
+            bool white,
+            MoveInfo lastMove,
+            Option<Fig>[,] board
+        ) {
+            var figMoves = new List<MoveInfo>();
+            var hasFig = true;
+            var movements = Movements.movements;
+
+            if (board[pos.x, pos.y].IsNone()) {
+                var fig = Fig.CreateFig(white, FigureType.Knight);
+                hasFig = false;
+                board[pos.x, pos.y] = Option<Fig>.Some(fig);
+            }
+            var queen = movements[FigureType.Queen];
+            var knight = movements[FigureType.Knight];
+            var moves = MoveEngine.GetFigureMoves(pos, queen, lastMove, board);
+            moves.AddRange(MoveEngine.GetFigureMoves(pos, knight, lastMove, board));
+
+            foreach (var move in moves) {
+                var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
+                var toX = move.move.first.Value.to.x;
+                var toY = move.move.first.Value.to.y;
+                if (BoardEngine.IsOnBoard(new Vector2Int(toX, toY), size)) {
+                    var figOpt = board[toX, toY];
+
+                    if (figOpt.IsSome()) {
+                        var fig = figOpt.Peel();
+                        var dmoves = MoveEngine.GetFigureMoves(
+                            move.move.first.Value.to,
+                            movements[board[toX, toY].Peel().type],
+                            lastMove,
+                            board
+                        );
+                        figMoves.AddRange(dmoves);
+                    }
+                }
+            }
+
+            foreach (var move in figMoves) {
+                if (move.move.first.Value.to == pos) {
+                    return true;
+                }
+            }
+
+            if (!hasFig) {
+                board[pos.x, pos.y] = Option<Fig>.None();
+            }
+
+            return false;
         }
     }
 }

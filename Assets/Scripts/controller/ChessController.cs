@@ -15,6 +15,7 @@ namespace controller {
     }
 
     public struct Map {
+        public Option<Fig>[,] startBoard;
         public Option<Fig>[,] board;
         public GameObject[,] figures;
     }
@@ -66,6 +67,7 @@ namespace controller {
             cellInfo.offset = boardInfo.leftTop.position.x - cellInfo.size / 2;
 
             map = new Map {
+                startBoard = new Option<Fig>[8, 8],
                 board = new Option<Fig>[8, 8],
                 figures = new GameObject[8, 8]
             };
@@ -101,6 +103,8 @@ namespace controller {
             for (int x = 0; x <= 7; x++) {
                map.board[6, x] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Pawn));
             }
+
+            map.startBoard = BoardEngine.CopyBoard(map.board);
         }
 
         private void Update() {
@@ -161,12 +165,19 @@ namespace controller {
                         kingPos = kingsPos.white;
                     }
 
-                    possibleMoves = ChessInspector.GetPossibleMoves(
+                    possibleMoves = MoveEngine.GetFigureMoves(
                         selectFigurePos,
-                        kingPos,
+                        movement,
                         lastMove,
                         map.board
                     );
+
+                    // possibleMoves = ChessInspector.GetPossibleMoves(
+                    //     selectFigurePos,
+                    //     kingPos,
+                    //     lastMove,
+                    //     map.board
+                    // );
 
                     CreatePossibleHighlights(possibleMoves);
                     playerAction = PlayerAction.Move;
@@ -188,13 +199,19 @@ namespace controller {
                         kingPos = kingsPos.white;
                     }
 
-                    var allMoves = GetAllPossibleMoves(kingPos);
-                    if (allMoves.Count == 0) {
-                        popupUi.checkMate.SetActive(!popupUi.checkMate.activeSelf);
-                    }
+                    var a = ChessInspector.GetPossibleMoves(
+                        selectFigurePos,
+                        kingPos,
+                        whiteMove,
+                        map.board
+                    );
+                    // var allMoves = GetAllPossibleMoves(kingPos);
+                    // if (allMoves.Count == 0) {
+                    //     popupUi.checkMate.SetActive(!popupUi.checkMate.activeSelf);
+                    // }
 
                     Destroy(highlights.red);
-                    if (ChessInspector.IsUnderAttackPos(kingPos, whiteMove, lastMove, map.board)) {
+                    if (MoveEngine.IsUnderAttackPos(kingPos, whiteMove, lastMove, map.board)) {
                         CreateCheckHighlight(kingPos);
                     }
                     playerAction = PlayerAction.None;
@@ -320,24 +337,24 @@ namespace controller {
             this.enabled = !this.enabled;
         }
 
-        public List<MoveInfo> GetAllPossibleMoves(Vector2Int kingPos) {
-            var allMoves = new List<MoveInfo>();
-            for (int i = 0; i < map.board.GetLength(0); i++) {
-                for (int j = 0; j < map.board.GetLength(1); j++) {
-                    var figOpt = map.board[i, j];
-                    var kingOpt = map.board[kingPos.x, kingPos.y];
-                    if (figOpt.IsSome() && figOpt.Peel().white == kingOpt.Peel().white) {
-                        var moves = ChessInspector.GetPossibleMoves(
-                            new Vector2Int(i, j),
-                            kingPos,
-                            lastMove,
-                            map.board
-                        );
-                        allMoves.AddRange(moves);
-                    }
-                }
-            }
-            return allMoves;
-        }
+        // public List<MoveInfo> GetAllPossibleMoves(Vector2Int kingPos) {
+        //     var allMoves = new List<MoveInfo>();
+        //     for (int i = 0; i < map.board.GetLength(0); i++) {
+        //         for (int j = 0; j < map.board.GetLength(1); j++) {
+        //             var figOpt = map.board[i, j];
+        //             var kingOpt = map.board[kingPos.x, kingPos.y];
+        //             if (figOpt.IsSome() && figOpt.Peel().white == kingOpt.Peel().white) {
+        //                 var moves = ChessInspector.GetPossibleMoves(
+        //                     new Vector2Int(i, j),
+        //                     kingPos,
+        //                     lastMove,
+        //                     map.board
+        //                 );
+        //                 allMoves.AddRange(moves);
+        //             }
+        //         }
+        //     }
+        //     return allMoves;
+        // }
     }
 }

@@ -13,7 +13,7 @@ namespace controller {
         private float offset;
         private float cellSize;
 
-        public void CreatingFiguresOnBoard(Option<Fig>[,] board) {
+        public void CreateFiguresOnBoard(Option<Fig>[,] board) {
             float xPos = offset;
             float yPos = offset;
 
@@ -149,7 +149,7 @@ namespace controller {
             offset = chessController.cellInfo.offset;
             cellSize = chessController.cellInfo.size;
 
-            CreatingFiguresOnBoard(chessController.map.board);
+            CreateFiguresOnBoard(chessController.map.board);
         }
     }
 }
