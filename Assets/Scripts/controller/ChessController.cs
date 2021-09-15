@@ -34,8 +34,8 @@ namespace controller {
 
     [System.Serializable]
     public struct Highlights {
-        public GameObject blue;
-        public GameObject red;
+        public GameObject possible;
+        public GameObject check;
     }
 
     [System.Serializable]
@@ -47,13 +47,16 @@ namespace controller {
     public class ChessController : MonoBehaviour {
         public Transform boardTransform;
         public PopupUi popupUi;
+
         public Map map;
         public BoardInfo boardInfo;
+
         public bool whiteMove = true;
         public CellInfo cellInfo;
         public Highlights highlights;
         public FigureResourses figContent;
         public MoveInfo lastMove;
+
         private List<MoveInfo> possibleMoves = new List<MoveInfo>();
         private Vector2Int selectFigurePos;
         private PlayerAction playerAction;
@@ -133,7 +136,7 @@ namespace controller {
                 return;
             }
 
-            foreach (Transform cell in highlights.blue.transform) {
+            foreach (Transform cell in highlights.possible.transform) {
                 Destroy(cell.gameObject);
             }
 
@@ -159,25 +162,12 @@ namespace controller {
                     var movement = movements[fig.type];
                     selectFigurePos = pos;
 
-                    var kingsPos = ChessInspector.GetKingsPos(map.board);
-                    var kingPos = kingsPos.black;
-                    if (whiteMove) {
-                        kingPos = kingsPos.white;
-                    }
-
-                    possibleMoves = MoveEngine.GetFigureMoves(
+                    possibleMoves = MoveEngine.GetMoves(
                         selectFigurePos,
                         movement,
                         lastMove,
                         map.board
                     );
-
-                    // possibleMoves = ChessInspector.GetPossibleMoves(
-                    //     selectFigurePos,
-                    //     kingPos,
-                    //     lastMove,
-                    //     map.board
-                    // );
 
                     CreatePossibleHighlights(possibleMoves);
                     playerAction = PlayerAction.Move;
@@ -185,35 +175,16 @@ namespace controller {
                 case PlayerAction.Move:
                     var move = Move.Mk(selectFigurePos, pos);
                     foreach (MoveInfo possMove in possibleMoves) {
+                        if (!possMove.move.first.HasValue) {
+                            continue;
+                        }
                         var firstMove = possMove.move.first.Value;
                         if (move.to == firstMove.to && move.from == firstMove.from) {
-                            MoveEngine.GetMoveInfo(possMove, map.board);
                             HandleMove(possMove, map.board);
                             break;
                         }
                     }
 
-                    kingsPos = ChessInspector.GetKingsPos(map.board);
-                    kingPos = kingsPos.black;
-                    if (whiteMove) {
-                        kingPos = kingsPos.white;
-                    }
-
-                    var a = ChessInspector.GetPossibleMoves(
-                        selectFigurePos,
-                        kingPos,
-                        whiteMove,
-                        map.board
-                    );
-                    // var allMoves = GetAllPossibleMoves(kingPos);
-                    // if (allMoves.Count == 0) {
-                    //     popupUi.checkMate.SetActive(!popupUi.checkMate.activeSelf);
-                    // }
-
-                    Destroy(highlights.red);
-                    if (MoveEngine.IsUnderAttackPos(kingPos, whiteMove, lastMove, map.board)) {
-                        CreateCheckHighlight(kingPos);
-                    }
                     playerAction = PlayerAction.None;
                     break;
             }
@@ -225,26 +196,17 @@ namespace controller {
                     continue;
                 }
 
+                var indent = 0.01f;
                 var pos = (Vector2)move.move.first.Value.to;
                 var cellOff = new Vector2(cellInfo.offset, cellInfo.offset);
 
                 var newPos = cellOff - pos * cellInfo.size;
-                var objPos = new Vector3(newPos.x, 0.01f, newPos.y);
+                var objPos = new Vector3(newPos.x, indent, newPos.y);
 
                 var obj = Instantiate(figContent.blueBacklight);
-                obj.transform.parent = highlights.blue.transform;
+                obj.transform.parent = highlights.possible.transform;
                 obj.transform.localPosition = objPos;
             }
-        }
-
-        private void CreateCheckHighlight(Vector2Int kingPos) {
-            var cellOff = new Vector2(cellInfo.offset, cellInfo.offset);
-            var newPos = cellOff - (Vector2)kingPos * cellInfo.size;
-            var objPos = new Vector3(newPos.x, 0.01f, newPos.y);
-
-            highlights.red = Instantiate(figContent.redBacklight);
-            highlights.red.transform.parent = boardTransform;
-            highlights.red.transform.localPosition = objPos;
         }
 
         private void Relocate(Move move, Option<Fig>[,] board) {
@@ -263,6 +225,8 @@ namespace controller {
         }
 
         private void HandleMove(MoveInfo moveInfo, Option<Fig>[,] board) {
+            MoveEngine.GetMoveInfo(moveInfo, map.board);
+
             if (moveInfo.sentenced.HasValue) {
                 var sentenced = moveInfo.sentenced.Value;
                 Destroy(map.figures[sentenced.x, sentenced.y]);
@@ -336,25 +300,5 @@ namespace controller {
             popupUi.changePawn.SetActive(!popupUi.changePawn.activeSelf);
             this.enabled = !this.enabled;
         }
-
-        // public List<MoveInfo> GetAllPossibleMoves(Vector2Int kingPos) {
-        //     var allMoves = new List<MoveInfo>();
-        //     for (int i = 0; i < map.board.GetLength(0); i++) {
-        //         for (int j = 0; j < map.board.GetLength(1); j++) {
-        //             var figOpt = map.board[i, j];
-        //             var kingOpt = map.board[kingPos.x, kingPos.y];
-        //             if (figOpt.IsSome() && figOpt.Peel().white == kingOpt.Peel().white) {
-        //                 var moves = ChessInspector.GetPossibleMoves(
-        //                     new Vector2Int(i, j),
-        //                     kingPos,
-        //                     lastMove,
-        //                     map.board
-        //                 );
-        //                 allMoves.AddRange(moves);
-        //             }
-        //         }
-        //     }
-        //     return allMoves;
-        // }
     }
 }

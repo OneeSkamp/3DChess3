@@ -26,10 +26,10 @@ namespace move {
             Option<Fig>[,] board
         ) {
             var possMoves = new List<MoveInfo>();
-            var moveInfo = new MoveInfo();
 
             foreach (var cell in movePath) {
                 var move = Move.Mk(start, cell);
+                var moveInfo = new MoveInfo();
 
                 if (ChessEngine.IsPossibleMove(move, board)) {
                     var fig = board[move.from.x, move.from.y].Peel();
@@ -47,6 +47,7 @@ namespace move {
                     possMoves.Add(moveInfo);
                 }
             }
+
             possMoves.AddRange(GetCastlingMoves(start, lastMove, board));
             possMoves.AddRange(GetEnPassantMoves(start, lastMove, board));
 
@@ -65,7 +66,7 @@ namespace move {
             return GetPossibleMoves(start, linearPath, lastMove, board);
         }
 
-        public static List<MoveInfo> GetFigureMoves(
+        public static List<MoveInfo> GetMoves(
             Vector2Int pos,
             List<Movement> movements,
             MoveInfo lastMove,
@@ -179,7 +180,7 @@ namespace move {
             board[move.to.x, move.to.y] = Option<Fig>.Some(figure);
         }
 
-        public static MoveInfo GetMoveInfo(MoveInfo moveInfo, Option<Fig>[,] board) {
+        public static void GetMoveInfo(MoveInfo moveInfo, Option<Fig>[,] board) {
             if (moveInfo.sentenced.HasValue) {
                 var sentenced = moveInfo.sentenced.Value;
                 board[sentenced.x, sentenced.y] = Option<Fig>.None();
@@ -192,8 +193,6 @@ namespace move {
             if (moveInfo.move.second.HasValue) {
                 MoveFigure(moveInfo.move.second.Value, board);
             }
-
-            return moveInfo;
         }
 
         public static List<MoveInfo> GetCastlingMoves(
@@ -338,8 +337,8 @@ namespace move {
             }
             var queen = movements[FigureType.Queen];
             var knight = movements[FigureType.Knight];
-            var moves = MoveEngine.GetFigureMoves(pos, queen, lastMove, board);
-            moves.AddRange(MoveEngine.GetFigureMoves(pos, knight, lastMove, board));
+            var moves = MoveEngine.GetMoves(pos, queen, lastMove, board);
+            moves.AddRange(MoveEngine.GetMoves(pos, knight, lastMove, board));
 
             foreach (var move in moves) {
                 var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
@@ -350,7 +349,7 @@ namespace move {
 
                     if (figOpt.IsSome()) {
                         var fig = figOpt.Peel();
-                        var dmoves = MoveEngine.GetFigureMoves(
+                        var dmoves = MoveEngine.GetMoves(
                             move.move.first.Value.to,
                             movements[board[toX, toY].Peel().type],
                             lastMove,
