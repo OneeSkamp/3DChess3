@@ -126,10 +126,8 @@ namespace controller {
 
             var localHit = boardTransform.InverseTransformPoint(hit.point);
 
-            var pos = new Vector2Int (
-                Mathf.Abs((int)((localHit.x - boardInfo.leftTop.position.x) / cellInfo.size)),
-                Mathf.Abs((int)((localHit.z - boardInfo.leftTop.position.x) / cellInfo.size))
-            );
+            var hitOffcet = (localHit - boardInfo.leftTop.position) / cellInfo.size;
+            var pos = new Vector2Int(Mathf.Abs((int)hitOffcet.x), Mathf.Abs((int)hitOffcet.z));
 
             var size = new Vector2Int(map.board.GetLength(0), map.board.GetLength(1));
             if (!BoardEngine.IsOnBoard(pos, size)) {
@@ -196,14 +194,14 @@ namespace controller {
                     continue;
                 }
 
-                var indent = 0.01f;
+                var highlight = figContent.blueBacklight;
                 var pos = (Vector2)move.move.first.Value.to;
                 var cellOff = new Vector2(cellInfo.offset, cellInfo.offset);
 
                 var newPos = cellOff - pos * cellInfo.size;
-                var objPos = new Vector3(newPos.x, indent, newPos.y);
+                var objPos = new Vector3(newPos.x, highlight.transform.position.y, newPos.y);
 
-                var obj = Instantiate(figContent.blueBacklight);
+                var obj = Instantiate(highlight);
                 obj.transform.parent = highlights.possible.transform;
                 obj.transform.localPosition = objPos;
             }
@@ -225,18 +223,19 @@ namespace controller {
         }
 
         private void HandleMove(MoveInfo moveInfo, Option<Fig>[,] board) {
-            MoveEngine.GetMoveInfo(moveInfo, map.board);
-
             if (moveInfo.sentenced.HasValue) {
                 var sentenced = moveInfo.sentenced.Value;
+                board[sentenced.x, sentenced.y] = Option<Fig>.None();
                 Destroy(map.figures[sentenced.x, sentenced.y]);
             }
 
             if (moveInfo.move.first.HasValue) {
+                MoveEngine.MoveFigure(moveInfo.move.first.Value, board);
                 Relocate(moveInfo.move.first.Value, board);
             }
 
             if (moveInfo.move.second.HasValue) {
+                MoveEngine.MoveFigure(moveInfo.move.second.Value, board);
                 Relocate(moveInfo.move.second.Value, board);
             }
 

@@ -180,21 +180,6 @@ namespace move {
             board[move.to.x, move.to.y] = Option<Fig>.Some(figure);
         }
 
-        public static void GetMoveInfo(MoveInfo moveInfo, Option<Fig>[,] board) {
-            if (moveInfo.sentenced.HasValue) {
-                var sentenced = moveInfo.sentenced.Value;
-                board[sentenced.x, sentenced.y] = Option<Fig>.None();
-            }
-
-            if (moveInfo.move.first.HasValue) {
-                MoveFigure(moveInfo.move.first.Value, board);
-            }
-
-            if (moveInfo.move.second.HasValue) {
-                MoveFigure(moveInfo.move.second.Value, board);
-            }
-        }
-
         public static List<MoveInfo> GetCastlingMoves(
             Vector2Int kingPos,
             MoveInfo lastMove,
@@ -360,14 +345,15 @@ namespace move {
                 }
             }
 
+
+            if (!hasFig) {
+                board[pos.x, pos.y] = Option<Fig>.None();
+            }
+
             foreach (var move in figMoves) {
                 if (move.move.first.Value.to == pos) {
                     return true;
                 }
-            }
-
-            if (!hasFig) {
-                board[pos.x, pos.y] = Option<Fig>.None();
             }
 
             return false;
