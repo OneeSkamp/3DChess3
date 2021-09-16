@@ -49,7 +49,6 @@ namespace move {
             }
 
             possMoves.AddRange(GetCastlingMoves(start, lastMove, board));
-            possMoves.AddRange(GetEnPassantMoves(start, lastMove, board));
 
             return possMoves;
         }
@@ -100,22 +99,21 @@ namespace move {
                     figMoves.AddRange(GetPossibleMoves(pos, list, lastMove, board));
 
                 } else {
-                    if (fig.Peel().type == FigureType.Pawn) {
-                        figMoves.AddRange(GetPawnMoves(pos, lastMove, board));
+                    var linear = type.linear.Value;
+                    var length = BoardEngine.GetLinearLength(pos, linear.dir, board);
 
-                    } else {
-                        var linear = type.linear.Value;
-                        var length = BoardEngine.GetLinearLength(pos, linear.dir, board);
-
-                        figMoves.AddRange(GetPossibleLinearMoves(
-                            pos,
-                            linear,
-                            lastMove,
-                            length,
-                            board
-                        ));
-                    }
+                    figMoves.AddRange(GetPossibleLinearMoves(
+                        pos,
+                        linear,
+                        lastMove,
+                        length,
+                        board
+                    ));
                 }
+            }
+
+            if (fig.Peel().type == FigureType.Pawn) {
+                figMoves = (GetPawnMoves(pos, figMoves, lastMove, board));
             }
 
             return figMoves;
@@ -123,10 +121,11 @@ namespace move {
 
         public static List<MoveInfo> GetPawnMoves(
             Vector2Int pos,
+            List<MoveInfo> moves,
             MoveInfo lastMove,
             Option<Fig>[,] board
         ) {
-            var pawnPath = new List<Vector2Int>();
+            var pawnPath = new List<MoveInfo>();
             var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
             var pawn = board[pos.x, pos.y].Peel();
             int prop = 1;
@@ -136,36 +135,51 @@ namespace move {
                 prop = -1;
             }
 
-            var forwardDir = new Vector2Int(1 * prop, 0);
             var leftPos = new Vector2Int(pos.x + prop, pos.y - prop);
             var rightPos = new Vector2Int(pos.x + prop, pos.y + prop);
 
             if (pawn.counter == 0) {
                 length = 2;
             }
+            var forwardPos = new Vector2Int(pos.x + 1 * prop, pos.y);
+            var nextForwardPos = new Vector2Int(pos.x + 2 * prop, pos.y);
 
-            var forwardPath = BoardEngine.GetLinearPath(pos, forwardDir, length, board);
+            var forwardPath = BoardEngine.GetLinearPath(pos, forwardPos, length, board);
 
-            foreach (var cell in forwardPath) {
-                if (BoardEngine.IsOnBoard(cell, size) && board[cell.x, cell.y].IsSome()) {
-                    break;
-                }
-
-                if (BoardEngine.IsOnBoard(cell, size) && board[cell.x, cell.y].IsNone()) {
-                    pawnPath.Add(cell);
+            foreach (var cell in moves) {
+                var nextCell = cell.move.first.Value.to;
+                if (!BoardEngine.IsOnBoard(nextCell, size)) {
                     continue;
                 }
-            }
+                if (board[forwardPos.x, forwardPos.y].IsSome() && nextCell == forwardPos) {
+                    continue;
+                }
+                if (board[forwardPos.x, forwardPos.y].IsNone() && (pawn.counter == 0)) {
+                    if (nextCell == new Vector2Int(forwardPos.x + prop, forwardPos.y)) {
+                        pawnPath.Add(cell);
+                    }
 
-            if (BoardEngine.IsOnBoard(rightPos, size) && board[rightPos.x, rightPos.y].IsSome()) {
-                pawnPath.Add(rightPos);
-            }
+                    if (nextCell == forwardPos) {
+                        pawnPath.Add(cell);
+                    }
+                } 
+                if (board[forwardPos.x, forwardPos.y].IsNone() && (pawn.counter != 0)) {
+                    if (nextCell == forwardPos) {
+                        pawnPath.Add(cell);
+                    }
+                }
 
-            if (BoardEngine.IsOnBoard(leftPos, size) && board[leftPos.x, leftPos.y].IsSome()) {
-                pawnPath.Add(leftPos);
-            }
+                if (rightPos == nextCell && board[rightPos.x, rightPos.y].IsSome()) {
+                    pawnPath.Add(cell);
+                }
 
-            return GetPossibleMoves(pos, pawnPath, lastMove, board);
+                if (leftPos == nextCell && board[leftPos.x, leftPos.y].IsSome()) {
+  
+                    pawnPath.Add(cell);
+                }
+            }
+            pawnPath.AddRange(GetEnPassantMoves(pos, lastMove, board));
+            return pawnPath;
         }
 
         public static void MoveFigure(Move move, Option<Fig>[,] board) {

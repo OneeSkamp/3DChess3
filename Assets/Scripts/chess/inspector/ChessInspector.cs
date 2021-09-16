@@ -7,18 +7,26 @@ using board;
 using movements;
 
 namespace inspector {
+    public struct CheckInfo {
+        public Vector2Int attackPos;
+        public List<Vector2Int> attackPath;
+        public static CheckInfo Mk(Vector2Int attackPos, List<Vector2Int> attackPath) {
+            return new CheckInfo { attackPos = attackPos, attackPath = attackPath };
+        }
+    }
+
     public struct KingsPos {
         public Vector2Int white;
         public Vector2Int black;
     }
-    public class ChessInspector : MonoBehaviour {
 
-        public static List<MoveInfo> CheckInfo(
+    public class ChessInspector : MonoBehaviour {
+        public static List<CheckInfo> GetCheckInfo(
             Vector2Int kingPos,
             Option<Fig>[,] board
         ) {
             var kingsPos = GetKingsPos(board);
-            var possibleMoves = new List<MoveInfo>();
+            var checkInfos = new List<CheckInfo>();
             var queenMovement = Movements.queenMovement;
             var pathList = new List<List<Vector2Int>>();
 
@@ -63,12 +71,13 @@ namespace inspector {
             var count = 0;
             var defenceCells = new List<Vector2Int>();
             foreach (var path in pathList) {
+                var blockCell = new Vector2Int();
                 foreach (var cell in path) {
                     var figOpt = board[cell.x, cell.y];
                     if (figOpt.IsSome()) {
                         var fig = figOpt.Peel();
                         if (fig.white = king.white) {
-                            defenceCells.Add(cell);
+                            blockCell = cell;
                             count++;
                         }
                     }
@@ -78,15 +87,16 @@ namespace inspector {
                     continue;
                 }
 
-                // if (count == 1) {
-                //     var fig = board[defenceCells[0].x, defenceCells[0].y].Peel();
-                //     var figMoves = MoveEngine.GetFigureMoves()
-                //     foreach (var move in )
-                // }
+                if (count == 1) {
+                    // var checkInfo = CheckInfo.Mk(c)
+                    // checkInfos.Add(CheckInfo.M)
+                }
+                
+
 
             }
 
-            return possibleMoves;
+            return checkInfos;
         }
 
         public static KingsPos GetKingsPos(Option<Fig>[,] board) {
