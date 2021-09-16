@@ -5,7 +5,6 @@ using chess;
 using board;
 using option;
 using move;
-using movements;
 
 namespace controller {
     public enum PlayerAction {
@@ -115,8 +114,6 @@ namespace controller {
                 return;
             }
 
-            var movements = Movements.movements;
-
             var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
 
@@ -157,15 +154,9 @@ namespace controller {
                         return;
                     }
 
-                    var movement = movements[fig.type];
                     selectFigurePos = pos;
 
-                    possibleMoves = MoveEngine.GetMoves(
-                        selectFigurePos,
-                        movement,
-                        lastMove,
-                        map.board
-                    );
+                    possibleMoves = ChessInspector.GetPossibleMoves(pos, lastMove, map.board);
 
                     CreatePossibleHighlights(possibleMoves);
                     playerAction = PlayerAction.Move;
@@ -189,6 +180,10 @@ namespace controller {
         }
 
         private void CreatePossibleHighlights(List<MoveInfo> possibleMoves) {
+            if (possibleMoves == null) {
+                return;
+            }
+
             foreach (var move in possibleMoves) {
                 if (!move.move.first.HasValue) {
                     continue;

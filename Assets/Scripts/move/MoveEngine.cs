@@ -19,7 +19,7 @@ namespace move {
     }
 
     public static class MoveEngine {
-        public static List<MoveInfo> GetPossibleMoves(
+        public static List<MoveInfo> GetPathMoves(
             Vector2Int start,
             List<Vector2Int> movePath,
             MoveInfo lastMove,
@@ -62,7 +62,7 @@ namespace move {
         ) {
             var linearPath = BoardEngine.GetLinearPath<Fig>(start, linear.dir, length, board);
 
-            return GetPossibleMoves(start, linearPath, lastMove, board);
+            return GetPathMoves(start, linearPath, lastMove, board);
         }
 
         public static List<MoveInfo> GetMoves(
@@ -96,7 +96,7 @@ namespace move {
                         }
                     }
 
-                    figMoves.AddRange(GetPossibleMoves(pos, list, lastMove, board));
+                    figMoves.AddRange(GetPathMoves(pos, list, lastMove, board));
 
                 } else {
                     var linear = type.linear.Value;
@@ -151,22 +151,21 @@ namespace move {
                 if (!BoardEngine.IsOnBoard(nextCell, size)) {
                     continue;
                 }
+
                 if (board[forwardPos.x, forwardPos.y].IsSome() && nextCell == forwardPos) {
                     continue;
                 }
-                if (board[forwardPos.x, forwardPos.y].IsNone() && (pawn.counter == 0)) {
+
+                if (pawn.counter == 0 && board[forwardPos.x + prop, forwardPos.y].IsNone()
+                    && board[forwardPos.x, forwardPos.y].IsNone()) {
+
                     if (nextCell == new Vector2Int(forwardPos.x + prop, forwardPos.y)) {
                         pawnPath.Add(cell);
                     }
+                }
 
-                    if (nextCell == forwardPos) {
-                        pawnPath.Add(cell);
-                    }
-                } 
-                if (board[forwardPos.x, forwardPos.y].IsNone() && (pawn.counter != 0)) {
-                    if (nextCell == forwardPos) {
-                        pawnPath.Add(cell);
-                    }
+                if (board[forwardPos.x, forwardPos.y].IsNone() && nextCell == forwardPos) {
+                    pawnPath.Add(cell);
                 }
 
                 if (rightPos == nextCell && board[rightPos.x, rightPos.y].IsSome()) {
@@ -174,7 +173,6 @@ namespace move {
                 }
 
                 if (leftPos == nextCell && board[leftPos.x, leftPos.y].IsSome()) {
-  
                     pawnPath.Add(cell);
                 }
             }
@@ -358,7 +356,6 @@ namespace move {
                     }
                 }
             }
-
 
             if (!hasFig) {
                 board[pos.x, pos.y] = Option<Fig>.None();

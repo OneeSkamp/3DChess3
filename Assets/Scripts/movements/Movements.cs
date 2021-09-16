@@ -19,7 +19,7 @@ namespace movements {
             new Movement { linear = new LinearMovement { dir = new Vector2Int(-1, 0) } }
         };
 
-        public static readonly List<Movement> knightMovemetn = new List<Movement> {
+        public static readonly List<Movement> knightMovement = new List<Movement> {
             new Movement { square = new SquareMovement { side = 5 } }
         };
 
@@ -44,7 +44,7 @@ namespace movements {
                 { FigureType.Bishop, bishopMovement },
                 { FigureType.Rook, rookMovement },
                 { FigureType.Queen, queenMovement },
-                { FigureType.Knight, knightMovemetn },
+                { FigureType.Knight, knightMovement },
                 { FigureType.Pawn, queenMovement },
                 { FigureType.King, kingMovement }
             };
