@@ -9,8 +9,7 @@ using movements;
 
 namespace inspector {
     public struct CheckInfo {
-        public Vector2Int attackPos;
-        public Vector2Int attackDir;
+        public FixedMovement attack;
         public Vector2Int? defPos;
         public List<Vector2Int> path;
     }
@@ -20,36 +19,90 @@ namespace inspector {
         public Vector2Int black;
     }
 
-    public class ChessInspector : MonoBehaviour {
-        public static List<CheckInfo> GetCheckInfos(
-            Vector2Int kingPos,
+    public enum CheckError {
+        BoardIsNull,
+        NoFigureOnPos,
+        PosOutsideBoard,
+        ImposterKing
+    }
+
+    public static class ChessInspector {
+        public static Result<Option<Fig>[,], CheckError> GetFilteredBoard(
+            Vector2Int safePos,
             Option<Fig>[,] board
         ) {
-            var checkInfos = new List<CheckInfo>();
-            var queenMovement = Movements.queenMovement;
-            var knightMovemetn = Movements.knightMovement;
+            if (board == null) {
+                return Result<Option<Fig>[,], CheckError>.Err(CheckError.BoardIsNull);
+            }
+
+            var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
+            if (!BoardEngine.IsOnBoard(safePos, size)) {
+                return Result<Option<Fig>[,], CheckError>.Err(CheckError.PosOutsideBoard);
+            }
+
+            var figOpt = board[safePos.x, safePos.y];
+            if (figOpt.IsNone()) {
+                return Result<Option<Fig>[,], CheckError>.Err(CheckError.NoFigureOnPos);
+            }
 
             var boardClone = BoardEngine.CopyBoard(board);
-            var king = boardClone[kingPos.x, kingPos.y].Peel();
+            var fig = figOpt.Peel();
 
             for (int i = 0; i < boardClone.GetLength(0); i++) {
                 for (int j = 0; j < boardClone.GetLength(1); j++) {
                     if (boardClone[i, j].IsSome()) {
-                        var fig = boardClone[i, j].Peel();
-                        if (fig.white == king.white && fig.type != FigureType.King) {
+                        var currentFig = boardClone[i, j].Peel();
+                        if (currentFig.white == fig.white && fig.type != currentFig.type) {
                             boardClone[i, j] = Option<Fig>.None();
                         }
                     }
                 }
             }
 
-            foreach (var movement in queenMovement) {
+            return Result<Option<Fig>[,], CheckError>.Ok(boardClone);
+        }
+
+        public static Result<List<CheckInfo>, CheckError> GetPotentialCheckInfos(
+            Vector2Int kingPos,
+            Option<Fig>[,] board
+        ) {
+            if (board == null) {
+                return Result<List<CheckInfo>, CheckError>.Err(CheckError.BoardIsNull);
+            }
+
+            var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
+            if (!BoardEngine.IsOnBoard(kingPos, size)) {
+                return Result<List<CheckInfo>, CheckError>.Err(CheckError.PosOutsideBoard);
+            }
+
+            var kingOpt = board[kingPos.x, kingPos.y];
+            if (kingOpt.IsNone()) {
+                return Result<List<CheckInfo>, CheckError>.Err(CheckError.NoFigureOnPos);
+            }
+
+            var king = kingOpt.Peel();
+            if (king.type != FigureType.King) {
+                return Result<List<CheckInfo>, CheckError>.Err(CheckError.ImposterKing);
+            }
+
+            var checkInfos = new List<CheckInfo>();
+            var allMovement = Movements.queenMovement;
+            allMovement.AddRange(Movements.knightMovement);
+            var boardClone = GetFilteredBoard(kingPos, board).AsOk();
+
+            foreach (var movement in allMovement) {
+                if (!movement.linear.HasValue) {
+                    continue;
+                }
+
                 var dir = movement.linear.Value.dir;
                 var length = BoardEngine.GetLinearLength(kingPos, dir, boardClone);
-                var path = BoardEngine.GetLinearPath(kingPos, dir, length, boardClone);
+                var linearPath = BoardEngine.GetLinearPath(kingPos, dir, length, boardClone);
+                var square = BoardEngine.GetSquarePath(kingPos, 5);
+                var bindableKnightPath = BoardEngine.RemoveSquareParts(square, 0, 1);
 
-                if (path.Count != 0) {
-                    var figPos = path[path.Count - 1];
+                if (linearPath.Count != 0) {
+                    var figPos = linearPath[linearPath.Count - 1];
                     var figOpt = boardClone[figPos.x, figPos.y];
                     if (figOpt.IsSome()) {
                         var fig = figOpt.Peel();
@@ -59,17 +112,42 @@ namespace inspector {
                             if (figMovement.linear.HasValue) {
                                 var figDir = figMovement.linear.Value.dir;
                                 if (dir == figDir) {
-                                    var checkInfo = new CheckInfo();
-                                    checkInfo.attackDir = dir;
-                                    checkInfo.attackPos = figPos;
-                                    checkInfo.path = path;
-                                    checkInfos.Add(checkInfo);
+                                    var newMovement = new Movement {
+                                        linear = new LinearMovement{
+                                            dir = dir
+                                        }
+                                    };
+                                    checkInfos.Add(
+                                        new CheckInfo {
+                                            attack = new FixedMovement {
+                                                start = figPos,
+                                                movement = newMovement
+                                            },
+                                            path = linearPath
+                                        }
+                                    );
                                 }
                             }
                         }
                     }
                 }
             }
+
+            return Result<List<CheckInfo>, CheckError>.Ok(checkInfos);
+        }
+
+        public static List<CheckInfo> GetCheckInfos(
+            Vector2Int kingPos,
+            Option<Fig>[,] board
+        ) {
+            var allMovement = Movements.queenMovement;
+            allMovement.AddRange(Movements.knightMovement);
+
+            var boardClone = GetFilteredBoard(kingPos, board).AsOk();
+            var king = boardClone[kingPos.x, kingPos.y].Peel();
+
+            var checkInfos = GetPotentialCheckInfos(kingPos, board).AsOk();
+
 
             var newCheckInfos = new List<CheckInfo>();
             foreach (var checkInfo in checkInfos) {
@@ -125,16 +203,19 @@ namespace inspector {
 
                         return null;
                     }
-                    movement.Add(new Movement {
-                        linear = new LinearMovement { dir = checkInfo.attackDir }
-                    });
+                    if (checkInfo.attack.movement.linear.HasValue) {
+                        var linear = checkInfo.attack.movement.linear.Value;
+                        movement.Add(new Movement {
+                            linear = new LinearMovement { dir = linear.dir }
+                        });
+                    }
 
-                    var moves = MoveEngine.GetMoves(pos, movement, lastMove, board);
+                    var moves = MoveEngine.GetMoves(pos, movement, lastMove, board).AsOk();
                     return moves;
                 }
             }
 
-            return MoveEngine.GetMoves(pos, movements, lastMove, board);
+            return MoveEngine.GetMoves(pos, movements, lastMove, board).AsOk();
         }
 
         public static KingsPos GetKingsPos(Option<Fig>[,] board) {

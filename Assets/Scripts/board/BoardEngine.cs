@@ -12,6 +12,11 @@ namespace board {
         public int side;
     }
 
+    public struct FixedMovement {
+        public Vector2Int start;
+        public Movement movement;
+    }
+
     public struct Movement {
         public LinearMovement? linear;
         public SquareMovement? square;

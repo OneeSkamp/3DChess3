@@ -7,15 +7,34 @@ using collections;
 using movements;
 
 namespace move {
+    public enum MoveError {
+        BoardIsNull,
+        PosOutsideBoard,
+        PathIsNull,
+        IncorrectLength,
+        NoFigureOnPos
+    }
     public static class MoveEngine {
-        public static List<MoveInfo> GetPathMoves(
+        public static Result<List<MoveInfo>, MoveError> GetPathMoves(
             Vector2Int start,
             List<Vector2Int> movePath,
             MoveInfo lastMove,
             Option<Fig>[,] board
         ) {
-            var possMoves = new List<MoveInfo>();
+            if (board == null) {
+                return Result<List<MoveInfo>, MoveError>.Err(MoveError.BoardIsNull);
+            }
 
+            if (movePath == null) {
+                return Result<List<MoveInfo>, MoveError>.Err(MoveError.PathIsNull);
+            }
+
+            var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
+            if (!BoardEngine.IsOnBoard(start, size)) {
+                return Result<List<MoveInfo>, MoveError>.Err(MoveError.PosOutsideBoard);
+            }
+
+            var possMoves = new List<MoveInfo>();
             foreach (var cell in movePath) {
                 var move = Move.Mk(start, cell);
                 var moveInfo = new MoveInfo();
@@ -39,40 +58,67 @@ namespace move {
 
             possMoves.AddRange(GetCastlingMoves(start, lastMove, board));
 
-            return possMoves;
+            return Result<List<MoveInfo>, MoveError>.Ok(possMoves);
         }
 
-        public static List<MoveInfo> GetPossibleLinearMoves(
+        public static Result<List<MoveInfo>, MoveError> GetPossibleLinearMoves(
             Vector2Int start,
             LinearMovement linear,
             MoveInfo lastMove,
             int length,
             Option<Fig>[,] board
         ) {
+            if (board == null) {
+                return Result<List<MoveInfo>, MoveError>.Err(MoveError.BoardIsNull);
+            }
+
+            if (length < 0) {
+                return Result<List<MoveInfo>, MoveError>.Err(MoveError.IncorrectLength);
+            }
+
+            var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
+            if (!BoardEngine.IsOnBoard(start, size)) {
+                return Result<List<MoveInfo>, MoveError>.Err(MoveError.PathIsNull);
+            }
+
             var linearPath = BoardEngine.GetLinearPath<Fig>(start, linear.dir, length, board);
 
-            return GetPathMoves(start, linearPath, lastMove, board);
+            var linearMoves = GetPathMoves(start, linearPath, lastMove, board).AsOk();
+            return Result<List<MoveInfo>, MoveError>.Ok(linearMoves); 
         }
 
-        public static List<MoveInfo> GetMoves(
+        public static Result<List<MoveInfo>, MoveError> GetMoves(
             Vector2Int pos,
             List<Movement> movements,
             MoveInfo lastMove,
             Option<Fig>[,] board
         ) {
-            var figMoves = new List<MoveInfo>();
-            var fig = board[pos.x, pos.y];
+            if (board == null) {
+                return Result<List<MoveInfo>, MoveError>.Err(MoveError.BoardIsNull);
+            }
 
+            var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
+            if (!BoardEngine.IsOnBoard(pos, size)) {
+                return Result<List<MoveInfo>, MoveError>.Err(MoveError.PosOutsideBoard);
+            }
+
+            var figOpt = board[pos.x, pos.y];
+            if (figOpt.IsNone()) {
+                return Result<List<MoveInfo>, MoveError>.Err(MoveError.NoFigureOnPos);
+            }
+
+            var figMoves = new List<MoveInfo>();
+            var fig = figOpt.Peel();
             foreach (Movement type in movements) {
                 if (type.square.HasValue) {
                     var squarePath = BoardEngine.GetSquarePath(pos, type.square.Value.side);
                     var square = new BindableList<Vector2Int>();
 
-                    if (fig.Peel().type == FigureType.Knight) {
+                    if (fig.type == FigureType.Knight) {
                         square = BoardEngine.RemoveSquareParts(squarePath, 0, 1);
                     }
 
-                    if (fig.Peel().type == FigureType.King) {
+                    if (fig.type == FigureType.King) {
                         square = BoardEngine.RemoveSquareParts(squarePath, 0, 0);
                     }
 
@@ -85,37 +131,44 @@ namespace move {
                         }
                     }
 
-                    figMoves.AddRange(GetPathMoves(pos, list, lastMove, board));
+                    figMoves.AddRange(GetPathMoves(pos, list, lastMove, board).AsOk());
 
                 } else {
                     var linear = type.linear.Value;
                     var length = BoardEngine.GetLinearLength(pos, linear.dir, board);
-
                     figMoves.AddRange(GetPossibleLinearMoves(
                         pos,
                         linear,
                         lastMove,
                         length,
                         board
-                    ));
+                    ).AsOk());
                 }
             }
 
-            if (fig.Peel().type == FigureType.Pawn) {
-                figMoves = (GetPawnMoves(pos, figMoves, lastMove, board));
+            if (figOpt.Peel().type == FigureType.Pawn) {
+                figMoves = GetPawnMoves(pos, figMoves, lastMove, board).AsOk();
             }
 
-            return figMoves;
+            return Result<List<MoveInfo>, MoveError>.Ok(figMoves);
         }
 
-        public static List<MoveInfo> GetPawnMoves(
+        public static Result<List<MoveInfo>, MoveError> GetPawnMoves(
             Vector2Int pos,
             List<MoveInfo> moves,
             MoveInfo lastMove,
             Option<Fig>[,] board
         ) {
-            var pawnPath = new List<MoveInfo>();
+            if (board == null) {
+                return Result<List<MoveInfo>, MoveError>.Err(MoveError.BoardIsNull);
+            }
+
             var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
+            if (!BoardEngine.IsOnBoard(pos, size)) {
+                return Result<List<MoveInfo>, MoveError>.Err(MoveError.PosOutsideBoard);
+            }
+
+            var pawnPath = new List<MoveInfo>();
             var pawn = board[pos.x, pos.y].Peel();
             int prop = 1;
             var length = 1;
@@ -166,7 +219,7 @@ namespace move {
                 }
             }
             pawnPath.AddRange(GetEnPassantMoves(pos, lastMove, board));
-            return pawnPath;
+            return Result<List<MoveInfo>, MoveError>.Ok(pawnPath);
         }
 
         public static void MoveFigure(Move move, Option<Fig>[,] board) {
@@ -323,8 +376,8 @@ namespace move {
             }
             var queen = movements[FigureType.Queen];
             var knight = movements[FigureType.Knight];
-            var moves = MoveEngine.GetMoves(pos, queen, lastMove, board);
-            moves.AddRange(MoveEngine.GetMoves(pos, knight, lastMove, board));
+            var moves = MoveEngine.GetMoves(pos, queen, lastMove, board).AsOk();
+            moves.AddRange(MoveEngine.GetMoves(pos, knight, lastMove, board).AsOk());
 
             foreach (var move in moves) {
                 var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
@@ -339,7 +392,7 @@ namespace move {
                             movements[board[to.x, to.y].Peel().type],
                             lastMove,
                             board
-                        );
+                        ).AsOk();
                         figMoves.AddRange(dmoves);
                     }
                 }
