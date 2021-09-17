@@ -148,7 +148,6 @@ namespace controller {
                     }
 
                     var fig = figOpt.Peel();
-
                     if (fig.white != whiteMove) {
                         Debug.LogError("Wrong figure color, not your turn!");
                         return;

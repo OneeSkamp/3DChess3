@@ -7,17 +7,6 @@ using collections;
 using movements;
 
 namespace move {
-    public enum MoveError {
-        None,
-        ImpossibleMove,
-        MoveOnFigure
-    }
-
-    public struct MoveRes {
-        public Vector2Int pos;
-        public MoveError error;
-    }
-
     public static class MoveEngine {
         public static List<MoveInfo> GetPathMoves(
             Vector2Int start,
@@ -339,16 +328,15 @@ namespace move {
 
             foreach (var move in moves) {
                 var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
-                var toX = move.move.first.Value.to.x;
-                var toY = move.move.first.Value.to.y;
-                if (BoardEngine.IsOnBoard(new Vector2Int(toX, toY), size)) {
-                    var figOpt = board[toX, toY];
+                var to = move.move.first.Value.to;
+                if (BoardEngine.IsOnBoard(new Vector2Int(to.x, to.y), size)) {
+                    var figOpt = board[to.x, to.y];
 
                     if (figOpt.IsSome()) {
                         var fig = figOpt.Peel();
                         var dmoves = MoveEngine.GetMoves(
                             move.move.first.Value.to,
-                            movements[board[toX, toY].Peel().type],
+                            movements[board[to.x, to.y].Peel().type],
                             lastMove,
                             board
                         );

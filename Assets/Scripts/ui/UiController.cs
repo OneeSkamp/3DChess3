@@ -1,11 +1,8 @@
-using System;
 using UnityEngine.UI;
 using UnityEngine;
 using controller;
-using parse;
 using chess;
 using board;
-using option;
 
 namespace ui {
     public class UiController : MonoBehaviour {
