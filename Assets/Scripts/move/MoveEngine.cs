@@ -12,7 +12,9 @@ namespace move {
         PosOutsideBoard,
         PathIsNull,
         IncorrectLength,
-        NoFigureOnPos
+        NoFigureOnPos,
+        FigureIsNotKing,
+        FigureIsNotPawn
     }
     public static class MoveEngine {
         public static Result<List<MoveInfo>, MoveError> GetPathMoves(
@@ -55,8 +57,9 @@ namespace move {
                     possMoves.Add(moveInfo);
                 }
             }
-
-            possMoves.AddRange(GetCastlingMoves(start, lastMove, board));
+            if (GetCastlingMoves(start, lastMove, board).AsOk() != null) {
+                possMoves.AddRange(GetCastlingMoves(start, lastMove, board).AsOk());
+            }
 
             return Result<List<MoveInfo>, MoveError>.Ok(possMoves);
         }
@@ -218,7 +221,7 @@ namespace move {
                     pawnPath.Add(cell);
                 }
             }
-            pawnPath.AddRange(GetEnPassantMoves(pos, lastMove, board));
+            pawnPath.AddRange(GetEnPassantMoves(pos, lastMove, board).AsOk());
             return Result<List<MoveInfo>, MoveError>.Ok(pawnPath);
         }
 
@@ -234,11 +237,25 @@ namespace move {
             board[move.to.x, move.to.y] = Option<Fig>.Some(figure);
         }
 
-        public static List<MoveInfo> GetCastlingMoves(
+        public static Result<List<MoveInfo>, MoveError> GetCastlingMoves(
             Vector2Int kingPos,
             MoveInfo lastMove,
             Option<Fig>[,] board
         ) {
+            if (board == null) {
+                return Result<List<MoveInfo>, MoveError>.Err(MoveError.BoardIsNull);
+            }
+
+            var figOpt = board[kingPos.x, kingPos.y];
+            if (figOpt.IsNone()) {
+                return Result<List<MoveInfo>, MoveError>.Err(MoveError.NoFigureOnPos);
+            }
+
+            var fig = figOpt.Peel();
+            if (fig.type != FigureType.King) {
+                return Result<List<MoveInfo>, MoveError>.Err(MoveError.FigureIsNotKing);
+            }
+
             var castlingMoves = new List<MoveInfo>();
 
             var leftDir = new Vector2Int(0, -1);
@@ -261,8 +278,6 @@ namespace move {
                 rightPos = rightPath[rightPath.Count - 1];
             }
 
-            var fig = board[kingPos.x, kingPos.y].Peel();
-
             if (fig.type == FigureType.King && fig.counter == 0) {
                 var leftFig = board[leftPos.x, leftPos.y].Peel();
                 var rightFig = board[rightPos.x, rightPos.y].Peel();
@@ -273,8 +288,10 @@ namespace move {
                         Move.Mk(leftPos, new Vector2Int(kingPos.x, kingPos.y - 1))
                     );
 
-                    if (!IsUnderAttackPos(move.first.Value.to, fig.white, lastMove, board) 
-                        && !IsUnderAttackPos(move.second.Value.to, fig.white, lastMove, board)) {
+                    var firstTo = move.first.Value.to;
+                    var secondTo = move.second.Value.to;
+                    if (!IsUnderAttackPos(firstTo, fig.white, lastMove, board).AsOk()
+                        && !IsUnderAttackPos(secondTo, fig.white, lastMove, board).AsOk()) {
                             castlingMoves.Add(new MoveInfo { move = move });
                         }
                 }
@@ -285,21 +302,37 @@ namespace move {
                         Move.Mk(rightPos, new Vector2Int(kingPos.x, kingPos.y + 1))
                     );
 
-                    if (!IsUnderAttackPos(move.first.Value.to, fig.white, lastMove, board) 
-                        && !IsUnderAttackPos(move.second.Value.to, fig.white, lastMove, board)) {
+                    var firstTo = move.first.Value.to;
+                    var secondTo = move.second.Value.to;
+                    if (!IsUnderAttackPos(firstTo, fig.white, lastMove, board).AsOk() 
+                        && !IsUnderAttackPos(secondTo, fig.white, lastMove, board).AsOk()) {
                             castlingMoves.Add(new MoveInfo { move = move });
                     }
                 }
             }
 
-            return castlingMoves;
+            return Result<List<MoveInfo>, MoveError>.Ok(castlingMoves);
         }
 
-        public static List<MoveInfo> GetEnPassantMoves(
+        public static Result<List<MoveInfo>, MoveError> GetEnPassantMoves(
         Vector2Int pawnPos,
         MoveInfo lastMove,
         Option<Fig>[,] board
         ) {
+            if (board == null) {
+                return Result<List<MoveInfo>, MoveError>.Err(MoveError.BoardIsNull);
+            }
+
+            var figOpt = board[pawnPos.x, pawnPos.y];
+            if (figOpt.IsNone()) {
+                return Result<List<MoveInfo>, MoveError>.Err(MoveError.NoFigureOnPos);
+            }
+
+            var fig = figOpt.Peel();
+            if (fig.type != FigureType.Pawn) {
+                return Result<List<MoveInfo>, MoveError>.Err(MoveError.FigureIsNotPawn);
+            }
+
             var enPassantMoves = new List<MoveInfo>();
             var leftDir = new Vector2Int(0, -1);
             var rightDir = new Vector2Int(0, 1);
@@ -321,8 +354,6 @@ namespace move {
             if (rightPath.Count == 1) {
                 rightPos = rightPath[0];
             }
-
-            var fig = board[pawnPos.x, pawnPos.y].Peel();
 
             if (fig.type == FigureType.Pawn) {
                 if (fig.white && pawnPos.x == 3) {
@@ -356,15 +387,19 @@ namespace move {
                 }
             }
 
-            return enPassantMoves;
+            return Result<List<MoveInfo>, MoveError>.Ok(enPassantMoves);
         }
 
-        public static bool IsUnderAttackPos(
+        public static Result<bool, MoveError> IsUnderAttackPos(
             Vector2Int pos,
             bool white,
             MoveInfo lastMove,
             Option<Fig>[,] board
         ) {
+            if (board == null) {
+                return Result<bool, MoveError>.Err(MoveError.BoardIsNull);
+            }
+
             var figMoves = new List<MoveInfo>();
             var hasFig = true;
             var movements = Movements.movements;
@@ -404,11 +439,11 @@ namespace move {
 
             foreach (var move in figMoves) {
                 if (move.move.first.Value.to == pos) {
-                    return true;
+                    return Result<bool, MoveError>.Ok(true);
                 }
             }
 
-            return false;
+            return Result<bool, MoveError>.Ok(false);
         }
     }
 }

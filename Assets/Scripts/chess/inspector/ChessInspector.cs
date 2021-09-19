@@ -86,7 +86,8 @@ namespace inspector {
             }
 
             var checkInfos = new List<CheckInfo>();
-            var allMovement = Movements.queenMovement;
+            var allMovement = new List<Movement>();
+            allMovement.AddRange(Movements.queenMovement);
             allMovement.AddRange(Movements.knightMovement);
             var boardClone = GetFilteredBoard(kingPos, board).AsOk();
 
@@ -140,14 +141,10 @@ namespace inspector {
             Vector2Int kingPos,
             Option<Fig>[,] board
         ) {
-            var allMovement = Movements.queenMovement;
-            allMovement.AddRange(Movements.knightMovement);
-
             var boardClone = GetFilteredBoard(kingPos, board).AsOk();
             var king = boardClone[kingPos.x, kingPos.y].Peel();
 
             var checkInfos = GetPotentialCheckInfos(kingPos, board).AsOk();
-
 
             var newCheckInfos = new List<CheckInfo>();
             foreach (var checkInfo in checkInfos) {
@@ -197,12 +194,13 @@ namespace inspector {
             var movements = Movements.movements[board[pos.x, pos.y].Peel().type];
             var checkInfos = GetCheckInfos(kingPos, board);
             foreach (var checkInfo in checkInfos) {
+                    Debug.Log("+");
                 if (checkInfo.defPos == pos) {
                     var defPos = checkInfo.defPos.Value;
                     if (board[defPos.x, defPos.y].Peel().type == FigureType.Knight) {
-
                         return null;
                     }
+
                     if (checkInfo.attack.movement.linear.HasValue) {
                         var linear = checkInfo.attack.movement.linear.Value;
                         movement.Add(new Movement {
