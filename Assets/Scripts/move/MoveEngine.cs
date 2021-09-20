@@ -403,12 +403,17 @@ namespace move {
             var figMoves = new List<MoveInfo>();
             var hasFig = true;
             var movements = Movements.movements;
+            var currentFigOpt = new Option<Fig>();
+
+            var fig = Fig.CreateFig(white, FigureType.Knight);
 
             if (board[pos.x, pos.y].IsNone()) {
-                var fig = Fig.CreateFig(white, FigureType.Knight);
                 hasFig = false;
-                board[pos.x, pos.y] = Option<Fig>.Some(fig);
+            } else {
+                currentFigOpt = board[pos.x, pos.y];
             }
+            board[pos.x, pos.y] = Option<Fig>.Some(fig);
+
             var queen = movements[FigureType.Queen];
             var knight = movements[FigureType.Knight];
             var moves = MoveEngine.GetMoves(pos, queen, lastMove, board).AsOk();
@@ -421,7 +426,7 @@ namespace move {
                     var figOpt = board[to.x, to.y];
 
                     if (figOpt.IsSome()) {
-                        var fig = figOpt.Peel();
+                        var figure = figOpt.Peel();
                         var dmoves = MoveEngine.GetMoves(
                             move.move.first.Value.to,
                             movements[board[to.x, to.y].Peel().type],
@@ -435,6 +440,8 @@ namespace move {
 
             if (!hasFig) {
                 board[pos.x, pos.y] = Option<Fig>.None();
+            } else {
+                board[pos.x, pos.y] = currentFigOpt;
             }
 
             foreach (var move in figMoves) {

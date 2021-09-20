@@ -293,6 +293,18 @@ namespace inspector {
                 }
             }
 
+            if (fig.type == FigureType.King) {
+                var kingPossMoves = new List<MoveInfo>();
+                var kingMoves = MoveEngine.GetMoves(pos, movements, lastMove, board).AsOk();
+                foreach (var move in kingMoves) {
+                    var moveTo = move.move.first.Value.to;
+                    if (!MoveEngine.IsUnderAttackPos(moveTo, fig.white, lastMove, board).AsOk()){
+                        kingPossMoves.Add(move);
+                    }
+                }
+                return Result<List<MoveInfo>, CheckError>.Ok(kingPossMoves);
+            }
+
             foreach (var checkInfo in checkInfos) {
                 var attackPos = checkInfo.attack.start;
                 if (checkInfo.defPos == null) {

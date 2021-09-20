@@ -155,7 +155,11 @@ namespace controller {
 
                     selectFigurePos = pos;
 
-                    possibleMoves = ChessInspector.GetPossibleMoves(pos, lastMove, map.board).AsOk();
+                    possibleMoves = ChessInspector.GetPossibleMoves(
+                        pos,
+                        lastMove,
+                        map.board
+                    ).AsOk();
 
                     CreatePossibleHighlights(possibleMoves);
                     playerAction = PlayerAction.Move;
