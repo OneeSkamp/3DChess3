@@ -156,9 +156,8 @@ namespace controller {
                     selectFigurePos = pos;
 
                     possibleMoves = ChessInspector.GetPossibleMoves(
-                        pos,
-                        lastMove,
-                        map.board
+                        new FigLoc {pos = pos, board = map.board},
+                        lastMove
                     ).AsOk();
 
                     CreatePossibleHighlights(possibleMoves);

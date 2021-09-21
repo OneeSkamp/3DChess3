@@ -1,4 +1,3 @@
-using System.Reflection;
 using UnityEngine;
 using System.Collections.Generic;
 using option;
@@ -19,33 +18,36 @@ namespace inspector {
         public Vector2Int black;
     }
 
+    public struct FigLoc {
+        public Vector2Int pos;
+        public Option<Fig>[,] board;
+    }
+
     public enum CheckError {
         BoardIsNull,
         NoFigureOnPos,
         PosOutsideBoard,
-        ImposterKing
+        ImposterKing,
+        IncorrectKingPos
     }
 
     public static class ChessInspector {
-        public static Result<Option<Fig>[,], CheckError> GetFilteredBoard(
-            Vector2Int safePos,
-            Option<Fig>[,] board
-        ) {
-            if (board == null) {
+        public static Result<Option<Fig>[,], CheckError> GetFilteredBoard(FigLoc figLoc) {
+            if (figLoc.board == null) {
                 return Result<Option<Fig>[,], CheckError>.Err(CheckError.BoardIsNull);
             }
 
-            var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
-            if (!BoardEngine.IsOnBoard(safePos, size)) {
+            var size = new Vector2Int(figLoc.board.GetLength(0), figLoc.board.GetLength(1));
+            if (!BoardEngine.IsOnBoard(figLoc.pos, size)) {
                 return Result<Option<Fig>[,], CheckError>.Err(CheckError.PosOutsideBoard);
             }
 
-            var figOpt = board[safePos.x, safePos.y];
+            var figOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
             if (figOpt.IsNone()) {
                 return Result<Option<Fig>[,], CheckError>.Err(CheckError.NoFigureOnPos);
             }
 
-            var boardClone = BoardEngine.CopyBoard(board);
+            var boardClone = BoardEngine.CopyBoard(figLoc.board);
             var fig = figOpt.Peel();
 
             for (int i = 0; i < boardClone.GetLength(0); i++) {
@@ -63,19 +65,18 @@ namespace inspector {
         }
 
         public static Result<List<CheckInfo>, CheckError> GetPotentialCheckInfos(
-            Vector2Int kingPos,
-            Option<Fig>[,] board
+            FigLoc figLoc
         ) {
-            if (board == null) {
+            if (figLoc.board == null) {
                 return Result<List<CheckInfo>, CheckError>.Err(CheckError.BoardIsNull);
             }
 
-            var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
-            if (!BoardEngine.IsOnBoard(kingPos, size)) {
+            var size = new Vector2Int(figLoc.board.GetLength(0), figLoc.board.GetLength(1));
+            if (!BoardEngine.IsOnBoard(figLoc.pos, size)) {
                 return Result<List<CheckInfo>, CheckError>.Err(CheckError.PosOutsideBoard);
             }
 
-            var kingOpt = board[kingPos.x, kingPos.y];
+            var kingOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
             if (kingOpt.IsNone()) {
                 return Result<List<CheckInfo>, CheckError>.Err(CheckError.NoFigureOnPos);
             }
@@ -89,13 +90,19 @@ namespace inspector {
             var allMovement = new List<Movement>();
             allMovement.AddRange(Movements.queenMovement);
             allMovement.AddRange(Movements.knightMovement);
-            var boardClone = GetFilteredBoard(kingPos, board).AsOk();
+
+            var boardCloneRes = GetFilteredBoard(figLoc);
+            if (boardCloneRes.IsErr()) {
+                return Result<List<CheckInfo>, CheckError>.Err(boardCloneRes.AsErr());
+            }
+
+            var boardClone = GetFilteredBoard(figLoc).AsOk();
 
             foreach (var movement in allMovement) {
                 if (movement.linear.HasValue) {
                     var dir = movement.linear.Value.dir;
-                    var length = BoardEngine.GetLinearLength(kingPos, dir, boardClone);
-                    var linearPath = BoardEngine.GetLinearPath(kingPos, dir, length, boardClone);
+                    var length = BoardEngine.GetLinearLength(figLoc.pos, dir, boardClone);
+                    var linearPath = BoardEngine.GetLinearPath(figLoc.pos, dir, length, boardClone);
 
                     if (linearPath.Count != 0) {
                         var figPos = linearPath[linearPath.Count - 1];
@@ -138,7 +145,7 @@ namespace inspector {
                 }
 
                 if (movement.square.HasValue) {
-                    var square = BoardEngine.GetSquarePath(kingPos, 5);
+                    var square = BoardEngine.GetSquarePath(figLoc.pos, 5);
                     var bindableKnightPath = BoardEngine.RemoveSquareParts(square, 0, 1);
 
                     var knightPath = new List<Vector2Int>();
@@ -156,7 +163,7 @@ namespace inspector {
                                 continue;
                             }
 
-                            var figOpt = board[cell.x, cell.y];
+                            var figOpt = figLoc.board[cell.x, cell.y];
                             if (figOpt.IsNone()) {
                                 continue;
                             }
@@ -189,19 +196,18 @@ namespace inspector {
         }
 
         public static Result<List<CheckInfo>, CheckError> GetCheckInfos(
-            Vector2Int kingPos,
-            Option<Fig>[,] board
+            FigLoc figLoc
         ) {
-            if (board == null) {
+            if (figLoc.board == null) {
                 return Result<List<CheckInfo>, CheckError>.Err(CheckError.BoardIsNull);
             }
 
-            var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
-            if (!BoardEngine.IsOnBoard(kingPos, size)) {
+            var size = new Vector2Int(figLoc.board.GetLength(0), figLoc.board.GetLength(1));
+            if (!BoardEngine.IsOnBoard(figLoc.pos, size)) {
                 return Result<List<CheckInfo>, CheckError>.Err(CheckError.PosOutsideBoard);
             }
 
-            var kingOpt = board[kingPos.x, kingPos.y];
+            var kingOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
             if (kingOpt.IsNone()) {
                 return Result<List<CheckInfo>, CheckError>.Err(CheckError.NoFigureOnPos);
             }
@@ -211,8 +217,8 @@ namespace inspector {
                 return Result<List<CheckInfo>, CheckError>.Err(CheckError.ImposterKing);
             }
 
-            var boardClone = GetFilteredBoard(kingPos, board).AsOk();
-            var checkInfos = GetPotentialCheckInfos(kingPos, board).AsOk();
+            var boardClone = GetFilteredBoard(figLoc).AsOk();
+            var checkInfos = GetPotentialCheckInfos(figLoc).AsOk();
             var newCheckInfos = new List<CheckInfo>();
 
             foreach (var checkInfo in checkInfos) {
@@ -222,7 +228,7 @@ namespace inspector {
                     var defPos = new Vector2Int();
 
                     foreach (var cell in checkPath) {
-                        var figOpt = board[cell.x, cell.y];
+                        var figOpt = figLoc.board[cell.x, cell.y];
                         if (figOpt.IsNone()) {
                             continue;
                         }
@@ -255,20 +261,19 @@ namespace inspector {
         }
 
         public static Result<List<MoveInfo>, CheckError> GetPossibleMoves(
-            Vector2Int pos,
-            MoveInfo lastMove,
-            Option<Fig>[,] board
+            FigLoc figLoc,
+            MoveInfo lastMove
         ) {
-            if (board == null) {
+            if (figLoc.board == null) {
                 return Result<List<MoveInfo>, CheckError>.Err(CheckError.BoardIsNull);
             }
 
-            var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
-            if (!BoardEngine.IsOnBoard(pos, size)) {
+            var size = new Vector2Int(figLoc.board.GetLength(0), figLoc.board.GetLength(1));
+            if (!BoardEngine.IsOnBoard(figLoc.pos, size)) {
                 return Result<List<MoveInfo>, CheckError>.Err(CheckError.PosOutsideBoard);
             }
 
-            var figOpt = board[pos.x, pos.y];
+            var figOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
             if (figOpt.IsNone()) {
                 return Result<List<MoveInfo>, CheckError>.Err(CheckError.NoFigureOnPos);
             }
@@ -277,16 +282,26 @@ namespace inspector {
 
             var movement = new List<Movement>();
             var white = fig.white;
-            var kingsPos = GetKingsPos(board).AsOk();
+
+            var kingsPosRes = GetKingsPos(figLoc.board);
+            if (kingsPosRes.IsErr()) {
+                return Result<List<MoveInfo>, CheckError>.Err(kingsPosRes.AsErr());
+            }
+            var kingsPos = kingsPosRes.AsOk();
             var kingPos = kingsPos.black;
             var check = false;
             if (white) {
                 kingPos = kingsPos.white;
             }
 
-            var movements = Movements.movements[board[pos.x, pos.y].Peel().type];
-            var checkInfos = GetCheckInfos(kingPos, board).AsOk();
+            var movements = Movements.movements[figLoc.board[figLoc.pos.x, figLoc.pos.y].Peel().type];
 
+            var checkInfosRes = GetCheckInfos(new FigLoc { pos = kingPos, board = figLoc.board});
+            if (checkInfosRes.IsErr()) {
+                return Result<List<MoveInfo>, CheckError>.Err(checkInfosRes.AsErr());
+            }
+
+            var checkInfos = GetCheckInfos(new FigLoc {pos = kingPos, board = figLoc.board}).AsOk();
             foreach (var checkInfo in checkInfos) {
                 if (checkInfo.defPos == null) {
                     check = true;
@@ -295,10 +310,15 @@ namespace inspector {
 
             if (fig.type == FigureType.King) {
                 var kingPossMoves = new List<MoveInfo>();
-                var kingMoves = MoveEngine.GetMoves(pos, movements, lastMove, board).AsOk();
+
+                var kingMovesRes = MoveEngine.GetMoves(figLoc.pos, movements, lastMove, figLoc.board);
+                // if (kingMovesRes.IsErr()) {
+                //     return Result<List<MoveInfo>, CheckError>.Err(kingMovesRes.AsErr());
+                // }
+                var kingMoves = MoveEngine.GetMoves(figLoc.pos, movements, lastMove, figLoc.board).AsOk();
                 foreach (var move in kingMoves) {
                     var moveTo = move.move.first.Value.to;
-                    if (!MoveEngine.IsUnderAttackPos(moveTo, fig.white, lastMove, board).AsOk()){
+                    if (!MoveEngine.IsUnderAttackPos(moveTo, fig.white, lastMove, figLoc.board).AsOk()){
                         kingPossMoves.Add(move);
                     }
                 }
@@ -309,7 +329,7 @@ namespace inspector {
                 var attackPos = checkInfo.attack.start;
                 if (checkInfo.defPos == null) {
                     if (checkInfo.attack.movement.linear.HasValue) {
-                        var moves = MoveEngine.GetMoves(pos, movements, lastMove, board).AsOk();
+                        var moves = MoveEngine.GetMoves(figLoc.pos, movements, lastMove, figLoc.board).AsOk();
                         var newMoves = new List<MoveInfo>();
                         foreach (var move in moves) {
                             var firstTo = move.move.first.Value.to;
@@ -325,7 +345,7 @@ namespace inspector {
                     }
 
                     if (checkInfo.attack.movement.square.HasValue) {
-                        var moves = MoveEngine.GetMoves(pos, movements, lastMove, board).AsOk();
+                        var moves = MoveEngine.GetMoves(figLoc.pos, movements, lastMove, figLoc.board).AsOk();
                         var newMoves = new List<MoveInfo>();
                         foreach (var move in moves) {
                             var firstTo = move.move.first.Value.to;
@@ -338,9 +358,9 @@ namespace inspector {
                     }
                 }
 
-                if (checkInfo.defPos == pos && !check) {
+                if (checkInfo.defPos == figLoc.pos && !check) {
                     var defPos = checkInfo.defPos.Value;
-                    if (board[defPos.x, defPos.y].Peel().type == FigureType.Knight) {
+                    if (figLoc.board[defPos.x, defPos.y].Peel().type == FigureType.Knight) {
                         return Result<List<MoveInfo>, CheckError>.Ok(null);
                     }
 
@@ -351,12 +371,12 @@ namespace inspector {
                         });
                     }
 
-                    var moves = MoveEngine.GetMoves(pos, movement, lastMove, board).AsOk();
+                    var moves = MoveEngine.GetMoves(figLoc.pos, movement, lastMove, figLoc.board).AsOk();
                     return Result<List<MoveInfo>, CheckError>.Ok(moves);
                 }
 
             }
-            var defaultMoves = MoveEngine.GetMoves(pos, movements, lastMove, board).AsOk();
+            var defaultMoves = MoveEngine.GetMoves(figLoc.pos, movements, lastMove, figLoc.board).AsOk();
             return Result<List<MoveInfo>, CheckError>.Ok(defaultMoves);
         }
 
