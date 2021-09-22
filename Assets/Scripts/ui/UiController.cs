@@ -47,7 +47,7 @@ namespace ui {
                 Destroy(fig);
             }
 
-            chessController.whiteMove = true;
+            chessController.moveColor = FigColor.White;
             chessController.map.board = BoardEngine.CopyBoard(chessController.map.startBoard);
             figureSpawner.CreateFiguresOnBoard(chessController.map.startBoard);
             ChackMateUi.SetActive(!ChackMateUi.activeSelf);

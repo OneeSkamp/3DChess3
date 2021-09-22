@@ -50,7 +50,7 @@ namespace controller {
         public Map map;
         public BoardInfo boardInfo;
 
-        public bool whiteMove = true;
+        public FigColor moveColor;
         public CellInfo cellInfo;
         public Highlights highlights;
         public FigureResourses figContent;
@@ -74,36 +74,36 @@ namespace controller {
                 figures = new GameObject[8, 8]
             };
 
-            map.board[0, 0] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Rook));
-            map.board[0, 7] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Rook));
+            map.board[0, 0] = Option<Fig>.Some(Fig.CreateFig(FigColor.Black, FigureType.Rook));
+            map.board[0, 7] = Option<Fig>.Some(Fig.CreateFig(FigColor.Black, FigureType.Rook));
 
-            map.board[0, 1] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Knight));
-            map.board[0, 6] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Knight));
+            map.board[0, 1] = Option<Fig>.Some(Fig.CreateFig(FigColor.Black, FigureType.Knight));
+            map.board[0, 6] = Option<Fig>.Some(Fig.CreateFig(FigColor.Black, FigureType.Knight));
 
-            map.board[0, 2] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Bishop));
-            map.board[0, 5] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Bishop));
+            map.board[0, 2] = Option<Fig>.Some(Fig.CreateFig(FigColor.Black, FigureType.Bishop));
+            map.board[0, 5] = Option<Fig>.Some(Fig.CreateFig(FigColor.Black, FigureType.Bishop));
 
-            map.board[0, 3] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Queen));
-            map.board[0, 4] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.King));
+            map.board[0, 3] = Option<Fig>.Some(Fig.CreateFig(FigColor.Black, FigureType.Queen));
+            map.board[0, 4] = Option<Fig>.Some(Fig.CreateFig(FigColor.Black, FigureType.King));
 
             for (int x = 0; x <= 7; x++) {
-               map.board[1, x] = Option<Fig>.Some(Fig.CreateFig(false, FigureType.Pawn));
+               map.board[1, x] = Option<Fig>.Some(Fig.CreateFig(FigColor.Black, FigureType.Pawn));
             }
 
-            map.board[7, 0] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Rook));
-            map.board[7, 7] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Rook));
+            map.board[7, 0] = Option<Fig>.Some(Fig.CreateFig(FigColor.White, FigureType.Rook));
+            map.board[7, 7] = Option<Fig>.Some(Fig.CreateFig(FigColor.White, FigureType.Rook));
 
-            map.board[7, 1] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Knight));
-            map.board[7, 6] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Knight));
+            map.board[7, 1] = Option<Fig>.Some(Fig.CreateFig(FigColor.White, FigureType.Knight));
+            map.board[7, 6] = Option<Fig>.Some(Fig.CreateFig(FigColor.White, FigureType.Knight));
 
-            map.board[7, 2] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Bishop));
-            map.board[7, 5] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Bishop));
+            map.board[7, 2] = Option<Fig>.Some(Fig.CreateFig(FigColor.White, FigureType.Bishop));
+            map.board[7, 5] = Option<Fig>.Some(Fig.CreateFig(FigColor.White, FigureType.Bishop));
 
-            map.board[7, 3] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Queen));
-            map.board[7, 4] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.King));
+            map.board[7, 3] = Option<Fig>.Some(Fig.CreateFig(FigColor.White, FigureType.Queen));
+            map.board[7, 4] = Option<Fig>.Some(Fig.CreateFig(FigColor.White, FigureType.King));
 
             for (int x = 0; x <= 7; x++) {
-               map.board[6, x] = Option<Fig>.Some(Fig.CreateFig(true, FigureType.Pawn));
+               map.board[6, x] = Option<Fig>.Some(Fig.CreateFig(FigColor.White, FigureType.Pawn));
             }
 
             map.startBoard = BoardEngine.CopyBoard(map.board);
@@ -126,8 +126,7 @@ namespace controller {
             var hitOffcet = (localHit - boardInfo.leftTop.position) / cellInfo.size;
             var pos = new Vector2Int(Mathf.Abs((int)hitOffcet.x), Mathf.Abs((int)hitOffcet.z));
 
-            var size = new Vector2Int(map.board.GetLength(0), map.board.GetLength(1));
-            if (!BoardEngine.IsOnBoard(pos, size)) {
+            if (!BoardEngine.IsOnBoard(pos, map.board)) {
                 return;
             }
 
@@ -136,7 +135,7 @@ namespace controller {
             }
 
             var figOpt = map.board[pos.x, pos.y];
-            if (figOpt.IsSome() && figOpt.Peel().white == whiteMove) {
+            if (figOpt.IsSome() && figOpt.Peel().color == moveColor) {
                 playerAction = PlayerAction.Select;
             }
 
@@ -148,7 +147,7 @@ namespace controller {
                     }
 
                     var fig = figOpt.Peel();
-                    if (fig.white != whiteMove) {
+                    if (fig.color != moveColor) {
                         Debug.LogError("Wrong figure color, not your turn!");
                         return;
                     }
@@ -243,13 +242,17 @@ namespace controller {
 
             lastMove = moveInfo;
 
-            whiteMove = !whiteMove;
+            if (moveColor == FigColor.White) {
+                moveColor = FigColor.Black;
+            } else {
+                moveColor = FigColor.White;
+            }
         }
 
         public void PromotionPawn(FigureType type) {
             var white = false;
             var figObj = new GameObject();
-            var fig = Fig.CreateFig(false, type);
+            var fig = Fig.CreateFig(FigColor.Black, type);
             var pos = lastMove.promote.Value;
             var cellOffset = new Vector2(cellInfo.offset, cellInfo.offset);
 
@@ -257,7 +260,7 @@ namespace controller {
             var newPos = new Vector3(prom.x, 0.0f, prom.y);
 
             if (pos.x == 0) {
-                fig = Fig.CreateFig(true, type);
+                fig = Fig.CreateFig(FigColor.White, type);
                 white = true;
             }
 

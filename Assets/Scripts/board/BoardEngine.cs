@@ -30,7 +30,7 @@ namespace board {
             for (int i = 1; i <= size.x; i++) {
                 var nextPos = pos + i * dir;
 
-                if (!IsOnBoard(nextPos, size)) {
+                if (!IsOnBoard(nextPos, board)) {
                     break;
                 }
 
@@ -128,7 +128,16 @@ namespace board {
             return clone;
         }
 
-        public static bool IsOnBoard(Vector2Int pos, Vector2Int size) {
+        public static bool IsOnBoard<T>(Vector2Int pos, Option<T>[,] board) {
+            var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
+            if (IsOnPlace(pos, size)) {
+                return true;
+            }
+
+            return false;
+        }
+
+        public static bool IsOnPlace(Vector2Int pos, Vector2Int size) {
             if (pos.x < 0 || pos.y < 0 || pos.x >= size.x || pos.y >= size.y) {
                 return false;
             }

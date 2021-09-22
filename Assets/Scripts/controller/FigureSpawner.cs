@@ -24,7 +24,7 @@ namespace controller {
                     var pawnPos = new Vector3(xPos, 0f , yPos);
                     var fig = board[i, j].Peel();
                     if (board[i, j].IsSome()) {
-                        if (fig.type == FigureType.Pawn && !fig.white) {
+                        if (fig.type == FigureType.Pawn && fig.color != FigColor.White) {
                             chessController.map.figures[i, j] = Instantiate(
                                 figCont.bPawn,
                                 pawnPos,
@@ -33,7 +33,7 @@ namespace controller {
                             );
                         }
 
-                        if (fig.type == FigureType.Queen && !fig.white) {
+                        if (fig.type == FigureType.Queen && fig.color != FigColor.White) {
                             chessController.map.figures[i, j] = Instantiate(
                                 figCont.bQueen,
                                 pos,
@@ -42,7 +42,7 @@ namespace controller {
                             );
                         }
 
-                        if (fig.type == FigureType.King && !fig.white) {
+                        if (fig.type == FigureType.King && fig.color != FigColor.White) {
                             chessController.map.figures[i, j] = Instantiate(
                                 figCont.bKing,
                                 pos,
@@ -51,7 +51,7 @@ namespace controller {
                             );
                         }
 
-                        if (fig.type == FigureType.Knight && !fig.white) {
+                        if (fig.type == FigureType.Knight && fig.color != FigColor.White) {
                             chessController.map.figures[i, j] = Instantiate(
                                 figCont.bKnight,
                                 pos,
@@ -60,7 +60,7 @@ namespace controller {
                             );
                         }
 
-                        if (fig.type == FigureType.Bishop && !fig.white) {
+                        if (fig.type == FigureType.Bishop && fig.color != FigColor.White) {
                             chessController.map.figures[i, j] = Instantiate(
                                 figCont.bBishop,
                                 pos,
@@ -69,7 +69,7 @@ namespace controller {
                             );
                         }
 
-                        if (fig.type == FigureType.Rook && !fig.white) {
+                        if (fig.type == FigureType.Rook && fig.color != FigColor.White) {
                             chessController.map.figures[i, j] = Instantiate(
                                 figCont.bRook,
                                 pos,
@@ -78,7 +78,7 @@ namespace controller {
                             );
                         }
 
-                        if (fig.type == FigureType.Pawn && fig.white) {
+                        if (fig.type == FigureType.Pawn && fig.color == FigColor.White) {
                             chessController.map.figures[i, j] = Instantiate(
                                 figCont.wPawn,
                                 pawnPos,
@@ -87,7 +87,7 @@ namespace controller {
                             );
                         }
 
-                        if (fig.type == FigureType.Queen && fig.white) {
+                        if (fig.type == FigureType.Queen && fig.color == FigColor.White) {
                             chessController.map.figures[i, j] = Instantiate(
                                 figCont.wQueen,
                                 pos,
@@ -96,7 +96,7 @@ namespace controller {
                             );
                         }
 
-                        if (fig.type == FigureType.King && fig.white) {
+                        if (fig.type == FigureType.King && fig.color == FigColor.White) {
                             chessController.map.figures[i, j] = Instantiate(
                                 figCont.wKing,
                                 pos,
@@ -105,7 +105,7 @@ namespace controller {
                             );
                         }
 
-                        if (fig.type == FigureType.Knight && fig.white) {
+                        if (fig.type == FigureType.Knight && fig.color == FigColor.White) {
                             chessController.map.figures[i, j] = Instantiate(
                                 figCont.wKnight,
                                 pos,
@@ -114,7 +114,7 @@ namespace controller {
                             );
                         }
 
-                        if (fig.type == FigureType.Bishop && fig.white) {
+                        if (fig.type == FigureType.Bishop && fig.color == FigColor.White) {
                             chessController.map.figures[i, j] = Instantiate(
                                 figCont.wBishop,
                                 pos,
@@ -123,7 +123,7 @@ namespace controller {
                             );
                         }
 
-                        if (fig.type == FigureType.Rook && fig.white) {
+                        if (fig.type == FigureType.Rook && fig.color == FigColor.White) {
                             chessController.map.figures[i, j] = Instantiate(
                                 figCont.wRook,
                                 pos,

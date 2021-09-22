@@ -3,6 +3,11 @@ using UnityEngine;
 using option;
 
 namespace chess {
+    public enum FigColor {
+        White,
+        Black
+    }
+
     public enum FigureType {
         Pawn,
         Knight,
@@ -12,14 +17,23 @@ namespace chess {
         King
     }
 
+    public struct FigLoc {
+        public Vector2Int pos;
+        public Option<Fig>[,] board;
+
+        public static FigLoc Mk(Vector2Int pos, Option<Fig>[,] board) {
+            return new FigLoc { pos = pos, board = board };
+        }
+    }
+
     public struct Fig {
-        public bool white;
+        public FigColor color;
         public int counter;
         public FigureType type;
 
-        public static Fig CreateFig(bool white, FigureType type) {
+        public static Fig CreateFig(FigColor color, FigureType type) {
             return new Fig {
-                white = white,
+                color = color,
                 type = type
             };
         }
@@ -53,7 +67,6 @@ namespace chess {
         public static bool IsPossibleMove(Move move, Option<Fig>[,] board) {
             var fromPos = move.from;
             var figOpt = board[fromPos.x, fromPos.y];
-            var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
 
             if (figOpt.IsNone()) {
                 return false;
@@ -61,7 +74,7 @@ namespace chess {
 
             var fig = figOpt.Peel();
 
-            if (BoardEngine.IsOnBoard(move.to, size)) {
+            if (BoardEngine.IsOnBoard(move.to, board)) {
                 var nextFigOpt = board[move.to.x, move.to.y];
 
                 if (nextFigOpt.IsNone()) {
@@ -69,7 +82,7 @@ namespace chess {
                 }
 
                 var nextFig = nextFigOpt.Peel();
-                if (fig.white != nextFig.white) {
+                if (fig.color != nextFig.color) {
                     return true;
                 }
             }
