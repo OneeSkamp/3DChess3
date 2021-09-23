@@ -4,22 +4,52 @@ using option;
 using collections;
 
 namespace board {
+    public struct MoveType {
+        public bool isAttack;
+        public bool isMove;
+    }
+
     public struct LinearMovement {
         public Vector2Int dir;
+
+        public static LinearMovement Mk(Vector2Int dir) {
+            return new LinearMovement { dir = dir };
+        }
     }
 
     public struct SquareMovement {
         public int side;
-    }
 
-    public struct FixedMovement {
-        public Vector2Int start;
-        public Movement movement;
+        public static SquareMovement Mk(int side) {
+            return new SquareMovement { side = side };
+        }
     }
 
     public struct Movement {
         public LinearMovement? linear;
         public SquareMovement? square;
+
+        public static Movement Linear(LinearMovement linear) {
+            return new Movement { linear = linear };
+        }
+        public static Movement Square(SquareMovement square) {
+            return new Movement { square = square };
+        }
+    }
+
+    public struct FixedMovement {
+        public Vector2Int start;
+        public Movement movement;
+
+        public static FixedMovement Mk(Vector2Int start, Movement movement) {
+            return new FixedMovement { start = start, movement = movement };
+        }
+    }
+
+    public struct LimitedMovement {
+        public int length;
+        public FixedMovement fixedMovement;
+        public MoveType moveType;
     }
 
     public static class BoardEngine {

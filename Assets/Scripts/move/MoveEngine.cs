@@ -80,7 +80,12 @@ namespace move {
                 return Result<List<MoveInfo>, MoveError>.Err(MoveError.PathIsNull);
             }
 
-            var linearPath = BoardEngine.GetLinearPath<Fig>(startLoc.pos, linear.dir, length, startLoc.board);
+            var linearPath = BoardEngine.GetLinearPath<Fig>(
+                startLoc.pos,
+                linear.dir,
+                length,
+                startLoc.board
+            );
 
             var linearMoves = GetPathMoves(startLoc, linearPath, lastMove).AsOk();
             return Result<List<MoveInfo>, MoveError>.Ok(linearMoves); 
@@ -180,7 +185,12 @@ namespace move {
             var forwardPos = new Vector2Int(figLoc.pos.x + 1 * prop, figLoc.pos.y);
             var nextForwardPos = new Vector2Int(figLoc.pos.x + 2 * prop, figLoc.pos.y);
 
-            var forwardPath = BoardEngine.GetLinearPath(figLoc.pos, forwardPos, length, figLoc.board);
+            var forwardPath = BoardEngine.GetLinearPath(
+                figLoc.pos,
+                forwardPos,
+                length,
+                figLoc.board
+            );
 
             foreach (var cell in moves) {
                 var nextCell = cell.move.first.Value.to;
@@ -294,7 +304,7 @@ namespace move {
                         return Result<List<MoveInfo>, MoveError>.Err(secondToIsUnderAttack.AsErr());
                     }
                     if (!firstToIsUnderAttack.AsOk() && !secondToIsUnderAttack.AsOk()) {
-                            castlingMoves.Add(new MoveInfo { move = move });
+                        castlingMoves.Add(new MoveInfo { move = move });
                     }
                 }
 
