@@ -23,6 +23,7 @@ namespace inspector {
         NoFigureOnPos,
         PosOutsideBoard,
         ImposterKing,
+        CantInterpMoveErr
     }
 
     public static class ChessInspector {
@@ -183,23 +184,21 @@ namespace inspector {
                     continue;
                 }
 
-                var dir = movement.linear.Value.dir;
-                var length = BoardEngine.GetLinearLength(figLoc.pos, dir, boardClone);
-                var linearPath = BoardEngine.GetLinearPath(figLoc.pos, dir, length, boardClone);
+                var fixedMovement = FixedMovement.Mk(figLoc.pos, movement);
+                var limMovement = BoardEngine.GetLimitedMovement(fixedMovement, boardClone);
+                var figPos = BoardEngine.GetLastOnPathPos(limMovement, boardClone);
 
-                if (linearPath.Count == 0) {
+                if (!figPos.HasValue) {
                     continue;
                 }
 
-                var figPos = linearPath[linearPath.Count - 1];
-                var figOpt = boardClone[figPos.x, figPos.y];
+                var figOpt = boardClone[figPos.Value.x, figPos.Value.y];
                 if (figOpt.IsNone()) {
                     continue;
                 }
-
                 var fig = figOpt.Peel();
                 if (fig.type == FigureType.Pawn) {
-                    if (linearPath.Count > 1) {
+                    if (limMovement.length > 1) {
                         continue;
                     }
                 }
@@ -211,7 +210,8 @@ namespace inspector {
                     }
 
                     var figDir = figMovement.linear.Value.dir;
-                    if (dir != figDir) {
+                    var dir = fixedMovement.movement.linear.Value.dir;
+                    if (fixedMovement.movement.linear.Value.dir != figDir) {
                         continue;
                     }
 
@@ -219,8 +219,7 @@ namespace inspector {
 
                     checkInfos.Add(
                         new CheckInfo {
-                            attack = FixedMovement.Mk(figPos, newMovement),
-                            path = linearPath
+                            attack = FixedMovement.Mk(figPos.Value, newMovement),
                         }
                     );
                 }
@@ -228,6 +227,8 @@ namespace inspector {
 
             return Result<List<CheckInfo>, CheckError>.Ok(checkInfos);
         }
+
+
 
         public static Result<List<CheckInfo>, CheckError> GetCheckInfos(
             FigLoc kingLoc
@@ -391,10 +392,21 @@ namespace inspector {
                         });
                     }
 
+                    var movesRes = MoveEngine.GetMoves(figLoc, movement, lastMove);
+                    if (movesRes.IsErr()) {
+                        return Result<List<MoveInfo>, CheckError>.Err(
+                            InterpMoveEngineErr(movesRes.AsErr())
+                        );
+                    }
+
                     var moves = MoveEngine.GetMoves(figLoc, movement, lastMove).AsOk();
+
                     return Result<List<MoveInfo>, CheckError>.Ok(moves);
                 }
 
+                if (checkInfo.defPos != null) {
+                    continue;
+                }
                 if (checkInfo.attack.movement.linear.HasValue) {
                     var possMoves = GetLinearPossibleMoves(figLoc, checkInfo, lastMove);
                     if (possMoves.IsErr()) {
@@ -415,8 +427,14 @@ namespace inspector {
                     return Result<List<MoveInfo>, CheckError>.Ok(possibleMoves);
                 }
             }
+            var defaultMovesRes = MoveEngine.GetMoves(figLoc, movements, lastMove);
+            if (defaultMovesRes.IsErr()) {
+                return Result<List<MoveInfo>, CheckError>.Err(
+                    InterpMoveEngineErr(defaultMovesRes.AsErr())
+                );
+            }
 
-            var defaultMoves = MoveEngine.GetMoves(figLoc, movements, lastMove).AsOk();
+            var defaultMoves = defaultMovesRes.AsOk();
             return Result<List<MoveInfo>, CheckError>.Ok(defaultMoves);
         }
 
@@ -445,7 +463,14 @@ namespace inspector {
                 var attackPos = checkInfo.attack.start;
                 if (!checkInfo.defPos.HasValue) {
                     if (checkInfo.attack.movement.square.HasValue) {
-                        var moves = MoveEngine.GetMoves(figLoc, movements, lastMove).AsOk();
+                        var movesRes = MoveEngine.GetMoves(figLoc, movements, lastMove);
+                        if (movesRes.IsErr()) {
+                            return Result<List<MoveInfo>, CheckError>.Err(
+                                InterpMoveEngineErr(movesRes.AsErr())
+                            );
+                        }
+
+                        var moves = movesRes.AsOk();
                         foreach (var move in moves) {
                             var firstTo = move.move.first.Value.to;
                             if (firstTo == attackPos) {
@@ -482,7 +507,13 @@ namespace inspector {
             var possMoves = new List<MoveInfo>();
             if (!checkInfo.defPos.HasValue) {
                 if (checkInfo.attack.movement.linear.HasValue) {
-                    var moves = MoveEngine.GetMoves(figLoc, movements, lastMove).AsOk();
+                    var movesRes = MoveEngine.GetMoves(figLoc, movements, lastMove);
+                    if (movesRes.IsErr()) {
+                        return Result<List<MoveInfo>, CheckError>.Err(
+                            InterpMoveEngineErr(movesRes.AsErr())
+                        );
+                    }
+                    var moves = movesRes.AsOk();
                     foreach (var move in moves) {
                         var firstTo = move.move.first.Value.to;
                         var path = checkInfo.path;
@@ -523,11 +554,23 @@ namespace inspector {
 
             if (fig.type == FigureType.King) {
                 var kingMovesRes = MoveEngine.GetMoves(figLoc, movements, lastMove);
+                if (kingMovesRes.IsErr()) {
+                    return Result<List<MoveInfo>, CheckError>.Err(
+                        InterpMoveEngineErr(kingMovesRes.AsErr())
+                    );
+                }
                 var kingMoves = kingMovesRes.AsOk();
                 foreach (var move in kingMoves) {
                     var moveTo = move.move.first.Value.to;
                     var moveToLoc = FigLoc.Mk(moveTo, figLoc.board);
-                    if (!MoveEngine.IsUnderAttackPos(moveToLoc, color, lastMove).AsOk()){
+                    var isUnderAttackRes = MoveEngine.IsUnderAttackPos(moveToLoc, color, lastMove);
+                    if (isUnderAttackRes.IsErr()) {
+                        return Result<List<MoveInfo>, CheckError>.Err(
+                            InterpMoveEngineErr(isUnderAttackRes.AsErr())
+                        );
+                    }
+
+                    if (!isUnderAttackRes.AsOk()){
                         kingPossMoves.Add(move);
                     }
                 }
@@ -544,6 +587,21 @@ namespace inspector {
             }
 
             return false;
+        }
+
+        public static CheckError InterpMoveEngineErr(MoveError err) {
+            switch (err) {
+                case MoveError.BoardIsNull:
+                    return CheckError.BoardIsNull;
+                case MoveError.PosOutsideBoard:
+                    return CheckError.PosOutsideBoard;
+                case MoveError.NoFigureOnPos:
+                    return CheckError.PosOutsideBoard;
+                case MoveError.FigureIsNotKing:
+                    return CheckError.ImposterKing;
+            }
+
+            return CheckError.CantInterpMoveErr;
         }
 
         public static Result<KingsPos, CheckError> FindKingsPos(Option<Fig>[,] board) {

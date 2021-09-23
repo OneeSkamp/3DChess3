@@ -49,7 +49,6 @@ namespace board {
     public struct LimitedMovement {
         public int length;
         public FixedMovement fixedMovement;
-        public MoveType moveType;
     }
 
     public static class BoardEngine {
@@ -145,6 +144,42 @@ namespace board {
             }
 
             return square;
+        }
+
+        public static Vector2Int? GetLastOnPathPos<T>(
+            LimitedMovement limMovement,
+            Option<T>[,] board
+        ) {
+            var dir = limMovement.fixedMovement.movement.linear.Value.dir;
+            var startPos = limMovement.fixedMovement.start;
+            var length = BoardEngine.GetLinearLength(startPos, dir, board);
+            var linearPath = BoardEngine.GetLinearPath(startPos, dir, length, board);
+
+            if (linearPath.Count == 0) {
+                return null;
+            }
+
+            var figPos = linearPath[linearPath.Count - 1];
+            var figOpt = board[figPos.x, figPos.y];
+            if (figOpt.IsNone()) {
+                return null;
+            }
+
+            return figPos;
+        }
+
+        public static LimitedMovement GetLimitedMovement<T>(
+            FixedMovement fixedMovement,
+            Option<T>[,] board
+        ) {
+            var startPos = fixedMovement.start;
+            var dir = fixedMovement.movement.linear.Value.dir;
+            var length = GetLinearLength(startPos, dir, board);
+
+            return new LimitedMovement {
+                length = length,
+                fixedMovement = fixedMovement,
+            };
         }
 
         public static Option<T>[,] CopyBoard<T>(Option<T>[,] board) {
