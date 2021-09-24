@@ -8,9 +8,19 @@ using movements;
 
 namespace inspector {
     public struct CheckInfo {
-        public FixedMovement attack;
+        public LimitedMovement attack;
         public Vector2Int? defPos;
         public List<Vector2Int> path;
+    }
+
+    public struct CoveredInfo {
+        public LimitedMovement attack;
+        public Vector2Int defPos;
+    }
+
+    public struct AttackInfo {
+        public CheckInfo? checkInfo;
+        public CoveredInfo? coveredInfo;
     }
 
     public struct KingsPos {
@@ -162,7 +172,9 @@ namespace inspector {
 
                         checkInfos.Add(
                             new CheckInfo {
-                                attack = FixedMovement.Mk(cell, knightMovement),
+                                attack = new LimitedMovement {
+                                    fixedMovement = FixedMovement.Mk(cell, knightMovement)
+                                },
                                 path = knightPath
                             }
                         );
@@ -219,7 +231,7 @@ namespace inspector {
 
                     checkInfos.Add(
                         new CheckInfo {
-                            attack = FixedMovement.Mk(figPos.Value, newMovement),
+                            attack = limMovement,
                         }
                     );
                 }
@@ -258,32 +270,163 @@ namespace inspector {
             var potentialCheckInfos = GetPotentialCheckInfos(kingLoc).AsOk();
             var checkInfos = new List<CheckInfo>();
 
-            foreach (var checkInfo in potentialCheckInfos) {
-                if (checkInfo.attack.movement.linear.HasValue) {
-                    var checkPath = checkInfo.path;
-
-                    var defPositionsRes = GetDefPositions(kingLoc, checkPath);
-                    if (defPositionsRes.IsErr()) {
-                        return Result<List<CheckInfo>, CheckError>.Err(defPositionsRes.AsErr());
-                    }
-
-                    var defPositions = defPositionsRes.AsOk();
-                    if (defPositions.Count == 1) {
-                        var newCheckInfo = checkInfo;
-                        newCheckInfo.defPos = defPositions[0];
-                        checkInfos.Add(newCheckInfo);
-                    }
-
-                    if (defPositions.Count == 0) {
-                        checkInfos.Add(checkInfo);
-                    }
-
-                } else if (checkInfo.attack.movement.square.HasValue) {
-                    checkInfos.Add(checkInfo);
+            foreach (var potCheckInfo in potentialCheckInfos) {
+                var checkInfoRes = GetRealCheckInfo(kingLoc, potCheckInfo);
+                if (checkInfoRes.IsErr()) {
+                    return Result<List<CheckInfo>, CheckError>.Err(checkInfoRes.AsErr());
                 }
+
+                var checkInfo = checkInfoRes.AsOk();
+                if (!checkInfo.HasValue) {
+                    continue;
+                }
+
+                checkInfos.Add(checkInfo.Value);
             }
 
             return Result<List<CheckInfo>, CheckError>.Ok(checkInfos);
+        }
+
+        public static Result<List<AttackInfo>, CheckError> GetAttackInfos(
+            FigLoc kingLoc
+        ) {
+            if (kingLoc.board == null) {
+                return Result<List<AttackInfo>, CheckError>.Err(CheckError.BoardIsNull);
+            }
+
+            if (!BoardEngine.IsOnBoard(kingLoc.pos, kingLoc.board)) {
+                return Result<List<AttackInfo>, CheckError>.Err(CheckError.PosOutsideBoard);
+            }
+
+            var kingOpt = kingLoc.board[kingLoc.pos.x, kingLoc.pos.y];
+            if (kingOpt.IsNone()) {
+                return Result<List<AttackInfo>, CheckError>.Err(CheckError.NoFigureOnPos);
+            }
+
+            var king = kingOpt.Peel();
+            if (king.type != FigureType.King) {
+                return Result<List<AttackInfo>, CheckError>.Err(CheckError.ImposterKing);
+            }
+
+            var potentialCheckInfosRes = GetPotentialCheckInfos(kingLoc);
+            if (potentialCheckInfosRes.IsErr()) {
+                return Result<List<AttackInfo>, CheckError>.Err(potentialCheckInfosRes.AsErr());
+            }
+            var potentialCheckInfos = GetPotentialCheckInfos(kingLoc).AsOk();
+            var attackInfos = new List<AttackInfo>();
+
+            foreach (var potCheckInfo in potentialCheckInfos) {
+                var attackInfo = new AttackInfo();
+                var checkInfoRes = GetRealCheckInfo(kingLoc, potCheckInfo);
+                if (checkInfoRes.IsErr()) {
+                    return Result<List<AttackInfo>, CheckError>.Err(checkInfoRes.AsErr());
+                }
+
+                var checkInfo = checkInfoRes.AsOk();
+                if (checkInfo.HasValue) {
+                    attackInfo = new AttackInfo {
+                        checkInfo = checkInfo
+                    };
+                }
+
+                var coveredInfoRes = GetCoveredCheckInfo(kingLoc, potCheckInfo);
+                if (checkInfoRes.IsErr()) {
+                    return Result<List<AttackInfo>, CheckError>.Err(coveredInfoRes.AsErr());
+                }
+
+                var coveredInfo = coveredInfoRes.AsOk();
+                if (coveredInfo.HasValue) {
+                    attackInfo = new AttackInfo {
+                        coveredInfo = coveredInfo
+                    };
+                }
+
+                attackInfos.Add(attackInfo);
+            }
+
+            return Result<List<AttackInfo>, CheckError>.Ok(attackInfos);
+        }
+
+        public static Result<CoveredInfo?, CheckError> GetCoveredCheckInfo(
+            FigLoc kingLoc,
+            CheckInfo potentialCheckInfo
+        ) {
+            var linear = potentialCheckInfo.attack.fixedMovement.movement.linear;
+            if (linear.HasValue) {
+                var dir = linear.Value.dir;
+                var length = potentialCheckInfo.attack.length;
+                var checkPath = BoardEngine.GetLinearPath(
+                    kingLoc.pos,
+                    dir,
+                    length,
+                    kingLoc.board
+                );
+
+                var defPositionsRes = GetDefPositions(kingLoc, checkPath);
+                if (defPositionsRes.IsErr()) {
+                    return Result<CoveredInfo?, CheckError>.Err(defPositionsRes.AsErr());
+                }
+
+                var defPositions = defPositionsRes.AsOk();
+                if (defPositions.Count == 1) {
+                    var coveredCheckInfo = new CoveredInfo {
+                        attack = potentialCheckInfo.attack,
+                        defPos = defPositions[0]
+                    };
+
+                    return Result<CoveredInfo?, CheckError>.Ok(coveredCheckInfo);
+                }
+
+                return Result<CoveredInfo?, CheckError>.Ok(null);
+
+
+
+            } else {
+                return Result<CoveredInfo?, CheckError>.Ok(null);
+            }
+        }
+
+        public static Result<CheckInfo?, CheckError> GetRealCheckInfo(
+            FigLoc kingLoc,
+            CheckInfo potentialCheckInfo
+        ) {
+            var linear = potentialCheckInfo.attack.fixedMovement.movement.linear;
+            if (linear.HasValue) {
+                var dir = linear.Value.dir;
+                var length = potentialCheckInfo.attack.length;
+                var checkPath = BoardEngine.GetLinearPath(
+                    kingLoc.pos,
+                    dir,
+                    length,
+                    kingLoc.board
+                );
+
+                var defPositionsRes = GetDefPositions(kingLoc, checkPath);
+                if (defPositionsRes.IsErr()) {
+                    return Result<CheckInfo?, CheckError>.Err(defPositionsRes.AsErr());
+                }
+
+                var defPositions = defPositionsRes.AsOk();
+                if (defPositions.Count == 1) {
+                    var newCheckInfo = potentialCheckInfo;
+                    newCheckInfo.defPos = defPositions[0];
+                    return Result<CheckInfo?, CheckError>.Ok(newCheckInfo);
+                }
+
+                if (defPositions.Count == 0) {
+                    var checkInfo = new CheckInfo {
+                        attack = potentialCheckInfo.attack,
+                        path = checkPath
+                    };
+
+                    return Result<CheckInfo?, CheckError>.Ok(checkInfo);
+                }
+
+                return Result<CheckInfo?, CheckError>.Ok(null);
+
+            } else {
+                return Result<CheckInfo?, CheckError>.Ok(potentialCheckInfo);
+            }
         }
 
         public static Result<List<Vector2Int>, CheckError> GetDefPositions(
@@ -385,8 +528,8 @@ namespace inspector {
                         return Result<List<MoveInfo>, CheckError>.Ok(null);
                     }
 
-                    if (checkInfo.attack.movement.linear.HasValue) {
-                        var linear = checkInfo.attack.movement.linear.Value;
+                    if (checkInfo.attack.fixedMovement.movement.linear.HasValue) {
+                        var linear = checkInfo.attack.fixedMovement.movement.linear.Value;
                         movement.Add(new Movement {
                             linear = LinearMovement.Mk(linear.dir)
                         });
@@ -407,14 +550,14 @@ namespace inspector {
                 if (checkInfo.defPos != null) {
                     continue;
                 }
-                if (checkInfo.attack.movement.linear.HasValue) {
+                if (checkInfo.attack.fixedMovement.movement.linear.HasValue) {
                     var possMoves = GetLinearPossibleMoves(figLoc, checkInfo, lastMove);
                     if (possMoves.IsErr()) {
                         return Result<List<MoveInfo>, CheckError>.Err(possMoves.AsErr());
                     }
 
                     possibleMoves.AddRange(possMoves.AsOk());
-                } else if (checkInfo.attack.movement.square.HasValue) {
+                } else if (checkInfo.attack.fixedMovement.movement.square.HasValue) {
                     var possMoves = GetSquarePossibleMoves(figLoc, checkInfos, lastMove);
                     if (possMoves.IsErr()) {
                         return Result<List<MoveInfo>, CheckError>.Err(possMoves.AsErr());
@@ -460,9 +603,9 @@ namespace inspector {
             var movements = Movements.movements[fig.type];
             var possMoves = new List<MoveInfo>();
             foreach (var checkInfo in checkInfos) {
-                var attackPos = checkInfo.attack.start;
+                var attackPos = checkInfo.attack.fixedMovement.start;
                 if (!checkInfo.defPos.HasValue) {
-                    if (checkInfo.attack.movement.square.HasValue) {
+                    if (checkInfo.attack.fixedMovement.movement.square.HasValue) {
                         var movesRes = MoveEngine.GetMoves(figLoc, movements, lastMove);
                         if (movesRes.IsErr()) {
                             return Result<List<MoveInfo>, CheckError>.Err(
@@ -506,7 +649,7 @@ namespace inspector {
             var movements = Movements.movements[fig.type];
             var possMoves = new List<MoveInfo>();
             if (!checkInfo.defPos.HasValue) {
-                if (checkInfo.attack.movement.linear.HasValue) {
+                if (checkInfo.attack.fixedMovement.movement.linear.HasValue) {
                     var movesRes = MoveEngine.GetMoves(figLoc, movements, lastMove);
                     if (movesRes.IsErr()) {
                         return Result<List<MoveInfo>, CheckError>.Err(
@@ -517,7 +660,9 @@ namespace inspector {
                     foreach (var move in moves) {
                         var firstTo = move.move.first.Value.to;
                         var path = checkInfo.path;
-
+                        if (path == null) {
+                            continue;
+                        }
                         foreach (var cell in path) {
                             if (cell == firstTo) {
                                 possMoves.Add(move);

@@ -49,6 +49,10 @@ namespace board {
     public struct LimitedMovement {
         public int length;
         public FixedMovement fixedMovement;
+
+        public static LimitedMovement Mk(int length, FixedMovement fixedMovement) {
+            return new LimitedMovement { length = length, fixedMovement = fixedMovement };
+        }
     }
 
     public static class BoardEngine {
