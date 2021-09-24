@@ -90,6 +90,7 @@ namespace inspector {
             allMovement.AddRange(Movements.knightMovement);
 
             var boardCloneRes = GetBoardWithoutColor(kingLoc.board, king.color);
+
             if (boardCloneRes.IsErr()) {
                 return Result<List<CheckInfo>, CheckError>.Err(boardCloneRes.AsErr());
             }
@@ -162,7 +163,7 @@ namespace inspector {
                         continue;
                     }
 
-                    var figOpt = kingLoc.board[cell.x, cell.y];
+                    var figOpt = boardClone[cell.x, cell.y];
                     if (figOpt.IsNone()) {
                         continue;
                     }
@@ -548,9 +549,10 @@ namespace inspector {
 
                         return Result<List<MoveInfo>, CheckError>.Ok(moves);
                     }
+                    continue;
                 }
 
-                if (attackInfo.coveredInfo.HasValue) {
+                if (!attackInfo.checkInfo.HasValue) {
                     continue;
                 }
 
