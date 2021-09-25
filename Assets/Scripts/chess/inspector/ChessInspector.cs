@@ -168,18 +168,18 @@ namespace inspector {
                         continue;
                     }
 
-                    if (figOpt.Peel().type == FigureType.Knight) {
-                        var knightMovement = Movement.Square(SquareMovement.Mk(5));
+                    // if (figOpt.Peel().type == FigureType.Knight) {
+                    //     var knightMovement = Movement.Square(SquareMovement.Mk(5));
 
-                        checkInfos.Add(
-                            new CheckInfo {
-                                attack = new LimitedMovement {
-                                    fixedMovement = FixedMovement.Mk(cell, knightMovement)
-                                },
-                                path = knightPath
-                            }
-                        );
-                    }
+                    //     checkInfos.Add(
+                    //         new CheckInfo {
+                    //             attack = new LimitedMovement {
+                    //                 fixedMovement = FixedMovement.Mk(cell, knightMovement)
+                    //             },
+                    //             path = knightPath
+                    //         }
+                    //     );
+                    // }
                 }
             }
 
@@ -198,7 +198,7 @@ namespace inspector {
                 }
 
                 var fixedMovement = FixedMovement.Mk(figLoc.pos, movement);
-                var limMovement = BoardEngine.GetLimitedMovement(fixedMovement, boardClone);
+                var limMovement = MoveEngine.GetLimitedMovement(fixedMovement, boardClone);
                 var figPos = BoardEngine.GetLastOnPathPos(limMovement, boardClone);
 
                 if (!figPos.HasValue) {
@@ -228,7 +228,7 @@ namespace inspector {
                         continue;
                     }
 
-                    var newMovement = Movement.Linear(LinearMovement.Mk(dir));
+                    var newMovement = Movement.Linear(LinearMovement.Mk(dir), MoveType.Move);
 
                     checkInfos.Add(
                         new CheckInfo {

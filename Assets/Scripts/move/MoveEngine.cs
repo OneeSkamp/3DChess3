@@ -17,6 +17,27 @@ namespace move {
         FigureIsNotPawn
     }
     public static class MoveEngine {
+        public static LimitedMovement GetLimitedMovement(
+            FixedMovement fixedMovement,
+            Option<Fig>[,] board
+        ) {
+            var startPos = fixedMovement.start;
+            var dir = fixedMovement.movement.linear.Value.dir;
+            var length = BoardEngine.GetLinearLength(startPos, dir, board);
+
+            var figOpt = board[startPos.x, startPos.y];
+            if (figOpt.IsSome()) {
+                var fig = figOpt.Peel();
+                if (fig.type == FigureType.Pawn) {
+                    length = 1;
+                }
+            }
+
+            return new LimitedMovement {
+                length = length,
+                fixedMovement = fixedMovement,
+            };
+        }
         public static Result<List<MoveInfo>, MoveError> GetPathMoves(
             FigLoc startLoc,
             List<Vector2Int> movePath,
@@ -64,30 +85,51 @@ namespace move {
 
         public static Result<List<MoveInfo>, MoveError> GetPossibleLinearMoves(
             FigLoc startLoc,
-            LinearMovement linear,
-            MoveInfo lastMove,
-            int length
+            LimitedMovement limitedMovement,
+            MoveInfo lastMove
         ) {
             if (startLoc.board == null) {
                 return Result<List<MoveInfo>, MoveError>.Err(MoveError.BoardIsNull);
             }
 
-            if (length < 0) {
+            if (limitedMovement.length < 0) {
                 return Result<List<MoveInfo>, MoveError>.Err(MoveError.IncorrectLength);
             }
 
             if (!BoardEngine.IsOnBoard(startLoc.pos, startLoc.board)) {
                 return Result<List<MoveInfo>, MoveError>.Err(MoveError.PathIsNull);
             }
+            Debug.Log(limitedMovement.length);
 
             var linearPath = BoardEngine.GetLinearPath<Fig>(
-                startLoc.pos,
-                linear.dir,
-                length,
+                limitedMovement.fixedMovement.start,
+                limitedMovement.fixedMovement.movement.linear.Value.dir,
+                limitedMovement.length,
                 startLoc.board
             );
 
-            var linearMoves = GetPathMoves(startLoc, linearPath, lastMove).AsOk();
+            var lastPos = BoardEngine.GetLastOnPathPos(limitedMovement, startLoc.board);
+            var movePath = new List<Vector2Int>();
+            var resultPath = new List<Vector2Int>();
+            movePath = linearPath;
+
+
+            if (limitedMovement.fixedMovement.movement.moveType == MoveType.Move) {
+                if (lastPos != null && movePath.Count >= 1) {
+                    Debug.Log(limitedMovement.length);
+                    movePath.Remove(lastPos.Value);
+                }
+
+                resultPath.AddRange(movePath);
+            }
+
+            if (limitedMovement.fixedMovement.movement.moveType == MoveType.Attack) {
+                if (lastPos != null) {
+                    resultPath.Add(lastPos.Value);
+                }
+            }
+
+            var linearMoves = GetPathMoves(startLoc, resultPath, lastMove).AsOk();
             return Result<List<MoveInfo>, MoveError>.Ok(linearMoves); 
         }
 
@@ -111,11 +153,14 @@ namespace move {
 
             var figMoves = new List<MoveInfo>();
             var fig = figOpt.Peel();
-            foreach (Movement type in movements) {
-                if (type.square.HasValue) {
-                    var squarePath = BoardEngine.GetSquarePath(figLoc.pos, type.square.Value.side);
-                    var square = new BindableList<Vector2Int>();
+            foreach (Movement movement in movements) {
+                if (movement.square.HasValue) {
+                    var squarePath = BoardEngine.GetSquarePath(
+                        figLoc.pos,
+                        movement.square.Value.side
+                    );
 
+                    var square = new BindableList<Vector2Int>();
                     if (fig.type == FigureType.Knight) {
                         square = BoardEngine.RemoveSquareParts(squarePath, 0, 1);
                     }
@@ -136,20 +181,22 @@ namespace move {
                     figMoves.AddRange(GetPathMoves(figLoc, list, lastMove).AsOk());
 
                 } else {
-                    var linear = type.linear.Value;
+                    var linear = movement.linear.Value;
                     var length = BoardEngine.GetLinearLength(figLoc.pos, linear.dir, figLoc.board);
+                    var limitedMovement = GetLimitedMovement(FixedMovement.Mk(figLoc.pos, movement), figLoc.board);
+                    //var limitedMovement = LimitedMovement.Mk(length, FixedMovement.Mk(figLoc.pos, movement));
+
                     figMoves.AddRange(GetPossibleLinearMoves(
                         figLoc,
-                        linear,
-                        lastMove,
-                        length
+                        limitedMovement,
+                        lastMove
                     ).AsOk());
                 }
             }
 
-            if (figOpt.Peel().type == FigureType.Pawn) {
-                figMoves = GetPawnMoves(figLoc, figMoves, lastMove).AsOk();
-            }
+            // if (figOpt.Peel().type == FigureType.Pawn) {
+            //     figMoves = GetPawnMoves(figLoc, figMoves, lastMove).AsOk();
+            // }
 
             return Result<List<MoveInfo>, MoveError>.Ok(figMoves);
         }

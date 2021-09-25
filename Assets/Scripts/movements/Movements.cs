@@ -6,17 +6,25 @@ using chess;
 namespace movements {
     public static class Movements {
         public static readonly List<Movement> bishopMovement = new List<Movement> {
-            new Movement { linear = new LinearMovement { dir = new Vector2Int(1, 1) } },
-            new Movement { linear = new LinearMovement { dir = new Vector2Int(-1, 1) } },
-            new Movement { linear = new LinearMovement { dir = new Vector2Int(1, -1) } },
-            new Movement { linear = new LinearMovement { dir = new Vector2Int(-1, -1) } }
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(1, 1)), MoveType.Move),
+            // Movement.Linear(LinearMovement.Mk(new Vector2Int(-1, 1)), MoveType.Move),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(1, -1)), MoveType.Move),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(-1, -1)), MoveType.Move),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(1, 1)), MoveType.Attack),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(-1, 1)), MoveType.Attack),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(1, -1)), MoveType.Attack),
+            // Movement.Linear(LinearMovement.Mk(new Vector2Int(-1, -1)), MoveType.Attack),
         };
 
         public static readonly List<Movement> rookMovement = new List<Movement> {
-            new Movement { linear = new LinearMovement { dir = new Vector2Int(1, 0) } },
-            new Movement { linear = new LinearMovement { dir = new Vector2Int(0, 1) } },
-            new Movement { linear = new LinearMovement { dir = new Vector2Int(0, -1) } },
-            new Movement { linear = new LinearMovement { dir = new Vector2Int(-1, 0) } }
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(0, 1)), MoveType.Move),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(0, -1)), MoveType.Move),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(-1, 0)), MoveType.Move),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(1, 0)), MoveType.Move),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(0, 1)), MoveType.Attack),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(0, -1)), MoveType.Attack),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(-1, 0)), MoveType.Attack),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(1, 0)), MoveType.Attack)
         };
 
         public static readonly List<Movement> knightMovement = new List<Movement> {
@@ -29,14 +37,33 @@ namespace movements {
         };
 
         public static readonly List<Movement> queenMovement = new List<Movement>() {
-            new Movement { linear = new LinearMovement { dir = new Vector2Int(1, 1) } },
-            new Movement { linear = new LinearMovement { dir = new Vector2Int(-1, 1) } },
-            new Movement { linear = new LinearMovement { dir = new Vector2Int(1, -1) } },
-            new Movement { linear = new LinearMovement { dir = new Vector2Int(-1, -1) } },
-            new Movement { linear = new LinearMovement { dir = new Vector2Int(1, 0) } },
-            new Movement { linear = new LinearMovement { dir = new Vector2Int(0, 1) } },
-            new Movement { linear = new LinearMovement { dir = new Vector2Int(0, -1) } },
-            new Movement { linear = new LinearMovement { dir = new Vector2Int(-1, 0) } }
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(1, 1)), MoveType.Move),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(-1, 1)), MoveType.Move),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(1, -1)), MoveType.Move),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(-1, -1)), MoveType.Move),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(0, 1)), MoveType.Move),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(0, -1)), MoveType.Move),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(-1, 0)), MoveType.Move),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(1, 0)), MoveType.Move),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(1, 1)), MoveType.Attack),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(-1, 1)), MoveType.Attack),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(1, -1)), MoveType.Attack),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(-1, -1)), MoveType.Attack),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(0, 1)), MoveType.Attack),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(0, -1)), MoveType.Attack),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(-1, 0)), MoveType.Attack),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(1, 0)), MoveType.Attack)
+        };
+
+        public static readonly List<Movement> pawnMovement = new List<Movement>() {
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(0, 1)), MoveType.Move),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(0, -1)), MoveType.Move),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(-1, 0)), MoveType.Move),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(1, 0)), MoveType.Move),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(1, 1)), MoveType.Attack),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(-1, 1)), MoveType.Attack),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(1, -1)), MoveType.Attack),
+            Movement.Linear(LinearMovement.Mk(new Vector2Int(-1, -1)), MoveType.Attack),
         };
 
         public static readonly Dictionary<FigureType, List<Movement>> movements =
@@ -45,7 +72,7 @@ namespace movements {
                 { FigureType.Rook, rookMovement },
                 { FigureType.Queen, queenMovement },
                 { FigureType.Knight, knightMovement },
-                { FigureType.Pawn, queenMovement },
+                { FigureType.Pawn, pawnMovement },
                 { FigureType.King, kingMovement }
             };
     }

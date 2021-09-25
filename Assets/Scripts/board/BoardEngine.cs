@@ -1,12 +1,13 @@
+using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using UnityEngine;
 using option;
 using collections;
 
 namespace board {
-    public struct MoveType {
-        public bool isAttack;
-        public bool isMove;
+    public enum MoveType {
+        Attack,
+        Move
     }
 
     public struct LinearMovement {
@@ -26,14 +27,15 @@ namespace board {
     }
 
     public struct Movement {
+        public MoveType moveType;
         public LinearMovement? linear;
         public SquareMovement? square;
 
-        public static Movement Linear(LinearMovement linear) {
-            return new Movement { linear = linear };
+        public static Movement Linear(LinearMovement linear, MoveType moveType) {
+            return new Movement { linear = linear, moveType = moveType };
         }
-        public static Movement Square(SquareMovement square) {
-            return new Movement { square = square };
+        public static Movement Square(SquareMovement square, MoveType moveType) {
+            return new Movement { square = square, moveType = moveType };
         }
     }
 
@@ -156,7 +158,7 @@ namespace board {
         ) {
             var dir = limMovement.fixedMovement.movement.linear.Value.dir;
             var startPos = limMovement.fixedMovement.start;
-            var length = BoardEngine.GetLinearLength(startPos, dir, board);
+            var length = limMovement.length;
             var linearPath = BoardEngine.GetLinearPath(startPos, dir, length, board);
 
             if (linearPath.Count == 0) {
@@ -170,20 +172,6 @@ namespace board {
             }
 
             return figPos;
-        }
-
-        public static LimitedMovement GetLimitedMovement<T>(
-            FixedMovement fixedMovement,
-            Option<T>[,] board
-        ) {
-            var startPos = fixedMovement.start;
-            var dir = fixedMovement.movement.linear.Value.dir;
-            var length = GetLinearLength(startPos, dir, board);
-
-            return new LimitedMovement {
-                length = length,
-                fixedMovement = fixedMovement,
-            };
         }
 
         public static Option<T>[,] CopyBoard<T>(Option<T>[,] board) {
