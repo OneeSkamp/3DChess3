@@ -5,6 +5,7 @@ using chess;
 using move;
 using board;
 using movements;
+using collections;
 
 namespace inspector {
     public struct CheckInfo {
@@ -145,14 +146,7 @@ namespace inspector {
                 var square = BoardEngine.GetSquarePath(kingLoc.pos, 5);
                 var bindableKnightPath = BoardEngine.RemoveSquareParts(square, 0, 1);
 
-                var knightPath = new List<Vector2Int>();
-                if (knightPath != null) {
-                    foreach (var cell in bindableKnightPath) {
-                        if (cell != null) {
-                            knightPath.Add(cell.value);
-                        }
-                    }
-                }
+                var knightPath = BindableList<Vector2Int>.ConvertToList(bindableKnightPath);
 
                 if (knightPath.Count == 0) {
                     continue;
@@ -168,18 +162,18 @@ namespace inspector {
                         continue;
                     }
 
-                    // if (figOpt.Peel().type == FigureType.Knight) {
-                    //     var knightMovement = Movement.Square(SquareMovement.Mk(5));
+                    if (figOpt.Peel().type == FigureType.Knight) {
+                        var knightMovement = Movement.Square(SquareMovement.Mk(5), MoveType.Move);
 
-                    //     checkInfos.Add(
-                    //         new CheckInfo {
-                    //             attack = new LimitedMovement {
-                    //                 fixedMovement = FixedMovement.Mk(cell, knightMovement)
-                    //             },
-                    //             path = knightPath
-                    //         }
-                    //     );
-                    // }
+                        checkInfos.Add(
+                            new CheckInfo {
+                                attack = new LimitedMovement {
+                                    fixedMovement = FixedMovement.Mk(cell, knightMovement)
+                                },
+                                path = knightPath
+                            }
+                        );
+                    }
                 }
             }
 
@@ -240,8 +234,6 @@ namespace inspector {
 
             return Result<List<CheckInfo>, CheckError>.Ok(checkInfos);
         }
-
-
 
         public static Result<List<CheckInfo>, CheckError> GetCheckInfos(
             FigLoc kingLoc
@@ -379,8 +371,6 @@ namespace inspector {
                 }
 
                 return Result<CoveredInfo?, CheckError>.Ok(null);
-
-
 
             } else {
                 return Result<CoveredInfo?, CheckError>.Ok(null);
@@ -527,27 +517,13 @@ namespace inspector {
                     var coveredInfo = attackInfo.coveredInfo.Value;
                     var defPos = attackInfo.coveredInfo.Value.defPos;
                     if (defPos == figLoc.pos && !IsCheck(attackInfos)) {
-                        if (figLoc.board[defPos.x, defPos.y].Peel().type == FigureType.Knight) {
-                            return Result<List<MoveInfo>, CheckError>.Ok(null);
+
+                        var moves = GetCoveredFigMove(figLoc, attackInfo, lastMove);
+                        if (moves.IsErr()) {
+                            return Result<List<MoveInfo>, CheckError>.Err(moves.AsErr());
                         }
 
-                        if (coveredInfo.attack.fixedMovement.movement.linear.HasValue) {
-                            var linear = coveredInfo.attack.fixedMovement.movement.linear.Value;
-                            movement.Add(new Movement {
-                                linear = LinearMovement.Mk(linear.dir)
-                            });
-                        }
-
-                        var movesRes = MoveEngine.GetMoves(figLoc, movement, lastMove);
-                        if (movesRes.IsErr()) {
-                            return Result<List<MoveInfo>, CheckError>.Err(
-                                InterpMoveEngineErr(movesRes.AsErr())
-                            );
-                        }
-
-                        var moves = MoveEngine.GetMoves(figLoc, movement, lastMove).AsOk();
-
-                        return Result<List<MoveInfo>, CheckError>.Ok(moves);
+                        return Result<List<MoveInfo>, CheckError>.Ok(moves.AsOk());
                     }
                     continue;
                 }
@@ -558,14 +534,14 @@ namespace inspector {
 
                 var checkInfo = attackInfo.checkInfo.Value;
                 if (checkInfo.attack.fixedMovement.movement.linear.HasValue) {
-                    var possMoves = GetLinearPossibleMoves(figLoc, attackInfo, lastMove);
+                    var possMoves = GetLinearPossibleMove(figLoc, attackInfo, lastMove);
                     if (possMoves.IsErr()) {
                         return Result<List<MoveInfo>, CheckError>.Err(possMoves.AsErr());
                     }
 
                     possibleMoves.AddRange(possMoves.AsOk());
                 } else if (checkInfo.attack.fixedMovement.movement.square.HasValue) {
-                    var possMoves = GetSquarePossibleMoves(figLoc, attackInfos, lastMove);
+                    var possMoves = GetSquarePossibleMove(figLoc, attackInfos, lastMove);
                     if (possMoves.IsErr()) {
                         return Result<List<MoveInfo>, CheckError>.Err(possMoves.AsErr());
                     }
@@ -588,7 +564,37 @@ namespace inspector {
             return Result<List<MoveInfo>, CheckError>.Ok(defaultMoves);
         }
 
-        public static Result<List<MoveInfo>, CheckError> GetSquarePossibleMoves(
+        public static Result<List<MoveInfo>, CheckError> GetCoveredFigMove(
+            FigLoc defLoc,
+            AttackInfo attackInfo,
+            MoveInfo lastMove
+        ) {
+            var coveredInfo = attackInfo.coveredInfo.Value;
+            var movement = new List<Movement>();
+            if (defLoc.board[defLoc.pos.x, defLoc.pos.y].Peel().type == FigureType.Knight) {
+                return Result<List<MoveInfo>, CheckError>.Ok(null);
+            }
+
+            if (coveredInfo.attack.fixedMovement.movement.linear.HasValue) {
+                var linear = coveredInfo.attack.fixedMovement.movement.linear.Value;
+                movement.Add(new Movement {
+                    linear = LinearMovement.Mk(linear.dir)
+                });
+            }
+
+            var movesRes = MoveEngine.GetMoves(defLoc, movement, lastMove);
+            if (movesRes.IsErr()) {
+                return Result<List<MoveInfo>, CheckError>.Err(
+                    InterpMoveEngineErr(movesRes.AsErr())
+                );
+            }
+
+            var moves = MoveEngine.GetMoves(defLoc, movement, lastMove).AsOk();
+
+            return Result<List<MoveInfo>, CheckError>.Ok(moves);
+        }
+
+        public static Result<List<MoveInfo>, CheckError> GetSquarePossibleMove(
             FigLoc figLoc,
             List<AttackInfo> attackInfos,
             MoveInfo lastMove
@@ -635,7 +641,7 @@ namespace inspector {
             return Result<List<MoveInfo>, CheckError>.Ok(possMoves);
         }
 
-        public static Result<List<MoveInfo>, CheckError> GetLinearPossibleMoves(
+        public static Result<List<MoveInfo>, CheckError> GetLinearPossibleMove(
             FigLoc figLoc,
             AttackInfo attackInfo,
             MoveInfo lastMove

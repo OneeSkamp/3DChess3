@@ -23,19 +23,29 @@ namespace move {
         ) {
             var startPos = fixedMovement.start;
             var dir = fixedMovement.movement.linear.Value.dir;
+            var moveType = fixedMovement.movement.moveType;
             var length = BoardEngine.GetLinearLength(startPos, dir, board);
 
+            var newLinear = fixedMovement.movement.linear.Value;
             var figOpt = board[startPos.x, startPos.y];
             if (figOpt.IsSome()) {
                 var fig = figOpt.Peel();
                 if (fig.type == FigureType.Pawn) {
+                    if (fig.color == FigColor.Black) {
+                        dir = dir * -1;
+                        newLinear = LinearMovement.Mk(dir);
+                    }
+
                     length = 1;
+                    if (fig.counter == 0 && moveType == MoveType.Move) {
+                        length = 2;
+                    }
                 }
             }
 
             return new LimitedMovement {
                 length = length,
-                fixedMovement = fixedMovement,
+                fixedMovement = FixedMovement.Mk(startPos, Movement.Linear(newLinear, moveType)),
             };
         }
         public static Result<List<MoveInfo>, MoveError> GetPathMoves(
@@ -76,9 +86,6 @@ namespace move {
                     possMoves.Add(moveInfo);
                 }
             }
-            if (GetCastlingMoves(startLoc.pos, lastMove, startLoc.board).AsOk() != null) {
-                possMoves.AddRange(GetCastlingMoves(startLoc.pos, lastMove, startLoc.board).AsOk());
-            }
 
             return Result<List<MoveInfo>, MoveError>.Ok(possMoves);
         }
@@ -99,7 +106,6 @@ namespace move {
             if (!BoardEngine.IsOnBoard(startLoc.pos, startLoc.board)) {
                 return Result<List<MoveInfo>, MoveError>.Err(MoveError.PathIsNull);
             }
-            Debug.Log(limitedMovement.length);
 
             var linearPath = BoardEngine.GetLinearPath<Fig>(
                 limitedMovement.fixedMovement.start,
@@ -116,7 +122,6 @@ namespace move {
 
             if (limitedMovement.fixedMovement.movement.moveType == MoveType.Move) {
                 if (lastPos != null && movePath.Count >= 1) {
-                    Debug.Log(limitedMovement.length);
                     movePath.Remove(lastPos.Value);
                 }
 
@@ -169,108 +174,47 @@ namespace move {
                         square = BoardEngine.RemoveSquareParts(squarePath, 0, 0);
                     }
 
-                    var list = new List<Vector2Int>();
-                    if (list != null) {
-                        foreach (var i in square) {
-                            if (i != null) {
-                                list.Add(i.value);
-                            }
-                        }
+                    var list = BindableList<Vector2Int>.ConvertToList(square);
+
+                    var pathMovesRes = GetPathMoves(figLoc, list, lastMove);
+                    if (pathMovesRes.IsErr()) {
+                        return Result<List<MoveInfo>, MoveError>.Err(pathMovesRes.AsErr());
                     }
 
-                    figMoves.AddRange(GetPathMoves(figLoc, list, lastMove).AsOk());
-
+                    figMoves.AddRange(pathMovesRes.AsOk());
                 } else {
                     var linear = movement.linear.Value;
                     var length = BoardEngine.GetLinearLength(figLoc.pos, linear.dir, figLoc.board);
-                    var limitedMovement = GetLimitedMovement(FixedMovement.Mk(figLoc.pos, movement), figLoc.board);
-                    //var limitedMovement = LimitedMovement.Mk(length, FixedMovement.Mk(figLoc.pos, movement));
+                    var limitedMovement = GetLimitedMovement(
+                        FixedMovement.Mk(figLoc.pos, movement),
+                        figLoc.board
+                    );
 
-                    figMoves.AddRange(GetPossibleLinearMoves(
+                    var possLinearMovesRes = GetPossibleLinearMoves(
                         figLoc,
                         limitedMovement,
                         lastMove
-                    ).AsOk());
+                    );
+
+                    if (possLinearMovesRes.IsErr()) {
+                        return Result<List<MoveInfo>, MoveError>.Err(possLinearMovesRes.AsErr());
+                    }
+
+                    figMoves.AddRange(possLinearMovesRes.AsOk());
                 }
+
             }
 
-            // if (figOpt.Peel().type == FigureType.Pawn) {
-            //     figMoves = GetPawnMoves(figLoc, figMoves, lastMove).AsOk();
-            // }
+            if (fig.type == FigureType.King) {
+                var castlingMovesRes = GetCastlingMoves(figLoc.pos, lastMove, figLoc.board);
+                if (castlingMovesRes.IsErr()) {
+                    return Result<List<MoveInfo>, MoveError>.Err(castlingMovesRes.AsErr());
+                }
+
+                figMoves.AddRange(castlingMovesRes.AsOk());
+            }
 
             return Result<List<MoveInfo>, MoveError>.Ok(figMoves);
-        }
-
-        public static Result<List<MoveInfo>, MoveError> GetPawnMoves(
-            FigLoc figLoc,
-            List<MoveInfo> moves,
-            MoveInfo lastMove
-        ) {
-            if (figLoc.board == null) {
-                return Result<List<MoveInfo>, MoveError>.Err(MoveError.BoardIsNull);
-            }
-
-            if (!BoardEngine.IsOnBoard(figLoc.pos, figLoc.board)) {
-                return Result<List<MoveInfo>, MoveError>.Err(MoveError.PosOutsideBoard);
-            }
-
-            var pawnPath = new List<MoveInfo>();
-            var pawn = figLoc.board[figLoc.pos.x, figLoc.pos.y].Peel();
-            int prop = 1;
-            var length = 1;
-
-            if (pawn.color == FigColor.White) {
-                prop = -1;
-            }
-
-            var leftPos = new Vector2Int(figLoc.pos.x + prop, figLoc.pos.y - prop);
-            var rightPos = new Vector2Int(figLoc.pos.x + prop, figLoc.pos.y + prop);
-
-            if (pawn.counter == 0) {
-                length = 2;
-            }
-            var forwardPos = new Vector2Int(figLoc.pos.x + 1 * prop, figLoc.pos.y);
-            var nextForwardPos = new Vector2Int(figLoc.pos.x + 2 * prop, figLoc.pos.y);
-
-            var forwardPath = BoardEngine.GetLinearPath(
-                figLoc.pos,
-                forwardPos,
-                length,
-                figLoc.board
-            );
-
-            foreach (var cell in moves) {
-                var nextCell = cell.move.first.Value.to;
-                if (!BoardEngine.IsOnBoard(nextCell, figLoc.board)) {
-                    continue;
-                }
-
-                if (figLoc.board[forwardPos.x, forwardPos.y].IsSome() && nextCell == forwardPos) {
-                    continue;
-                }
-
-                if (pawn.counter == 0 && figLoc.board[forwardPos.x + prop, forwardPos.y].IsNone()
-                    && figLoc.board[forwardPos.x, forwardPos.y].IsNone()) {
-
-                    if (nextCell == new Vector2Int(forwardPos.x + prop, forwardPos.y)) {
-                        pawnPath.Add(cell);
-                    }
-                }
-
-                if (figLoc.board[forwardPos.x, forwardPos.y].IsNone() && nextCell == forwardPos) {
-                    pawnPath.Add(cell);
-                }
-
-                if (rightPos == nextCell && figLoc.board[rightPos.x, rightPos.y].IsSome()) {
-                    pawnPath.Add(cell);
-                }
-
-                if (leftPos == nextCell && figLoc.board[leftPos.x, leftPos.y].IsSome()) {
-                    pawnPath.Add(cell);
-                }
-            }
-            pawnPath.AddRange(GetEnPassantMoves(figLoc.pos, lastMove, figLoc.board).AsOk());
-            return Result<List<MoveInfo>, MoveError>.Ok(pawnPath);
         }
 
         public static void MoveFigure(Move move, Option<Fig>[,] board) {
@@ -348,7 +292,9 @@ namespace move {
 
                     var secondToIsUnderAttack = IsUnderAttackPos(secondToLoc, fig.color, lastMove);
                     if (secondToIsUnderAttack.IsErr()) {
-                        return Result<List<MoveInfo>, MoveError>.Err(secondToIsUnderAttack.AsErr());
+                        return Result<List<MoveInfo>, MoveError>.Err(
+                            secondToIsUnderAttack.AsErr()
+                        );
                     }
                     if (!firstToIsUnderAttack.AsOk() && !secondToIsUnderAttack.AsOk()) {
                         castlingMoves.Add(new MoveInfo { move = move });

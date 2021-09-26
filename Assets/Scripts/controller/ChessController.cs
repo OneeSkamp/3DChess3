@@ -171,6 +171,9 @@ namespace controller {
                         var firstMove = possMove.move.first.Value;
                         if (move.to == firstMove.to && move.from == firstMove.from) {
                             HandleMove(possMove, map.board);
+                            if (IsCheckMate(moveColor, lastMove, map.board)) {
+                                popupUi.checkMate.SetActive(!popupUi.checkMate.activeSelf);
+                            }
                             break;
                         }
                     }
@@ -298,6 +301,35 @@ namespace controller {
             map.figures[pos.x, pos.y].transform.localPosition = newPos;
             popupUi.changePawn.SetActive(!popupUi.changePawn.activeSelf);
             this.enabled = !this.enabled;
+        }
+
+        public static bool IsCheckMate(FigColor color, MoveInfo lastMove, Option<Fig>[,] board) {
+            var allMoves = new List<MoveInfo>();
+            for (int i = 0; i < board.GetLength(0); i++) {
+                for (int j = 0; j < board.GetLength(1); j++) {
+                    var figOpt = board[i, j];
+                    if (figOpt.IsNone()) {
+                        continue;
+                    }
+
+                    var fig = figOpt.Peel();
+                    if (fig.color == color) {
+                        var figLoc = new FigLoc {
+                            pos = new Vector2Int(i, j),
+                            board = board
+                        };
+
+                        allMoves.AddRange(ChessInspector.GetPossibleMoves(figLoc, lastMove).AsOk());
+                    }
+
+                }
+            }
+
+            if (allMoves.Count == 0) {
+                return true;
+            }
+
+            return false;
         }
     }
 }

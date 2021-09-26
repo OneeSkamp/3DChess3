@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections;
 
@@ -70,6 +71,17 @@ namespace collections {
             }
 
             yield return node;
+        }
+
+        public static List<T> ConvertToList (BindableList<T> blist) {
+            var list = new List<T>();
+            foreach (var item in blist) {
+                if (item != null) {
+                    list.Add(item.value);
+                }
+            }
+
+            return list;
         }
     }
 }

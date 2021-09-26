@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using UnityEngine;
 using option;
@@ -34,6 +33,7 @@ namespace board {
         public static Movement Linear(LinearMovement linear, MoveType moveType) {
             return new Movement { linear = linear, moveType = moveType };
         }
+
         public static Movement Square(SquareMovement square, MoveType moveType) {
             return new Movement { square = square, moveType = moveType };
         }
@@ -87,8 +87,14 @@ namespace board {
 
             for (int i = 1; i <= length; i++) {
                 var nextPos = pos + i * dir;
-
                 linearMoves.Add(nextPos);
+                if (!IsOnBoard(nextPos, board)) {
+                    continue;
+                }
+
+                if (board[nextPos.x, nextPos.y].IsSome()){
+                    break;
+                }
             }
             return linearMoves;
         }
@@ -166,6 +172,10 @@ namespace board {
             }
 
             var figPos = linearPath[linearPath.Count - 1];
+            if (!BoardEngine.IsOnBoard(figPos, board)) {
+                return null;
+            }
+
             var figOpt = board[figPos.x, figPos.y];
             if (figOpt.IsNone()) {
                 return null;
