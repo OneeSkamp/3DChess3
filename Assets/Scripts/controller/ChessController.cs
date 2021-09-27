@@ -318,8 +318,11 @@ namespace controller {
                             pos = new Vector2Int(i, j),
                             board = board
                         };
-
-                        allMoves.AddRange(ChessInspector.GetPossibleMoves(figLoc, lastMove).AsOk());
+                        var possMovesRes = ChessInspector.GetPossibleMoves(figLoc, lastMove);
+                        if (possMovesRes.IsErr()) {
+                            continue;
+                        }
+                        allMoves.AddRange(possMovesRes.AsOk());
                     }
 
                 }

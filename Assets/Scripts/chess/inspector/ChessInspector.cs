@@ -192,7 +192,14 @@ namespace inspector {
                 }
 
                 var fixedMovement = FixedMovement.Mk(figLoc.pos, movement);
-                var limMovement = MoveEngine.GetLimitedMovement(fixedMovement, boardClone);
+                var limMovementRes = MoveEngine.GetLimitedMovement(fixedMovement, boardClone);
+                if (limMovementRes.IsErr()) {
+                    return Result<List<CheckInfo>, CheckError>.Err(
+                        InterpMoveEngineErr(limMovementRes.AsErr())
+                    );
+                }
+
+                var limMovement = limMovementRes.AsOk();
                 var figPos = BoardEngine.GetLastOnPathPos(limMovement, boardClone);
 
                 if (!figPos.HasValue) {

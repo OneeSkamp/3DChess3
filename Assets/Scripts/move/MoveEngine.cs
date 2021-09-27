@@ -17,10 +17,14 @@ namespace move {
         FigureIsNotPawn
     }
     public static class MoveEngine {
-        public static LimitedMovement GetLimitedMovement(
+        public static Result<LimitedMovement, MoveError> GetLimitedMovement(
             FixedMovement fixedMovement,
             Option<Fig>[,] board
         ) {
+            if (board == null) {
+                return Result<LimitedMovement, MoveError>.Err(MoveError.BoardIsNull);
+            }
+
             var startPos = fixedMovement.start;
             var dir = fixedMovement.movement.linear.Value.dir;
             var moveType = fixedMovement.movement.moveType;
@@ -43,10 +47,12 @@ namespace move {
                 }
             }
 
-            return new LimitedMovement {
+            var limMovement = new LimitedMovement {
                 length = length,
                 fixedMovement = FixedMovement.Mk(startPos, Movement.Linear(newLinear, moveType)),
             };
+
+            return Result<LimitedMovement, MoveError>.Ok(limMovement);
         }
         public static Result<List<MoveInfo>, MoveError> GetPathMoves(
             FigLoc startLoc,
@@ -185,10 +191,16 @@ namespace move {
                 } else {
                     var linear = movement.linear.Value;
                     var length = BoardEngine.GetLinearLength(figLoc.pos, linear.dir, figLoc.board);
-                    var limitedMovement = GetLimitedMovement(
+                    var limitedMovementRes = GetLimitedMovement(
                         FixedMovement.Mk(figLoc.pos, movement),
                         figLoc.board
                     );
+
+                    if (limitedMovementRes.IsErr()) {
+                        return Result<List<MoveInfo>, MoveError>.Err(limitedMovementRes.AsErr());
+                    }
+
+                    var limitedMovement = limitedMovementRes.AsOk();
 
                     var possLinearMovesRes = GetPossibleLinearMoves(
                         figLoc,
@@ -453,11 +465,16 @@ namespace move {
                     if (figOpt.IsSome()) {
                         var figure = figOpt.Peel();
                         var dFigLoc = FigLoc.Mk(move.move.first.Value.to, figLoc.board);
-                        var dmoves = MoveEngine.GetMoves(
+                        var dmovesRes = MoveEngine.GetMoves(
                             dFigLoc,
-                            movements[figLoc.board[to.x, to.y].Peel().type],
+                            movements[figOpt.Peel().type],
                             lastMove
-                        ).AsOk();
+                        );
+                        if (dmovesRes.IsErr()) {
+                            return Result<bool, MoveError>.Err(dmovesRes.AsErr());
+                        }
+
+                        var dmoves = dmovesRes.AsOk();
                         figMoves.AddRange(dmoves);
                     }
                 }
