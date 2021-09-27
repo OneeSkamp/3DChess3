@@ -10,10 +10,11 @@ namespace board {
     }
 
     public struct LinearMovement {
+        public int length;
         public Vector2Int dir;
 
-        public static LinearMovement Mk(Vector2Int dir) {
-            return new LinearMovement { dir = dir };
+        public static LinearMovement Mk(int length, Vector2Int dir) {
+            return new LinearMovement { length = length, dir = dir };
         }
     }
 
@@ -45,15 +46,6 @@ namespace board {
 
         public static FixedMovement Mk(Vector2Int start, Movement movement) {
             return new FixedMovement { start = start, movement = movement };
-        }
-    }
-
-    public struct LimitedMovement {
-        public int length;
-        public FixedMovement fixedMovement;
-
-        public static LimitedMovement Mk(int length, FixedMovement fixedMovement) {
-            return new LimitedMovement { length = length, fixedMovement = fixedMovement };
         }
     }
 
@@ -159,12 +151,12 @@ namespace board {
         }
 
         public static Vector2Int? GetLastOnPathPos<T>(
-            LimitedMovement limMovement,
+            FixedMovement fixedMovement,
             Option<T>[,] board
         ) {
-            var dir = limMovement.fixedMovement.movement.linear.Value.dir;
-            var startPos = limMovement.fixedMovement.start;
-            var length = limMovement.length;
+            var dir = fixedMovement.movement.linear.Value.dir;
+            var startPos = fixedMovement.start;
+            var length = fixedMovement.movement.linear.Value.length;
             var linearPath = BoardEngine.GetLinearPath(startPos, dir, length, board);
 
             if (linearPath.Count == 0) {
