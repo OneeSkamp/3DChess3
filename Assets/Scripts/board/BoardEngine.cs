@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using option;
-using collections;
 
 namespace board {
     public enum MoveType {
@@ -80,19 +79,19 @@ namespace board {
             for (int i = 1; i <= length; i++) {
                 var nextPos = pos + i * dir;
                 linearMoves.Add(nextPos);
-                if (!IsOnBoard(nextPos, board)) {
-                    continue;
-                }
+                // if (!IsOnBoard(nextPos, board)) {
+                //     continue;
+                // }
 
-                if (board[nextPos.x, nextPos.y].IsSome()){
-                    break;
-                }
+                // if (board[nextPos.x, nextPos.y].IsSome()){
+                //     break;
+                // }
             }
             return linearMoves;
         }
 
-        public static BindableList<Vector2Int> GetSquarePath(Vector2Int pos, int side) {
-            var squareMoves = new BindableList<Vector2Int>();
+        public static List<Vector2Int> GetSquarePath(Vector2Int pos, int side) {
+            var squareMoves = new List<Vector2Int>();
             var startPos = new Vector2Int(pos.x - side/2, pos.y - side/2);
             var nextPos = new Vector2Int();
             var dir = new Vector2Int(1, 0);
@@ -123,31 +122,17 @@ namespace board {
             return squareMoves;
         }
 
-        public static BindableList<Vector2Int> RemoveSquareParts(
-            BindableList<Vector2Int> square,
+        public static List<Vector2Int> RemoveSquareParts(
+            List<Vector2Int> square,
             int start,
             int skipValue
         ) {
-            var pointer = square.head;
-
-            for (int i = 0; i < start; i++) {
-                pointer = pointer.next;
+            var newSquare = new List<Vector2Int>();
+            for (int i = start; i < square.Count; i = i + 1 + skipValue) {
+                newSquare.Add(square[i]);
             }
 
-            square.head = pointer;
-            var count = 0;
-
-            foreach (var i in square) {
-                if (count == 0) {
-                    count = skipValue;
-                    continue;
-                }
-                square.Remove(i);
-
-                count--;
-            }
-
-            return square;
+            return newSquare;
         }
 
         public static Vector2Int? GetLastOnPathPos<T>(
@@ -189,14 +174,14 @@ namespace board {
 
         public static bool IsOnBoard<T>(Vector2Int pos, Option<T>[,] board) {
             var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
-            if (IsOnPlace(pos, size)) {
+            if (IsOnBoard(pos, size)) {
                 return true;
             }
 
             return false;
         }
 
-        public static bool IsOnPlace(Vector2Int pos, Vector2Int size) {
+        public static bool IsOnBoard(Vector2Int pos, Vector2Int size) {
             if (pos.x < 0 || pos.y < 0 || pos.x >= size.x || pos.y >= size.y) {
                 return false;
             }

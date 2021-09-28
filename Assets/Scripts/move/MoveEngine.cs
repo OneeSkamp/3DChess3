@@ -3,7 +3,6 @@ using UnityEngine;
 using chess;
 using board;
 using option;
-using collections;
 using movements;
 
 namespace move {
@@ -17,43 +16,6 @@ namespace move {
         FigureIsNotPawn
     }
     public static class MoveEngine {
-        // public static Result<LimitedMovement, MoveError> GetLimitedMovement(
-        //     FixedMovement fixedMovement,
-        //     Option<Fig>[,] board
-        // ) {
-        //     if (board == null) {
-        //         return Result<LimitedMovement, MoveError>.Err(MoveError.BoardIsNull);
-        //     }
-
-        //     var startPos = fixedMovement.start;
-        //     var dir = fixedMovement.movement.linear.Value.dir;
-        //     var moveType = fixedMovement.movement.moveType;
-        //     var length = BoardEngine.GetLinearLength(startPos, dir, board);
-
-        //     var newLinear = fixedMovement.movement.linear.Value;
-        //     var figOpt = board[startPos.x, startPos.y];
-        //     if (figOpt.IsSome()) {
-        //         var fig = figOpt.Peel();
-        //         if (fig.type == FigureType.Pawn) {
-        //             if (fig.color == FigColor.Black) {
-        //                 dir = dir * -1;
-        //                 newLinear = LinearMovement.Mk(1, dir);
-        //             }
-
-        //             length = 1;
-        //             if (fig.counter == 0 && moveType == MoveType.Move) {
-        //                 length = 2;
-        //             }
-        //         }
-        //     }
-
-        //     var limMovement = new LimitedMovement {
-        //         length = length,
-        //         fixedMovement = FixedMovement.Mk(startPos, Movement.Linear(newLinear, moveType)),
-        //     };
-
-        //     return Result<LimitedMovement, MoveError>.Ok(limMovement);
-        // }
         public static Result<List<MoveInfo>, MoveError> GetPathMoves(
             FigLoc startLoc,
             List<Vector2Int> movePath,
@@ -107,6 +69,13 @@ namespace move {
 
             if (!BoardEngine.IsOnBoard(startLoc.pos, startLoc.board)) {
                 return Result<List<MoveInfo>, MoveError>.Err(MoveError.PathIsNull);
+            }
+            var start = fixedMovement.start;
+            var dir = fixedMovement.movement.linear.Value.dir;
+            var length = fixedMovement.movement.linear.Value.length;
+
+            if (length < 0) {
+                length = BoardEngine.GetLinearLength(start, dir, startLoc.board);
             }
 
             var linearPath = BoardEngine.GetLinearPath<Fig>(
@@ -167,7 +136,7 @@ namespace move {
                         movement.square.Value.side
                     );
 
-                    var square = new BindableList<Vector2Int>();
+                    var square = new List<Vector2Int>();
                     if (fig.type == FigureType.Knight) {
                         square = BoardEngine.RemoveSquareParts(squarePath, 0, 1);
                     }
@@ -176,17 +145,13 @@ namespace move {
                         square = BoardEngine.RemoveSquareParts(squarePath, 0, 0);
                     }
 
-                    var list = BindableList<Vector2Int>.ConvertToList(square);
-
-                    var pathMovesRes = GetPathMoves(figLoc, list, lastMove);
+                    var pathMovesRes = GetPathMoves(figLoc, square, lastMove);
                     if (pathMovesRes.IsErr()) {
                         return Result<List<MoveInfo>, MoveError>.Err(pathMovesRes.AsErr());
                     }
 
                     figMoves.AddRange(pathMovesRes.AsOk());
                 } else {
-                    var linear = movement.linear.Value;
-                    var length = BoardEngine.GetLinearLength(figLoc.pos, linear.dir, figLoc.board);
                     var fixedMovement = FixedMovement.Mk(figLoc.pos, movement);
 
                     var possLinearMovesRes = GetPossibleLinearMoves(
@@ -457,6 +422,7 @@ namespace move {
                             movements[figOpt.Peel().type],
                             lastMove
                         );
+
                         if (dmovesRes.IsErr()) {
                             return Result<bool, MoveError>.Err(dmovesRes.AsErr());
                         }
