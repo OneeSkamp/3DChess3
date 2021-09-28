@@ -147,7 +147,7 @@ namespace inspector {
             }
             allMovement.AddRange(Movements.knightMovement);
 
-            var linearCheckInfosRes = GetLinearPotentialCheckInfos(
+            var linearCheckInfosRes = GetLinearPotentialAttackInfos(
                 allMovement,
                 kingLoc,
                 boardClone
@@ -157,7 +157,7 @@ namespace inspector {
             }
             checkInfos.AddRange(linearCheckInfosRes.AsOk());
 
-            var squareCheckInfosRes = GetSquarePotentialCheckInfos(
+            var squareCheckInfosRes = GetSquarePotentialAttackInfos(
                 allMovement,
                 kingLoc,
                 boardClone
@@ -170,7 +170,7 @@ namespace inspector {
             return Result<List<AttackInfo>, CheckError>.Ok(checkInfos);
         }
 
-        public static Result<List<AttackInfo>, CheckError> GetSquarePotentialCheckInfos(
+        public static Result<List<AttackInfo>, CheckError> GetSquarePotentialAttackInfos(
             List<Movement> movements,
             FigLoc kingLoc,
             Option<Fig>[,] boardClone
@@ -223,7 +223,7 @@ namespace inspector {
             return Result<List<AttackInfo>, CheckError>.Ok(checkInfos);
         }
 
-        public static Result<List<AttackInfo>, CheckError> GetLinearPotentialCheckInfos(
+        public static Result<List<AttackInfo>, CheckError> GetLinearPotentialAttackInfos(
             List<Movement> movements,
             FigLoc figLoc,
             Option<Fig>[,] boardClone
@@ -311,7 +311,7 @@ namespace inspector {
 
             foreach (var potCheckInfo in potentialCheckInfos) {
                 var attackInfo = new AttackInfo();
-                var checkInfoRes = GetRealCheckInfo(kingLoc, potCheckInfo);
+                var checkInfoRes = GetRealAttackInfo(kingLoc, potCheckInfo);
                 if (checkInfoRes.IsErr()) {
                     return Result<List<AttackInfo>, CheckError>.Err(checkInfoRes.AsErr());
                 }
@@ -332,7 +332,7 @@ namespace inspector {
             return Result<List<AttackInfo>, CheckError>.Ok(attackInfos);
         }
 
-        public static Result<AttackInfo?, CheckError> GetRealCheckInfo(
+        public static Result<AttackInfo?, CheckError> GetRealAttackInfo(
             FigLoc kingLoc,
             AttackInfo potentialCheckInfo
         ) {
