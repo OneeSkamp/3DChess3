@@ -242,31 +242,39 @@ namespace inspector {
                     continue;
                 }
 
+                if (boardClone[figPos.Value.x, figPos.Value.y].IsNone()) {
+                    continue;
+                }
+
                 var figOpt = boardClone[figPos.Value.x, figPos.Value.y];
                 if (figOpt.IsNone()) {
                     continue;
                 }
                 var fig = figOpt.Peel();
 
-                var figMovements = Movements.movements[fig.type];
+                var figMovements = GetRealMovement(FigLoc.Mk(figPos.Value, boardClone)).AsOk();
                 foreach (var figMovement in figMovements) {
                     if (!figMovement.linear.HasValue) {
                         continue;
                     }
 
-                    var figDir = figMovement.linear.Value.dir;
+                    var moveType = figMovement.moveType;
+                    var figDir = -figMovement.linear.Value.dir;
                     var dir = fixedMovement.movement.linear.Value.dir;
-                    if (fixedMovement.movement.linear.Value.dir != figDir) {
+                    var length = figMovement.linear.Value.length;
+                    if (dir != figDir) {
                         continue;
                     }
 
-                    var newMovement = Movement.Linear(LinearMovement.Mk(-1, dir), MoveType.Move);
+                    var attackLength = Mathf.Abs(figLoc.pos.x - figPos.Value.x);
 
-                    checkInfos.Add(
-                        new AttackInfo {
-                            attack = fixedMovement,
-                        }
-                    );
+                    if (moveType == MoveType.Attack && attackLength <= length) {
+                        checkInfos.Add(
+                            new AttackInfo {
+                                attack = fixedMovement,
+                            }
+                        );
+                    }
                 }
             }
 
@@ -638,7 +646,13 @@ namespace inspector {
                         var start = attackInfo.attack.start;
                         var dir = attackInfo.attack.movement.linear.Value.dir;
                         var length = attackInfo.attack.movement.linear.Value.length;
-                        var path = BoardEngine.GetLinearPath(start, dir, length, figLoc.board);
+                        var path = BoardEngine.GetLinearPathToFigure(
+                            start,
+                            dir,
+                            length,
+                            figLoc.board
+                        );
+
                         if (path == null) {
                             continue;
                         }

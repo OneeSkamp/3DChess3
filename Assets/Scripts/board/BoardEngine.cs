@@ -79,13 +79,29 @@ namespace board {
             for (int i = 1; i <= length; i++) {
                 var nextPos = pos + i * dir;
                 linearMoves.Add(nextPos);
-                // if (!IsOnBoard(nextPos, board)) {
-                //     continue;
-                // }
+            }
+            return linearMoves;
+        }
 
-                // if (board[nextPos.x, nextPos.y].IsSome()){
-                //     break;
-                // }
+        public static List<Vector2Int> GetLinearPathToFigure<T>(
+            Vector2Int pos,
+            Vector2Int dir,
+            int length,
+            Option<T>[,] board
+        ) {
+            var linearMoves = new List<Vector2Int>();
+
+            for (int i = 1; i <= length; i++) {
+                var nextPos = pos + i * dir;
+                linearMoves.Add(nextPos);
+
+                if (!IsOnBoard(nextPos, board)) {
+                    break;
+                }
+
+                if (board[nextPos.x, nextPos.y].IsSome()) {
+                    break;
+                }
             }
             return linearMoves;
         }
@@ -142,7 +158,7 @@ namespace board {
             var dir = fixedMovement.movement.linear.Value.dir;
             var startPos = fixedMovement.start;
             var length = fixedMovement.movement.linear.Value.length;
-            var linearPath = BoardEngine.GetLinearPath(startPos, dir, length, board);
+            var linearPath = BoardEngine.GetLinearPathToFigure(startPos, dir, length, board);
 
             if (linearPath.Count == 0) {
                 return null;
@@ -150,11 +166,6 @@ namespace board {
 
             var figPos = linearPath[linearPath.Count - 1];
             if (!BoardEngine.IsOnBoard(figPos, board)) {
-                return null;
-            }
-
-            var figOpt = board[figPos.x, figPos.y];
-            if (figOpt.IsNone()) {
                 return null;
             }
 

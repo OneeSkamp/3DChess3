@@ -42,6 +42,7 @@ namespace chess {
     public struct MoveInfo {
         public DoubleMove move;
         public Vector2Int? sentenced;
+        public Vector2Int? shadow;
         public Vector2Int? promote;
     }
 
