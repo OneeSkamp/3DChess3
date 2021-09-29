@@ -48,10 +48,37 @@ namespace board {
         }
     }
 
-    public static class BoardEngine {
-        public static int GetLinearLength<T>(Vector2Int pos, Vector2Int dir, Option<T>[,] board) {
-            var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
+    public struct MovementLoc {
+        public int index;
+        public Option<Vector2Int> pos;
 
+        public static MovementLoc Mk(int index, Option<Vector2Int> pos) {
+            return new MovementLoc { index = index, pos = pos };
+        }
+    }
+
+    public static class BoardEngine {
+        public static MovementLoc GetMovementLoc<T>(
+            Vector2Int pos,
+            LinearMovement linear,
+            Option<T>[,] board
+        ) {
+            for (int i = 1; i <= linear.length; i++) {
+                var nextPos = pos + i * linear.dir;
+                if (!IsOnBoard(nextPos, board)) {
+                    return MovementLoc.Mk(i - 1, Option<Vector2Int>.None());
+                }
+
+                if (board[nextPos.x, nextPos.y].IsSome()) {
+                    return MovementLoc.Mk(i, Option<Vector2Int>.Some(nextPos));
+                }
+            }
+
+            return MovementLoc.Mk(linear.length, Option<Vector2Int>.None());
+        }
+
+        public static int GetMaxLength<T>(Vector2Int pos, Vector2Int dir, Option<T>[,] board) {
+            var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
             var length = 0;
             for (int i = 1; i <= size.x; i++) {
                 var nextPos = pos + i * dir;
@@ -68,19 +95,28 @@ namespace board {
             return length;
         }
 
-        public static List<Vector2Int> GetPath<T>(
-            FixedMovement fixedMovement,
+        public static int GetLinearLength<T>(
+            Vector2Int pos,
+            LinearMovement linear,
             Option<T>[,] board
         ) {
-            var movement = fixedMovement.movement;
-            var start = fixedMovement.start;
-
-            if (movement.linear.HasValue) {
-                return GetLinearPath(start, movement.linear.Value, board);
-            } else {
-                return GetLinearPath(start, movement.linear.Value, board);
+            if (linear.length < 0) {
+                return linear.length = GetMaxLength(pos, linear.dir, board);
             }
 
+            for (int i = 1; i <= linear.length; i++) {
+                var nextPos = pos + i * linear.dir;
+
+                if (!IsOnBoard(nextPos, board)) {
+                    break;
+                }
+
+                linear.length++;
+                if (board[nextPos.x, nextPos.y].IsSome()) {
+                    break;
+                }
+            }
+            return linear.length;
         }
 
         public static List<Vector2Int> GetLinearPath<T>(
