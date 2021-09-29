@@ -52,56 +52,6 @@ namespace inspector {
             return Result<Option<Fig>[,], CheckError>.Ok(boardClone);
         }
 
-        public static Result<List<Movement>, CheckError> GetRealMovement(FigLoc figLoc) {
-            if (figLoc.board == null) {
-                return Result<List<Movement>, CheckError>.Err(CheckError.BoardIsNull);
-            }
-
-            var figOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
-            if (figOpt.IsNone()) {
-                return Result<List<Movement>, CheckError>.Err(CheckError.NoFigureOnPos);
-            }
-
-            var movements = Movements.movements;
-            var fig = figOpt.Peel();
-            var figMovements = movements[fig.type];
-            var realFigMovements = new List<Movement>();
-
-            foreach (var figMovement in figMovements) {
-                if (figMovement.square.HasValue) {
-                    realFigMovements.Add(figMovement);
-                    continue;
-                }
-
-                if (figMovement.linear.Value.length < 0) {
-                    var moveType = figMovement.moveType;
-                    var dir = figMovement.linear.Value.dir;
-                    var length = BoardEngine.GetLinearLength(figLoc.pos, dir, figLoc.board);
-
-                    var realMovement = Movement.Linear(LinearMovement.Mk(length, dir), moveType);
-                    realFigMovements.Add(realMovement);
-                }
-
-                if (fig.type == FigureType.Pawn) {
-                    var moveType = figMovement.moveType;
-                    var length = figMovement.linear.Value.length;
-                    var dir = figMovement.linear.Value.dir;
-                    if (fig.counter == 0 && figMovement.moveType == MoveType.Move) {
-                        length = 2;
-                    }
-
-                    if (fig.color == FigColor.Black) {
-                        dir = dir * -1;
-                    }
-
-                    var realMovement = Movement.Linear(LinearMovement.Mk(length, dir), moveType);
-                    realFigMovements.Add(realMovement);
-                }
-            }
-
-            return Result<List<Movement>, CheckError>.Ok(realFigMovements);
-        }
-
         public static Result<List<AttackInfo>, CheckError> GetPotentialAttackInfos(
             FigLoc kingLoc
         ) {
@@ -253,7 +203,16 @@ namespace inspector {
                 }
                 var fig = figOpt.Peel();
 
-                var figMovements = GetRealMovement(FigLoc.Mk(figPos.Value, boardClone)).AsOk();
+                var figMovementsRes = MoveEngine.GetRealMovement(
+                    FigLoc.Mk(figPos.Value, boardClone)
+                );
+                if (figMovementsRes.IsErr()) {
+                    return Result<List<AttackInfo>, CheckError>.Err(
+                        InterpMoveEngineErr(figMovementsRes.AsErr())
+                    );
+                }
+
+                var figMovements = figMovementsRes.AsOk();
                 foreach (var figMovement in figMovements) {
                     if (!figMovement.linear.HasValue) {
                         continue;
@@ -303,9 +262,9 @@ namespace inspector {
                 return Result<List<AttackInfo>, CheckError>.Err(CheckError.ImposterKing);
             }
 
-            var potentialCheckInfosRes = GetPotentialAttackInfos(kingLoc);
-            if (potentialCheckInfosRes.IsErr()) {
-                return Result<List<AttackInfo>, CheckError>.Err(potentialCheckInfosRes.AsErr());
+            var potentialAttackInfosRes = GetPotentialAttackInfos(kingLoc);
+            if (potentialAttackInfosRes.IsErr()) {
+                return Result<List<AttackInfo>, CheckError>.Err(potentialAttackInfosRes.AsErr());
             }
             var potentialCheckInfos = GetPotentialAttackInfos(kingLoc).AsOk();
             var attackInfos = new List<AttackInfo>();
@@ -335,12 +294,12 @@ namespace inspector {
 
         public static Result<AttackInfo?, CheckError> GetRealAttackInfo(
             FigLoc kingLoc,
-            AttackInfo potentialCheckInfo
+            AttackInfo potentialAttackInfo
         ) {
-            var linear = potentialCheckInfo.attack.movement.linear;
+            var linear = potentialAttackInfo.attack.movement.linear;
             if (linear.HasValue) {
                 var dir = linear.Value.dir;
-                var length = potentialCheckInfo.attack.movement.linear.Value.length;
+                var length = potentialAttackInfo.attack.movement.linear.Value.length;
                 var checkPath = BoardEngine.GetLinearPath(
                     kingLoc.pos,
                     linear.Value,
@@ -354,14 +313,14 @@ namespace inspector {
 
                 var defPositions = defPositionsRes.AsOk();
                 if (defPositions.Count == 1) {
-                    var newCheckInfo = potentialCheckInfo;
+                    var newCheckInfo = potentialAttackInfo;
                     newCheckInfo.defPos = defPositions[0];
                     return Result<AttackInfo?, CheckError>.Ok(newCheckInfo);
                 }
 
                 if (defPositions.Count == 0) {
                     var checkInfo = new AttackInfo {
-                        attack = potentialCheckInfo.attack,
+                        attack = potentialAttackInfo.attack,
                     };
 
                     return Result<AttackInfo?, CheckError>.Ok(checkInfo);
@@ -370,7 +329,7 @@ namespace inspector {
                 return Result<AttackInfo?, CheckError>.Ok(null);
 
             } else {
-                return Result<AttackInfo?, CheckError>.Ok(potentialCheckInfo);
+                return Result<AttackInfo?, CheckError>.Ok(potentialAttackInfo);
             }
         }
 
@@ -436,9 +395,11 @@ namespace inspector {
             var movement = new List<Movement>();
             var color = fig.color;
 
-            var movementsRes = GetRealMovement(figLoc);
+            var movementsRes = MoveEngine.GetRealMovement(figLoc);
             if (movementsRes.IsErr()) {
-                return Result<List<MoveInfo>, CheckError>.Err(movementsRes.AsErr());
+                return Result<List<MoveInfo>, CheckError>.Err(
+                    InterpMoveEngineErr(movementsRes.AsErr())
+                );
             }
             var movements = movementsRes.AsOk();
 
@@ -527,9 +488,11 @@ namespace inspector {
                 return Result<List<MoveInfo>, CheckError>.Ok(null);
             }
 
-            var defMovementsRes = GetRealMovement(defLoc);
+            var defMovementsRes = MoveEngine.GetRealMovement(defLoc);
             if (defMovementsRes.IsErr()) {
-                return Result<List<MoveInfo>, CheckError>.Err(defMovementsRes.AsErr());
+                return Result<List<MoveInfo>, CheckError>.Err(
+                    InterpMoveEngineErr(defMovementsRes.AsErr())
+                );
             }
             var defMovements = defMovementsRes.AsOk();
 
@@ -625,9 +588,11 @@ namespace inspector {
             }
 
             var fig = figOpt.Peel();
-            var movementsRes = GetRealMovement(figLoc);
+            var movementsRes = MoveEngine.GetRealMovement(figLoc);
             if (movementsRes.IsErr()) {
-                return Result<List<MoveInfo>, CheckError>.Err(movementsRes.AsErr());
+                return Result<List<MoveInfo>, CheckError>.Err(
+                    InterpMoveEngineErr(movementsRes.AsErr())
+                );
             }
 
             var movement = movementsRes.AsOk();

@@ -16,6 +16,56 @@ namespace move {
         FigureIsNotPawn
     }
     public static class MoveEngine {
+        public static Result<List<Movement>, MoveError> GetRealMovement(FigLoc figLoc) {
+            if (figLoc.board == null) {
+                return Result<List<Movement>, MoveError>.Err(MoveError.BoardIsNull);
+            }
+
+            var figOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
+            if (figOpt.IsNone()) {
+                return Result<List<Movement>, MoveError>.Err(MoveError.NoFigureOnPos);
+            }
+
+            var movements = Movements.movements;
+            var fig = figOpt.Peel();
+            var figMovements = movements[fig.type];
+            var realFigMovements = new List<Movement>();
+
+            foreach (var figMovement in figMovements) {
+                if (figMovement.square.HasValue) {
+                    realFigMovements.Add(figMovement);
+                    continue;
+                }
+
+                if (figMovement.linear.Value.length < 0) {
+                    var moveType = figMovement.moveType;
+                    var dir = figMovement.linear.Value.dir;
+                    var length = BoardEngine.GetLinearLength(figLoc.pos, dir, figLoc.board);
+
+                    var realMovement = Movement.Linear(LinearMovement.Mk(length, dir), moveType);
+                    realFigMovements.Add(realMovement);
+                }
+
+                if (fig.type == FigureType.Pawn) {
+                    var moveType = figMovement.moveType;
+                    var length = figMovement.linear.Value.length;
+                    var dir = figMovement.linear.Value.dir;
+                    if (fig.counter == 0 && figMovement.moveType == MoveType.Move) {
+                        length = 2;
+                    }
+
+                    if (fig.color == FigColor.Black) {
+                        dir = dir * -1;
+                    }
+
+                    var realMovement = Movement.Linear(LinearMovement.Mk(length, dir), moveType);
+                    realFigMovements.Add(realMovement);
+                }
+            }
+
+            return Result<List<Movement>, MoveError>.Ok(realFigMovements);
+        }
+
         public static Result<List<MoveInfo>, MoveError> GetPathMoves(
             FigLoc startLoc,
             List<Vector2Int> movePath,
@@ -89,6 +139,7 @@ namespace move {
             if (length < 0) {
                 length = BoardEngine.GetLinearLength(start, dir, startLoc.board);
             }
+
             var linear = fixedMovement.movement.linear.Value;
             var linearPath = BoardEngine.GetLinearPathToFigure<Fig>(
                 fixedMovement.start,
@@ -191,7 +242,6 @@ namespace move {
 
                     figMoves.AddRange(possLinearMovesRes.AsOk());
                 }
-
             }
 
             return Result<List<MoveInfo>, MoveError>.Ok(figMoves);
@@ -223,31 +273,34 @@ namespace move {
             var movements = Movements.movements;
             var currentFigOpt = new Option<Fig>();
 
-            var fig = Fig.CreateFig(color, FigureType.Knight);
 
             if (figLoc.board[figLoc.pos.x, figLoc.pos.y].IsNone()) {
                 hasFig = false;
             } else {
                 currentFigOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
             }
+
+            var fig = Fig.CreateFig(color, FigureType.Knight);
             figLoc.board[figLoc.pos.x, figLoc.pos.y] = Option<Fig>.Some(fig);
+            var knight = GetRealMovement(figLoc).AsOk();
 
-            var queen = movements[FigureType.Queen];
-            var knight = movements[FigureType.Knight];
-
-            var queenMovesRes = MoveEngine.GetMoves(figLoc, queen, lastMove);
-            if (queenMovesRes.IsErr()) {
-                return Result<bool, MoveError>.Err(queenMovesRes.AsErr());
-            }
             var moves = new List<MoveInfo>();
-
-            moves.AddRange(queenMovesRes.AsOk());
-
             var knightMovesRes = MoveEngine.GetMoves(figLoc, knight, lastMove);
             if (knightMovesRes.IsErr()) {
                 return Result<bool, MoveError>.Err(knightMovesRes.AsErr());
             }
             moves.AddRange(knightMovesRes.AsOk());
+
+            fig = Fig.CreateFig(color, FigureType.Queen);
+            figLoc.board[figLoc.pos.x, figLoc.pos.y] = Option<Fig>.Some(fig);
+            var queen = GetRealMovement(figLoc).AsOk();
+
+            var queenMovesRes = MoveEngine.GetMoves(figLoc, queen, lastMove);
+            if (queenMovesRes.IsErr()) {
+                return Result<bool, MoveError>.Err(queenMovesRes.AsErr());
+            }
+
+            moves.AddRange(queenMovesRes.AsOk());
 
             foreach (var move in moves) {
                 var to = move.move.first.Value.to;
@@ -257,9 +310,14 @@ namespace move {
                     if (figOpt.IsSome()) {
                         var figure = figOpt.Peel();
                         var dFigLoc = FigLoc.Mk(move.move.first.Value.to, figLoc.board);
+                        var realFigMovementsRes = GetRealMovement(dFigLoc);
+                        if (realFigMovementsRes.IsErr()) {
+                            return Result<bool, MoveError>.Err(realFigMovementsRes.AsErr());
+                        }
+                        var realFigMovements = realFigMovementsRes.AsOk();
                         var dmovesRes = MoveEngine.GetMoves(
                             dFigLoc,
-                            movements[figOpt.Peel().type],
+                            realFigMovements,
                             lastMove
                         );
 
