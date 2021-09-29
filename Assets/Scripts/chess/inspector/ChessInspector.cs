@@ -26,32 +26,6 @@ namespace inspector {
     }
 
     public static class ChessInspector {
-        public static Result<Option<Fig>[,], CheckError> GetBoardWithoutColor(
-            Option<Fig>[,] board,
-            FigColor color
-        ) {
-            if (board == null) {
-                return Result<Option<Fig>[,], CheckError>.Err(CheckError.BoardIsNull);
-            }
-
-            var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
-
-            var boardClone = BoardEngine.CopyBoard(board);
-
-            for (int i = 0; i < boardClone.GetLength(0); i++) {
-                for (int j = 0; j < boardClone.GetLength(1); j++) {
-                    if (boardClone[i, j].IsSome()) {
-                        var currentFig = boardClone[i, j].Peel();
-                        if (currentFig.color == color) {
-                            boardClone[i, j] = Option<Fig>.None();
-                        }
-                    }
-                }
-            }
-
-            return Result<Option<Fig>[,], CheckError>.Ok(boardClone);
-        }
-
         public static Result<List<AttackInfo>, CheckError> GetPotentialAttackInfos(
             FigLoc kingLoc
         ) {
@@ -77,10 +51,12 @@ namespace inspector {
             var allMovement = new List<Movement>();
 
 
-            var boardCloneRes = GetBoardWithoutColor(kingLoc.board, king.color);
+            var boardCloneRes = MoveEngine.GetBoardWithoutColor(kingLoc.board, king.color);
 
             if (boardCloneRes.IsErr()) {
-                return Result<List<AttackInfo>, CheckError>.Err(boardCloneRes.AsErr());
+                return Result<List<AttackInfo>, CheckError>.Err(
+                    InterpMoveEngineErr(boardCloneRes.AsErr())
+                );
             }
 
             var boardClone = boardCloneRes.AsOk();

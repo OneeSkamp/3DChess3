@@ -16,6 +16,32 @@ namespace move {
         FigureIsNotPawn
     }
     public static class MoveEngine {
+        public static Result<Option<Fig>[,], MoveError> GetBoardWithoutColor(
+            Option<Fig>[,] board,
+            FigColor color
+        ) {
+            if (board == null) {
+                return Result<Option<Fig>[,], MoveError>.Err(MoveError.BoardIsNull);
+            }
+
+            var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
+
+            var boardClone = BoardEngine.CopyBoard(board);
+
+            for (int i = 0; i < boardClone.GetLength(0); i++) {
+                for (int j = 0; j < boardClone.GetLength(1); j++) {
+                    if (boardClone[i, j].IsSome()) {
+                        var currentFig = boardClone[i, j].Peel();
+                        if (currentFig.color == color) {
+                            boardClone[i, j] = Option<Fig>.None();
+                        }
+                    }
+                }
+            }
+
+            return Result<Option<Fig>[,], MoveError>.Ok(boardClone);
+        }
+
         public static Result<List<Movement>, MoveError> GetRealMovement(FigLoc figLoc) {
             if (figLoc.board == null) {
                 return Result<List<Movement>, MoveError>.Err(MoveError.BoardIsNull);
