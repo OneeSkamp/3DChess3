@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using board;
 using UnityEngine;
 using option;
@@ -65,6 +66,34 @@ namespace chess {
     }
 
     public static class ChessEngine {
+        public static int GetMoveLength(
+            Vector2Int pos,
+            LinearMovement linear,
+            MoveType moveType,
+            Option<Fig>[,] board
+        ) {
+            linear.length = BoardEngine.GetLinearLength(pos, linear, board);
+            Debug.Log(linear.length);
+            var movementLoc = BoardEngine.GetMovementLoc(pos, linear, board);
+            Debug.Log(movementLoc.pos.Peel());
+            if (moveType == MoveType.Move) {
+                Debug.Log("moveType == MoveType.Move");
+                if (movementLoc.pos.IsSome()) {
+                    Debug.Log("movementLoc.pos.IsSome");
+                    linear.length--;
+                }
+            }
+
+            if (moveType == MoveType.Attack) {
+                Debug.Log("moveType == MoveType.Attack");
+                if (movementLoc.pos.IsNone()) {
+                    linear.length--;
+                }
+            }
+
+            return linear.length;
+        }
+
         public static bool IsPossibleMove(Move move, Option<Fig>[,] board) {
             var fromPos = move.from;
             var figOpt = board[fromPos.x, fromPos.y];
