@@ -1,11 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
-using inspector;
 using chess;
 using board;
 using option;
-using move;
-using sifter;
+using movements;
 
 namespace controller {
     public enum PlayerAction {
@@ -140,6 +138,10 @@ namespace controller {
                 playerAction = PlayerAction.Select;
             }
 
+            var linear = LinearMovement.Mk(-1, new Vector2Int(-1, 1));
+
+            Debug.Log(ChessEngine.GetMoveLength(new Vector2Int(6, 0), linear, MoveType.Attack, map.board));
+
             switch (playerAction) {
                 case PlayerAction.Select:
                     if (figOpt.IsNone()) {
@@ -155,10 +157,6 @@ namespace controller {
 
                     selectFigurePos = pos;
 
-                    possibleMoves = MoveSifter.GetPossibleMoves(
-                        new FigLoc {pos = pos, board = map.board},
-                        lastMove
-                    ).AsOk();
 
                     CreatePossibleHighlights(possibleMoves);
                     playerAction = PlayerAction.Move;
@@ -171,10 +169,6 @@ namespace controller {
                         }
                         var firstMove = possMove.move.first.Value;
                         if (move.to == firstMove.to && move.from == firstMove.from) {
-                            HandleMove(possMove, map.board);
-                            if (IsCheckMate(moveColor, lastMove, map.board)) {
-                                popupUi.checkMate.SetActive(!popupUi.checkMate.activeSelf);
-                            }
                             break;
                         }
                     }
@@ -205,137 +199,6 @@ namespace controller {
                 obj.transform.parent = highlights.possible.transform;
                 obj.transform.localPosition = objPos;
             }
-        }
-
-        private void Relocate(Move move, Option<Fig>[,] board) {
-            var fig = board[move.from.x, move.from.y].Peel();
-            var posFrom = move.from;
-            var posTo = move.to;
-
-            map.figures[posTo.x, posTo.y] = map.figures[posFrom.x, posFrom.y];
-            map.figures[posFrom.x, posFrom.y] = null;
-
-            var newX = cellInfo.offset - posTo.x * cellInfo.size;
-            var newY = cellInfo.offset - posTo.y * cellInfo.size;
-            var newPos = new Vector3(newX, 0.0f, newY);
-
-            map.figures[posTo.x, posTo.y].transform.localPosition = newPos;
-        }
-
-        private void HandleMove(MoveInfo moveInfo, Option<Fig>[,] board) {
-            if (moveInfo.sentenced.HasValue) {
-                var sentenced = moveInfo.sentenced.Value;
-                board[sentenced.x, sentenced.y] = Option<Fig>.None();
-                Destroy(map.figures[sentenced.x, sentenced.y]);
-            }
-
-            if (moveInfo.move.first.HasValue) {
-                MoveEngine.MoveFigure(moveInfo.move.first.Value, board);
-                Relocate(moveInfo.move.first.Value, board);
-            }
-
-            if (moveInfo.move.second.HasValue) {
-                MoveEngine.MoveFigure(moveInfo.move.second.Value, board);
-                Relocate(moveInfo.move.second.Value, board);
-            }
-
-            if (moveInfo.promote.HasValue) {
-                popupUi.changePawn.SetActive(!popupUi.changePawn.activeSelf);
-                this.enabled = !this.enabled;
-            }
-
-            lastMove = moveInfo;
-
-            if (moveColor == FigColor.White) {
-                moveColor = FigColor.Black;
-            } else {
-                moveColor = FigColor.White;
-            }
-        }
-
-        public void PromotionPawn(FigureType type) {
-            var white = false;
-            GameObject figPrefab = null;
-            var fig = Fig.CreateFig(FigColor.Black, type);
-            var pos = lastMove.promote.Value;
-            var cellOffset = new Vector2(cellInfo.offset, cellInfo.offset);
-
-            var prom = cellOffset - (Vector2)pos * cellInfo.size;
-            var newPos = new Vector3(prom.x, 0.0f, prom.y);
-
-            if (pos.x == 0) {
-                fig = Fig.CreateFig(FigColor.White, type);
-                white = true;
-            }
-
-            switch (type) {
-                case FigureType.Knight:
-                    figPrefab = figContent.bKnight;
-                    if (white) {
-                        figPrefab = figContent.wKnight;
-                    }
-                    break;
-                case FigureType.Bishop:
-                    figPrefab = figContent.bBishop;
-                    if (white) {
-                        figPrefab = figContent.wBishop;
-                    }
-                    break;
-                case FigureType.Rook:
-                    figPrefab = figContent.bRook;
-                    if (white) {
-                        figPrefab = figContent.wRook;
-                    }
-                    break;
-                case FigureType.Queen:
-                    figPrefab = figContent.bQueen;
-                    if (white) {
-                        figPrefab = figContent.wQueen;
-                    }
-                    break;
-            }
-
-            map.board[pos.x, pos.y] = Option<Fig>.Some(fig);
-            Destroy(map.figures[pos.x, pos.y]);
-            map.figures[pos.x, pos.y] = Instantiate(figPrefab);
-            map.figures[pos.x, pos.y].transform.parent = boardTransform;
-            map.figures[pos.x, pos.y].transform.localPosition = newPos;
-            popupUi.changePawn.SetActive(!popupUi.changePawn.activeSelf);
-            this.enabled = !this.enabled;
-        }
-
-        public static bool IsCheckMate(FigColor color, MoveInfo lastMove, Option<Fig>[,] board) {
-            var allMoves = new List<MoveInfo>();
-            for (int i = 0; i < board.GetLength(0); i++) {
-                for (int j = 0; j < board.GetLength(1); j++) {
-                    var figOpt = board[i, j];
-                    if (figOpt.IsNone()) {
-                        continue;
-                    }
-
-                    var fig = figOpt.Peel();
-                    if (fig.color == color) {
-                        var figLoc = new FigLoc {
-                            pos = new Vector2Int(i, j),
-                            board = board
-                        };
-                        var possMovesRes = MoveSifter.GetPossibleMoves(figLoc, lastMove);
-                        if (possMovesRes.IsErr()) {
-                            continue;
-                        }
-                        if (possMovesRes.AsOk() == null) {
-                            continue;
-                        }
-                        allMoves.AddRange(possMovesRes.AsOk());
-                    }
-                }
-            }
-
-            if (allMoves.Count == 0) {
-                return true;
-            }
-
-            return false;
         }
     }
 }
