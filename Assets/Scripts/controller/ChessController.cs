@@ -322,9 +322,11 @@ namespace controller {
                         if (possMovesRes.IsErr()) {
                             continue;
                         }
+                        if (possMovesRes.AsOk() == null) {
+                            continue;
+                        }
                         allMoves.AddRange(possMovesRes.AsOk());
                     }
-
                 }
             }
 

@@ -191,7 +191,7 @@ namespace inspector {
                     continue;
                 }
 
-                var square = BoardEngine.GetSquarePath(kingLoc.pos, 5);
+                var square = BoardEngine.GetSquarePath(kingLoc.pos, movement.square.Value);
                 var knightPath = BoardEngine.RemoveSquareParts(square, 0, 1);
 
                 if (knightPath.Count == 0) {
@@ -235,8 +235,9 @@ namespace inspector {
                 }
 
                 var fixedMovement = FixedMovement.Mk(figLoc.pos, movement);
-
-                var figPos = BoardEngine.GetLastOnPathPos(fixedMovement, boardClone);
+                var start = fixedMovement.start;
+                var linear = movement.linear.Value;
+                var figPos = BoardEngine.GetLastOnPathPos(start, linear, boardClone);
 
                 if (!figPos.HasValue) {
                     continue;
@@ -342,8 +343,7 @@ namespace inspector {
                 var length = potentialCheckInfo.attack.movement.linear.Value.length;
                 var checkPath = BoardEngine.GetLinearPath(
                     kingLoc.pos,
-                    dir,
-                    length,
+                    linear.Value,
                     kingLoc.board
                 );
 
@@ -644,12 +644,10 @@ namespace inspector {
                     foreach (var move in moves) {
                         var firstTo = move.move.first.Value.to;
                         var start = attackInfo.attack.start;
-                        var dir = attackInfo.attack.movement.linear.Value.dir;
-                        var length = attackInfo.attack.movement.linear.Value.length;
+                        var linear = attackInfo.attack.movement.linear.Value;
                         var path = BoardEngine.GetLinearPathToFigure(
                             start,
-                            dir,
-                            length,
+                            linear,
                             figLoc.board
                         );
 

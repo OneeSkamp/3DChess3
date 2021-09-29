@@ -68,16 +68,30 @@ namespace board {
             return length;
         }
 
+        public static List<Vector2Int> GetPath<T>(
+            FixedMovement fixedMovement,
+            Option<T>[,] board
+        ) {
+            var movement = fixedMovement.movement;
+            var start = fixedMovement.start;
+
+            if (movement.linear.HasValue) {
+                return GetLinearPath(start, movement.linear.Value, board);
+            } else {
+                return GetLinearPath(start, movement.linear.Value, board);
+            }
+
+        }
+
         public static List<Vector2Int> GetLinearPath<T>(
             Vector2Int pos,
-            Vector2Int dir,
-            int length,
+            LinearMovement linear,
             Option<T>[,] board
         ) {
             var linearMoves = new List<Vector2Int>();
 
-            for (int i = 1; i <= length; i++) {
-                var nextPos = pos + i * dir;
+            for (int i = 1; i <= linear.length; i++) {
+                var nextPos = pos + i * linear.dir;
                 linearMoves.Add(nextPos);
             }
             return linearMoves;
@@ -85,14 +99,13 @@ namespace board {
 
         public static List<Vector2Int> GetLinearPathToFigure<T>(
             Vector2Int pos,
-            Vector2Int dir,
-            int length,
+            LinearMovement linear,
             Option<T>[,] board
         ) {
             var linearMoves = new List<Vector2Int>();
 
-            for (int i = 1; i <= length; i++) {
-                var nextPos = pos + i * dir;
+            for (int i = 1; i <= linear.length; i++) {
+                var nextPos = pos + i * linear.dir;
                 linearMoves.Add(nextPos);
 
                 if (!IsOnBoard(nextPos, board)) {
@@ -106,31 +119,31 @@ namespace board {
             return linearMoves;
         }
 
-        public static List<Vector2Int> GetSquarePath(Vector2Int pos, int side) {
+        public static List<Vector2Int> GetSquarePath(Vector2Int pos, SquareMovement square) {
             var squareMoves = new List<Vector2Int>();
-            var startPos = new Vector2Int(pos.x - side/2, pos.y - side/2);
+            var startPos = new Vector2Int(pos.x - square.side/2, pos.y - square.side/2);
             var nextPos = new Vector2Int();
             var dir = new Vector2Int(1, 0);
 
-            for (int i = 1; i < side; i++) {
+            for (int i = 1; i < square.side; i++) {
                 nextPos = new Vector2Int(startPos.x, startPos.y + i);
                 squareMoves.Add(nextPos);
             }
             startPos = nextPos;
 
-            for (int i = 1; i < side; i++) {
+            for (int i = 1; i < square.side; i++) {
                 nextPos = new Vector2Int(startPos.x + i, startPos.y);
                 squareMoves.Add(nextPos);
             }
             startPos = nextPos;
 
-            for (int i = 1; i < side; i++) {
+            for (int i = 1; i < square.side; i++) {
                 nextPos = new Vector2Int(startPos.x, startPos.y - i);
                 squareMoves.Add(nextPos);
             }
             startPos = nextPos;
 
-            for (int i = 1; i < side; i++) {
+            for (int i = 1; i < square.side; i++) {
                 nextPos = new Vector2Int(startPos.x - i, startPos.y);
                 squareMoves.Add(nextPos);
             }
@@ -152,13 +165,11 @@ namespace board {
         }
 
         public static Vector2Int? GetLastOnPathPos<T>(
-            FixedMovement fixedMovement,
+            Vector2Int startPos,
+            LinearMovement linearMovement,
             Option<T>[,] board
         ) {
-            var dir = fixedMovement.movement.linear.Value.dir;
-            var startPos = fixedMovement.start;
-            var length = fixedMovement.movement.linear.Value.length;
-            var linearPath = BoardEngine.GetLinearPathToFigure(startPos, dir, length, board);
+            var linearPath = BoardEngine.GetLinearPathToFigure(startPos, linearMovement, board);
 
             if (linearPath.Count == 0) {
                 return null;

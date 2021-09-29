@@ -89,15 +89,14 @@ namespace move {
             if (length < 0) {
                 length = BoardEngine.GetLinearLength(start, dir, startLoc.board);
             }
-
+            var linear = fixedMovement.movement.linear.Value;
             var linearPath = BoardEngine.GetLinearPathToFigure<Fig>(
                 fixedMovement.start,
-                fixedMovement.movement.linear.Value.dir,
-                length,
+                linear,
                 startLoc.board
             );
 
-            var lastPos = BoardEngine.GetLastOnPathPos(fixedMovement, startLoc.board);
+            var lastPos = BoardEngine.GetLastOnPathPos(start, linear, startLoc.board);
             var movePath = new List<Vector2Int>();
             var resultPath = new List<Vector2Int>();
             movePath = linearPath;
@@ -159,7 +158,7 @@ namespace move {
                 if (movement.square.HasValue) {
                     var squarePath = BoardEngine.GetSquarePath(
                         figLoc.pos,
-                        movement.square.Value.side
+                        movement.square.Value
                     );
 
                     var square = new List<Vector2Int>();
@@ -195,15 +194,6 @@ namespace move {
 
             }
 
-            if (fig.type == FigureType.King) {
-                var castlingMovesRes = GetCastlingMoves(figLoc.pos, lastMove, figLoc.board);
-                if (castlingMovesRes.IsErr()) {
-                    return Result<List<MoveInfo>, MoveError>.Err(castlingMovesRes.AsErr());
-                }
-
-                figMoves.AddRange(castlingMovesRes.AsOk());
-            }
-
             return Result<List<MoveInfo>, MoveError>.Ok(figMoves);
         }
 
@@ -217,108 +207,6 @@ namespace move {
             var figure = board[move.to.x, move.to.y].Peel();
             figure.counter++;
             board[move.to.x, move.to.y] = Option<Fig>.Some(figure);
-        }
-
-        public static Result<List<MoveInfo>, MoveError> GetCastlingMoves(
-            Vector2Int kingPos,
-            MoveInfo lastMove,
-            Option<Fig>[,] board
-        ) {
-            if (board == null) {
-                return Result<List<MoveInfo>, MoveError>.Err(MoveError.BoardIsNull);
-            }
-
-            var figOpt = board[kingPos.x, kingPos.y];
-            if (figOpt.IsNone()) {
-                return Result<List<MoveInfo>, MoveError>.Err(MoveError.NoFigureOnPos);
-            }
-
-            var fig = figOpt.Peel();
-            if (fig.type != FigureType.King) {
-                return Result<List<MoveInfo>, MoveError>.Err(MoveError.FigureIsNotKing);
-            }
-
-            var castlingMoves = new List<MoveInfo>();
-
-            var leftDir = new Vector2Int(0, -1);
-            var rightDir = new Vector2Int(0, 1);
-
-            var leftLength = BoardEngine.GetLinearLength(kingPos, leftDir, board);
-            var rightLength = BoardEngine.GetLinearLength(kingPos, rightDir, board);
-
-            var leftPath = BoardEngine.GetLinearPath(kingPos, leftDir, leftLength, board);
-            var rightPath = BoardEngine.GetLinearPath(kingPos, rightDir, rightLength, board);
-
-            var leftPos = new Vector2Int();
-            var rightPos = new Vector2Int();
-
-            if (leftPath.Count > 0) {
-                leftPos = leftPath[leftPath.Count - 1];
-            }
-
-            if (rightPath.Count > 0) {
-                rightPos = rightPath[rightPath.Count - 1];
-            }
-
-            if (fig.type == FigureType.King && fig.counter == 0) {
-                var leftFig = board[leftPos.x, leftPos.y].Peel();
-                var rightFig = board[rightPos.x, rightPos.y].Peel();
-
-                var move = new DoubleMove();
-                if (leftFig.type == FigureType.Rook && leftFig.counter == 0) {
-                    move = DoubleMove.Mk(
-                        Move.Mk(kingPos, new Vector2Int(kingPos.x, kingPos.y - 2)),
-                        Move.Mk(leftPos, new Vector2Int(kingPos.x, kingPos.y - 1))
-                    );
-
-                    var firstTo = move.first.Value.to;
-                    var secondTo = move.second.Value.to;
-                    var firstToLoc = FigLoc.Mk(firstTo, board);
-                    var secondToLoc = FigLoc.Mk(secondTo, board);
-                    var firstToIsUnderAttack = IsUnderAttackPos(firstToLoc, fig.color, lastMove);
-                    if (firstToIsUnderAttack.IsErr()) {
-                        return Result<List<MoveInfo>, MoveError>.Err(firstToIsUnderAttack.AsErr());
-                    }
-
-                    var secondToIsUnderAttack = IsUnderAttackPos(secondToLoc, fig.color, lastMove);
-                    if (secondToIsUnderAttack.IsErr()) {
-                        return Result<List<MoveInfo>, MoveError>.Err(
-                            secondToIsUnderAttack.AsErr()
-                        );
-                    }
-                    if (!firstToIsUnderAttack.AsOk() && !secondToIsUnderAttack.AsOk()) {
-                        castlingMoves.Add(new MoveInfo { move = move });
-                    }
-                }
-
-                if (rightFig.type == FigureType.Rook && rightFig.counter == 0) {
-                    move = DoubleMove.Mk(
-                        Move.Mk(kingPos, new Vector2Int(kingPos.x, kingPos.y + 2)),
-                        Move.Mk(rightPos, new Vector2Int(kingPos.x, kingPos.y + 1))
-                    );
-
-                    var firstTo = move.first.Value.to;
-                    var secondTo = move.second.Value.to;
-                    var firstToLoc = FigLoc.Mk(firstTo, board);
-                    var secondToLoc = FigLoc.Mk(secondTo, board);
-                    var firstToIsUnderAttack = IsUnderAttackPos(firstToLoc, fig.color, lastMove);
-                    if (firstToIsUnderAttack.IsErr()) {
-                        return Result<List<MoveInfo>, MoveError>.Err(firstToIsUnderAttack.AsErr());
-                    }
-
-                    var secondToIsUnderAttack = IsUnderAttackPos(secondToLoc, fig.color, lastMove);
-                    if (secondToIsUnderAttack.IsErr()) {
-                        return Result<List<MoveInfo>, MoveError>.Err(
-                            secondToIsUnderAttack.AsErr()
-                        );
-                    }
-                    if (!firstToIsUnderAttack.AsOk() && !secondToIsUnderAttack.AsOk()) {
-                            castlingMoves.Add(new MoveInfo { move = move });
-                    }
-                }
-            }
-
-            return Result<List<MoveInfo>, MoveError>.Ok(castlingMoves);
         }
 
         public static Result<bool, MoveError> IsUnderAttackPos(
