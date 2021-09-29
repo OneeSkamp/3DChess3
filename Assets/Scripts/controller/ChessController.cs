@@ -5,6 +5,7 @@ using chess;
 using board;
 using option;
 using move;
+using sifter;
 
 namespace controller {
     public enum PlayerAction {
@@ -154,7 +155,7 @@ namespace controller {
 
                     selectFigurePos = pos;
 
-                    possibleMoves = ChessInspector.GetPossibleMoves(
+                    possibleMoves = MoveSifter.GetPossibleMoves(
                         new FigLoc {pos = pos, board = map.board},
                         lastMove
                     ).AsOk();
@@ -318,7 +319,7 @@ namespace controller {
                             pos = new Vector2Int(i, j),
                             board = board
                         };
-                        var possMovesRes = ChessInspector.GetPossibleMoves(figLoc, lastMove);
+                        var possMovesRes = MoveSifter.GetPossibleMoves(figLoc, lastMove);
                         if (possMovesRes.IsErr()) {
                             continue;
                         }
