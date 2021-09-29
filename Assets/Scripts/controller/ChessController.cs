@@ -254,7 +254,7 @@ namespace controller {
 
         public void PromotionPawn(FigureType type) {
             var white = false;
-            var figObj = new GameObject();
+            GameObject figPrefab = null;
             var fig = Fig.CreateFig(FigColor.Black, type);
             var pos = lastMove.promote.Value;
             var cellOffset = new Vector2(cellInfo.offset, cellInfo.offset);
@@ -269,34 +269,34 @@ namespace controller {
 
             switch (type) {
                 case FigureType.Knight:
-                    figObj = figContent.bKnight;
+                    figPrefab = figContent.bKnight;
                     if (white) {
-                        figObj = figContent.wKnight;
+                        figPrefab = figContent.wKnight;
                     }
                     break;
                 case FigureType.Bishop:
-                    figObj = figContent.bBishop;
+                    figPrefab = figContent.bBishop;
                     if (white) {
-                        figObj = figContent.wBishop;
+                        figPrefab = figContent.wBishop;
                     }
                     break;
                 case FigureType.Rook:
-                    figObj = figContent.bRook;
+                    figPrefab = figContent.bRook;
                     if (white) {
-                        figObj = figContent.wRook;
+                        figPrefab = figContent.wRook;
                     }
                     break;
                 case FigureType.Queen:
-                    figObj = figContent.bQueen;
+                    figPrefab = figContent.bQueen;
                     if (white) {
-                        figObj = figContent.wQueen;
+                        figPrefab = figContent.wQueen;
                     }
                     break;
             }
 
             map.board[pos.x, pos.y] = Option<Fig>.Some(fig);
             Destroy(map.figures[pos.x, pos.y]);
-            map.figures[pos.x, pos.y] = Instantiate(figObj);
+            map.figures[pos.x, pos.y] = Instantiate(figPrefab);
             map.figures[pos.x, pos.y].transform.parent = boardTransform;
             map.figures[pos.x, pos.y].transform.localPosition = newPos;
             popupUi.changePawn.SetActive(!popupUi.changePawn.activeSelf);

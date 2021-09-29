@@ -49,7 +49,7 @@ namespace move {
                             moveInfo.shadow = new Vector2Int(move.to.x - 1, move.from.y);
                         }
 
-                        if (fig.color == FigColor.Black && move.to.x == 4 && fig.counter == 0) {
+                        if (fig.color == FigColor.White && move.to.x == 4 && fig.counter == 0) {
                             moveInfo.shadow = new Vector2Int(move.to.x + 1, move.from.y);
                         }
 
