@@ -3,9 +3,9 @@ using UnityEngine;
 using option;
 
 namespace board {
-    public enum MoveType {
-        Attack,
-        Move
+    public enum BoardErr {
+        PosOutsideBoard,
+        BoardIsNull,
     }
 
     public struct LinearMovement {
@@ -48,30 +48,54 @@ namespace board {
     }
 
     public static class BoardEngine {
-        public static MovementLoc GetMovementLoc<T>(
+        public static Result<MovementLoc, BoardErr> GetMovementLoc<T>(
             Vector2Int pos,
             LinearMovement linear,
             Option<T>[,] board
         ) {
+            if (board == null) {
+                return Result<MovementLoc, BoardErr>.Err(BoardErr.BoardIsNull);
+            }
+
+            if (!IsOnBoard(pos, board)) {
+                return Result<MovementLoc, BoardErr>.Err(BoardErr.PosOutsideBoard);
+            }
+
+            var movementLoc = MovementLoc.Mk(linear.length, Option<Vector2Int>.None());
             for (int i = 1; i <= linear.length; i++) {
                 var nextPos = pos + i * linear.dir;
                 if (!IsOnBoard(nextPos, board)) {
-                    return MovementLoc.Mk(i - 1, Option<Vector2Int>.None());
+                    movementLoc = MovementLoc.Mk(i - 1, Option<Vector2Int>.None());
+                    return Result<MovementLoc, BoardErr>.Ok(movementLoc);
                 }
 
                 if (board[nextPos.x, nextPos.y].IsSome()) {
-                    return MovementLoc.Mk(i, Option<Vector2Int>.Some(nextPos));
+                    movementLoc = MovementLoc.Mk(i, Option<Vector2Int>.Some(nextPos));
+                    return Result<MovementLoc, BoardErr>.Ok(movementLoc);
                 }
             }
 
-            return MovementLoc.Mk(linear.length, Option<Vector2Int>.None());
+            return Result<MovementLoc, BoardErr>.Ok(movementLoc);
         }
 
-        public static int GetMaxLength<T>(Vector2Int pos, Vector2Int dir, Option<T>[,] board) {
-            var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
+        public static Result<int, BoardErr> GetMaxLength<T>(
+            Vector2Int pos,
+            LinearMovement linear,
+            Option<T>[,] board
+        ) {
+            if (board == null) {
+                return Result<int, BoardErr>.Err(BoardErr.BoardIsNull);
+            }
+
+            if (!IsOnBoard(pos, board)) {
+                return Result<int, BoardErr>.Err(BoardErr.PosOutsideBoard);
+            }
+
+            var maxLength = Mathf.Max(board.GetLength(0), board.GetLength(1));
             var length = 0;
-            for (int i = 1; i <= size.x; i++) {
-                var nextPos = pos + i * dir;
+
+            for (int i = 1; i <= maxLength; i++) {
+                var nextPos = pos + i * linear.dir;
 
                 if (!IsOnBoard(nextPos, board)) {
                     break;
@@ -82,32 +106,7 @@ namespace board {
                     break;
                 }
             }
-            return length;
-        }
-
-        public static int GetLinearLength<T>(
-            Vector2Int pos,
-            LinearMovement linear,
-            Option<T>[,] board
-        ) {
-            var length = 0;
-            if (linear.length < 0) {
-                return GetMaxLength(pos, linear.dir, board);
-            }
-
-            for (int i = 1; i <= linear.length; i++) {
-                var nextPos = pos + i * linear.dir;
-
-                if (!IsOnBoard(nextPos, board)) {
-                    break;
-                }
-
-                length++;
-                if (board[nextPos.x, nextPos.y].IsSome()) {
-                    break;
-                }
-            }
-            return length;
+            return Result<int, BoardErr>.Ok(length);
         }
 
         public static List<Vector2Int> GetSquarePoints(Vector2Int pos, SquareMovement square) {

@@ -6,7 +6,6 @@ namespace controller {
     public class FigureSpawner : MonoBehaviour {
         public Transform boardTransform;
 
-
         public FigureResourses figCont;
         public ChessController chessController;
 

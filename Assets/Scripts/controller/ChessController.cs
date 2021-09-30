@@ -37,15 +37,8 @@ namespace controller {
         public GameObject check;
     }
 
-    [System.Serializable]
-    public struct PopupUi {
-        public GameObject changePawn;
-        public GameObject checkMate;
-    }
-
     public class ChessController : MonoBehaviour {
         public Transform boardTransform;
-        public PopupUi popupUi;
 
         public Map map;
         public BoardInfo boardInfo;
@@ -232,11 +225,6 @@ namespace controller {
             if (moveInfo.move.second.HasValue) {
                 MoveEngine.MoveFigure(moveInfo.move.second.Value, board);
                 Relocate(moveInfo.move.second.Value, board);
-            }
-
-            if (moveInfo.promote.HasValue) {
-                popupUi.changePawn.SetActive(!popupUi.changePawn.activeSelf);
-                this.enabled = !this.enabled;
             }
 
             lastMove = moveInfo;

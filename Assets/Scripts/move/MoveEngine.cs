@@ -6,54 +6,76 @@ using chess;
 using movements;
 
 namespace move {
-    public enum MoveError {
+    public enum MoveErr {
+        CantInterpMoveErr,
+        PosOutsideBoard,
+        BoardIsNull,
         MovementNotСontainLinear,
-        MovementNotСontainSquare
+        MovementNotСontainSquare,
+        NoFigureOnPos
     }
 
     public class MoveEngine {
-        public static List<FigMovement> GetFigMovements(FigLoc figLoc) {
-            var figOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
-            var fig = figOpt.Peel();
-            var movements = Movements.movements[fig.type];
-            var newFigMovements = new List<FigMovement>();
+        public static Result<List<FigMovement>, MoveErr> GetFigMovements(FigLoc figLoc) {
+            if (figLoc.board == null) {
+                return Result<List<FigMovement>, MoveErr>.Err(MoveErr.BoardIsNull);
+            }
 
-            foreach (var figMovement in movements) {
+            var figOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
+            if (figOpt.IsNone()) {
+                Result<List<FigMovement>, MoveErr>.Err(MoveErr.NoFigureOnPos);
+            }
+
+            var fig = figOpt.Peel();
+            var figMovements = Movements.movements[fig.type];
+            var newFigMovements = new List<FigMovement>();
+            foreach (var figMovement in figMovements) {
+                if (figMovement.movement.square.HasValue) {
+                    return Result<List<FigMovement>, MoveErr>.Ok(figMovements);
+                }
+
                 var length = figMovement.movement.linear.Value.length;
-                // if (length < 0) {
-                //     length 
-                // }
+                var dir = figMovement.movement.linear.Value.dir;
 
                 if (fig.type == FigureType.Pawn) {
-                    var dir = figMovement.movement.linear.Value.dir;
-
-                    if (figMovement.type == MoveType.Move && fig.counter == 0) {
-                        length = 2;
-                    }
-
                     if (fig.color == FigColor.Black) {
                         dir = dir * -1;
                     }
 
-                    newFigMovements.Add(
-                        FigMovement.Mk(
-                            figMovement.type,
-                            Movement.Linear(LinearMovement.Mk(length, dir))
-                        )
-                    );
+                    if (fig.counter == 0 && figMovement.type == MoveType.Move) {
+                        length = 2;
+                    }
                 }
 
-                return newFigMovements;
+                var movement = Movement.Linear(LinearMovement.Mk(length, dir));
+                var newFigMovement = FigMovement.Mk(figMovement.type, movement);
+                var movelengthRes = ChessEngine.GetMoveLength(
+                    figLoc.pos,
+                    newFigMovement,
+                    figLoc.board
+                );
+                if (movelengthRes.IsErr()) {
+                    return Result<List<FigMovement>, MoveErr>.Err(
+                        InterpChessErr(movelengthRes.AsErr())
+                    );
+                }
+                var movelength = movelengthRes.AsOk();
+                movement = Movement.Linear(LinearMovement.Mk(movelength, dir));
+                newFigMovements.Add(FigMovement.Mk(figMovement.type, movement));
             }
 
-            return movements;
+            return Result<List<FigMovement>, MoveErr>.Ok(newFigMovements);
         }
-        public static Result<List<MoveInfo>, MoveError> GetLinearMoves(
+        public static Result<List<MoveInfo>, MoveErr> GetLinearMoves(
             FixedMovement fixedMovement,
             Option<Fig>[,] board
         ) {
+            if (board == null) {
+                return Result<List<MoveInfo>, MoveErr>.Err(MoveErr.BoardIsNull);
+            }
+
             if (fixedMovement.figMovement.movement.square.HasValue) {
-                return Result<List<MoveInfo>, MoveError>.Err(MoveError.MovementNotСontainLinear);
+                return Result<List<MoveInfo>, MoveErr>.Err(MoveErr.MovementNotСontainLinear);
             }
 
             var linear = fixedMovement.figMovement.movement.linear.Value;
@@ -62,48 +84,84 @@ namespace move {
             for (int i = 1; i <= linear.length; i++) {
                 var to = pos + i * linear.dir;
                 var move = Move.Mk(pos, to);
+                var moveInfo = new MoveInfo();
+
+                if (board[to.x, to.y].IsSome()) {
+                    moveInfo.sentenced = to;
+                }
+
                 if (ChessEngine.IsPossibleMove(move, board)) {
-                    linearMoves.Add(new MoveInfo { move = DoubleMove.Mk(move, null)});
+                    moveInfo.move = DoubleMove.Mk(move, null);
+                    linearMoves.Add(moveInfo);
                 }
             }
 
-            return Result<List<MoveInfo>, MoveError>.Ok(linearMoves);
+            return Result<List<MoveInfo>, MoveErr>.Ok(linearMoves);
         }
 
-        public static Result<List<MoveInfo>, MoveError> GetSquareMoves(
+        public static Result<List<MoveInfo>, MoveErr> GetSquareMoves(
             FixedMovement fixedMovement,
             Option<Fig>[,] board
         ) {
-            if (fixedMovement.figMovement.movement.linear.HasValue) {
-                return Result<List<MoveInfo>, MoveError>.Err(MoveError.MovementNotСontainSquare);
+            if (board == null) {
+                return Result<List<MoveInfo>, MoveErr>.Err(MoveErr.BoardIsNull);
             }
 
-            var squarePoints = ChessEngine.GetRealSquarePoints(fixedMovement, board);
+            if (fixedMovement.figMovement.movement.linear.HasValue) {
+                return Result<List<MoveInfo>, MoveErr>.Err(MoveErr.MovementNotСontainSquare);
+            }
+
+            var squarePointsRes = ChessEngine.GetRealSquarePoints(fixedMovement, board);
+            if (squarePointsRes.IsErr()) {
+                return Result<List<MoveInfo>, MoveErr>.Err(
+                    InterpChessErr(squarePointsRes.AsErr())
+                );
+            }
+
+            var squarePoints = squarePointsRes.AsOk();
             var pos = fixedMovement.start;
             var squareMoves = new List<MoveInfo>();
             foreach (var point in squarePoints) {
                 var to = point;
                 var move = Move.Mk(pos, to);
+                var moveInfo = new MoveInfo();
+
+                if (board[to.x, to.y].IsSome()) {
+                    moveInfo.sentenced = to;
+                }
 
                 if (ChessEngine.IsPossibleMove(move, board)) {
-                    squareMoves.Add(new MoveInfo { move = DoubleMove.Mk(move, null) });
+                    moveInfo.move = DoubleMove.Mk(move, null);
+                    squareMoves.Add(moveInfo);
                 }
             }
 
-            return Result<List<MoveInfo>, MoveError>.Ok(squareMoves);
+            return Result<List<MoveInfo>, MoveErr>.Ok(squareMoves);
         }
 
-        public static Result<List<MoveInfo>, MoveError> GetFigMoves(FigLoc figLoc) {
-            var figMoves = new List<MoveInfo>();
-            var fig = figLoc.board[figLoc.pos.x, figLoc.pos.y];
-            var figMovements = GetFigMovements(figLoc);
+        public static Result<List<MoveInfo>, MoveErr> GetFigMoves(FigLoc figLoc) {
+            if (figLoc.board == null) {
+                return Result<List<MoveInfo>, MoveErr>.Err(MoveErr.BoardIsNull);
+            }
 
+            var figOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
+            if (figOpt.IsNone()) {
+                return Result<List<MoveInfo>, MoveErr>.Err(MoveErr.NoFigureOnPos);
+            }
+
+            var figMoves = new List<MoveInfo>();
+            var figMovementsRes = GetFigMovements(figLoc);
+            if (figMovementsRes.IsErr()) {
+                return Result<List<MoveInfo>, MoveErr>.Err(figMovementsRes.AsErr());
+            }
+
+            var figMovements = figMovementsRes.AsOk();
             foreach (var figMovement in figMovements) {
                 var fixedMovement = FixedMovement.Mk(figLoc.pos, figMovement);
                 if (figMovement.movement.linear.HasValue) {
                     var linearMovesRes = GetLinearMoves(fixedMovement, figLoc.board);
                     if (linearMovesRes.IsErr()) {
-                        return Result<List<MoveInfo>, MoveError>.Err(linearMovesRes.AsErr());
+                        return Result<List<MoveInfo>, MoveErr>.Err(linearMovesRes.AsErr());
                     }
 
                     var linearMoves = linearMovesRes.AsOk();
@@ -111,7 +169,7 @@ namespace move {
                 } else if (figMovement.movement.square.HasValue) {
                     var squareMovesRes = GetSquareMoves(fixedMovement, figLoc.board);
                     if (squareMovesRes.IsErr()) {
-                        return Result<List<MoveInfo>, MoveError>.Err(squareMovesRes.AsErr());
+                        return Result<List<MoveInfo>, MoveErr>.Err(squareMovesRes.AsErr());
                     }
 
                     var squareMoves = squareMovesRes.AsOk();
@@ -119,7 +177,7 @@ namespace move {
                 }
             }
 
-            return Result<List<MoveInfo>, MoveError>.Ok(figMoves);
+            return Result<List<MoveInfo>, MoveErr>.Ok(figMoves);
         }
 
         public static void MoveFigure(Move move, Option<Fig>[,] board) {
@@ -132,6 +190,17 @@ namespace move {
             var figure = board[move.to.x, move.to.y].Peel();
             figure.counter++;
             board[move.to.x, move.to.y] = Option<Fig>.Some(figure);
+        }
+
+        public static MoveErr InterpChessErr(ChessErr err) {
+            switch (err) {
+                case ChessErr.BoardIsNull:
+                    return MoveErr.BoardIsNull;
+                case ChessErr.PosOutsideBoard:
+                    return MoveErr.PosOutsideBoard;
+            }
+
+            return MoveErr.CantInterpMoveErr;
         }
     }
 }
