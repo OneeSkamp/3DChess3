@@ -18,6 +18,24 @@ namespace chess {
         King
     }
 
+    public struct FigMovement {
+        public MoveType type;
+        public Movement movement;
+
+        public static FigMovement Mk(MoveType type, Movement movement) {
+            return new FigMovement { type = type, movement = movement };
+        }
+    }
+
+    public struct FixedMovement {
+        public Vector2Int start;
+        public FigMovement figMovement;
+
+        public static FixedMovement Mk(Vector2Int start, FigMovement figMovement) {
+            return new FixedMovement { start = start, figMovement = figMovement };
+        }
+    }
+
     public struct FigLoc {
         public Vector2Int pos;
         public Option<Fig>[,] board;
@@ -73,25 +91,40 @@ namespace chess {
             Option<Fig>[,] board
         ) {
             linear.length = BoardEngine.GetLinearLength(pos, linear, board);
-            Debug.Log(linear.length);
             var movementLoc = BoardEngine.GetMovementLoc(pos, linear, board);
-            Debug.Log(movementLoc.pos.Peel());
+
             if (moveType == MoveType.Move) {
-                Debug.Log("moveType == MoveType.Move");
                 if (movementLoc.pos.IsSome()) {
-                    Debug.Log("movementLoc.pos.IsSome");
                     linear.length--;
                 }
             }
 
             if (moveType == MoveType.Attack) {
-                Debug.Log("moveType == MoveType.Attack");
                 if (movementLoc.pos.IsNone()) {
                     linear.length--;
                 }
             }
 
             return linear.length;
+        }
+
+        public static List<Vector2Int> GetRealSquarePoints(FixedMovement fixedMovement, Option<Fig>[,] board) {
+            var pos = fixedMovement.start;
+            var figOpt = board[pos.x, pos.y];
+
+            var fig = figOpt.Peel();
+
+            var square = BoardEngine.GetSquarePoints(pos, fixedMovement.figMovement.movement.square.Value);
+
+            if (fig.type == FigureType.Knight) {
+                return BoardEngine.RemoveSquareParts(square, 0, 1, board);
+            }
+
+            if (fig.type == FigureType.King) {
+                return BoardEngine.RemoveSquareParts(square, 0, 0, board);
+            }
+
+            return null;
         }
 
         public static bool IsPossibleMove(Move move, Option<Fig>[,] board) {

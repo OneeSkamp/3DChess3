@@ -26,25 +26,15 @@ namespace board {
     }
 
     public struct Movement {
-        public MoveType moveType;
         public LinearMovement? linear;
         public SquareMovement? square;
 
-        public static Movement Linear(LinearMovement linear, MoveType moveType) {
-            return new Movement { linear = linear, moveType = moveType };
+        public static Movement Linear(LinearMovement linear) {
+            return new Movement { linear = linear };
         }
 
-        public static Movement Square(SquareMovement square, MoveType moveType) {
-            return new Movement { square = square, moveType = moveType };
-        }
-    }
-
-    public struct FixedMovement {
-        public Vector2Int start;
-        public Movement movement;
-
-        public static FixedMovement Mk(Vector2Int start, Movement movement) {
-            return new FixedMovement { start = start, movement = movement };
+        public static Movement Square(SquareMovement square) {
+            return new Movement { square = square };
         }
     }
 
@@ -100,8 +90,9 @@ namespace board {
             LinearMovement linear,
             Option<T>[,] board
         ) {
+            var length = 0;
             if (linear.length < 0) {
-                return linear.length = GetMaxLength(pos, linear.dir, board);
+                return GetMaxLength(pos, linear.dir, board);
             }
 
             for (int i = 1; i <= linear.length; i++) {
@@ -111,51 +102,15 @@ namespace board {
                     break;
                 }
 
-                linear.length++;
+                length++;
                 if (board[nextPos.x, nextPos.y].IsSome()) {
                     break;
                 }
             }
-            return linear.length;
+            return length;
         }
 
-        public static List<Vector2Int> GetLinearPath<T>(
-            Vector2Int pos,
-            LinearMovement linear,
-            Option<T>[,] board
-        ) {
-            var linearMoves = new List<Vector2Int>();
-
-            for (int i = 1; i <= linear.length; i++) {
-                var nextPos = pos + i * linear.dir;
-                linearMoves.Add(nextPos);
-            }
-            return linearMoves;
-        }
-
-        public static List<Vector2Int> GetLinearPathToFigure<T>(
-            Vector2Int pos,
-            LinearMovement linear,
-            Option<T>[,] board
-        ) {
-            var linearMoves = new List<Vector2Int>();
-
-            for (int i = 1; i <= linear.length; i++) {
-                var nextPos = pos + i * linear.dir;
-                linearMoves.Add(nextPos);
-
-                if (!IsOnBoard(nextPos, board)) {
-                    break;
-                }
-
-                if (board[nextPos.x, nextPos.y].IsSome()) {
-                    break;
-                }
-            }
-            return linearMoves;
-        }
-
-        public static List<Vector2Int> GetSquarePath(Vector2Int pos, SquareMovement square) {
+        public static List<Vector2Int> GetSquarePoints(Vector2Int pos, SquareMovement square) {
             var squareMoves = new List<Vector2Int>();
             var startPos = new Vector2Int(pos.x - square.side/2, pos.y - square.side/2);
             var nextPos = new Vector2Int();
@@ -187,36 +142,20 @@ namespace board {
             return squareMoves;
         }
 
-        public static List<Vector2Int> RemoveSquareParts(
+        public static List<Vector2Int> RemoveSquareParts<T>(
             List<Vector2Int> square,
             int start,
-            int skipValue
+            int skipValue,
+            Option<T>[,] board
         ) {
             var newSquare = new List<Vector2Int>();
             for (int i = start; i < square.Count; i = i + 1 + skipValue) {
-                newSquare.Add(square[i]);
+                if (IsOnBoard(square[i], board)){
+                    newSquare.Add(square[i]);
+                }
             }
 
             return newSquare;
-        }
-
-        public static Vector2Int? GetLastOnPathPos<T>(
-            Vector2Int startPos,
-            LinearMovement linearMovement,
-            Option<T>[,] board
-        ) {
-            var linearPath = BoardEngine.GetLinearPathToFigure(startPos, linearMovement, board);
-
-            if (linearPath.Count == 0) {
-                return null;
-            }
-
-            var figPos = linearPath[linearPath.Count - 1];
-            if (!BoardEngine.IsOnBoard(figPos, board)) {
-                return null;
-            }
-
-            return figPos;
         }
 
         public static Option<T>[,] CopyBoard<T>(Option<T>[,] board) {

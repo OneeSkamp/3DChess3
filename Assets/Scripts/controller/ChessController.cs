@@ -3,6 +3,7 @@ using UnityEngine;
 using chess;
 using board;
 using option;
+using move;
 using movements;
 
 namespace controller {
@@ -138,10 +139,6 @@ namespace controller {
                 playerAction = PlayerAction.Select;
             }
 
-            var linear = LinearMovement.Mk(-1, new Vector2Int(-1, 1));
-
-            Debug.Log(ChessEngine.GetMoveLength(new Vector2Int(6, 0), linear, MoveType.Attack, map.board));
-
             switch (playerAction) {
                 case PlayerAction.Select:
                     if (figOpt.IsNone()) {
@@ -157,6 +154,9 @@ namespace controller {
 
                     selectFigurePos = pos;
 
+                    possibleMoves = MoveEngine.GetFigMoves(
+                        new FigLoc {pos = pos, board = map.board}
+                    ).AsOk();
 
                     CreatePossibleHighlights(possibleMoves);
                     playerAction = PlayerAction.Move;
@@ -169,6 +169,7 @@ namespace controller {
                         }
                         var firstMove = possMove.move.first.Value;
                         if (move.to == firstMove.to && move.from == firstMove.from) {
+                            HandleMove(possMove, map.board);
                             break;
                         }
                     }
@@ -198,6 +199,52 @@ namespace controller {
                 var obj = Instantiate(highlight);
                 obj.transform.parent = highlights.possible.transform;
                 obj.transform.localPosition = objPos;
+            }
+        }
+
+        private void Relocate(Move move, Option<Fig>[,] board) {
+            var fig = board[move.from.x, move.from.y].Peel();
+            var posFrom = move.from;
+            var posTo = move.to;
+
+            map.figures[posTo.x, posTo.y] = map.figures[posFrom.x, posFrom.y];
+            map.figures[posFrom.x, posFrom.y] = null;
+
+            var newX = cellInfo.offset - posTo.x * cellInfo.size;
+            var newY = cellInfo.offset - posTo.y * cellInfo.size;
+            var newPos = new Vector3(newX, 0.0f, newY);
+
+            map.figures[posTo.x, posTo.y].transform.localPosition = newPos;
+        }
+
+        private void HandleMove(MoveInfo moveInfo, Option<Fig>[,] board) {
+            if (moveInfo.sentenced.HasValue) {
+                var sentenced = moveInfo.sentenced.Value;
+                board[sentenced.x, sentenced.y] = Option<Fig>.None();
+                Destroy(map.figures[sentenced.x, sentenced.y]);
+            }
+
+            if (moveInfo.move.first.HasValue) {
+                MoveEngine.MoveFigure(moveInfo.move.first.Value, board);
+                Relocate(moveInfo.move.first.Value, board);
+            }
+
+            if (moveInfo.move.second.HasValue) {
+                MoveEngine.MoveFigure(moveInfo.move.second.Value, board);
+                Relocate(moveInfo.move.second.Value, board);
+            }
+
+            if (moveInfo.promote.HasValue) {
+                popupUi.changePawn.SetActive(!popupUi.changePawn.activeSelf);
+                this.enabled = !this.enabled;
+            }
+
+            lastMove = moveInfo;
+
+            if (moveColor == FigColor.White) {
+                moveColor = FigColor.Black;
+            } else {
+                moveColor = FigColor.White;
             }
         }
     }
