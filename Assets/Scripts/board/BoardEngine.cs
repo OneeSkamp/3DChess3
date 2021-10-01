@@ -4,6 +4,7 @@ using option;
 
 namespace board {
     public enum BoardErr {
+        None,
         PosOutsideBoard,
         BoardIsNull,
     }
@@ -78,17 +79,17 @@ namespace board {
             return Result<MovementLoc, BoardErr>.Ok(movementLoc);
         }
 
-        public static Result<int, BoardErr> GetMaxLength<T>(
+        public static (int, BoardErr) GetLenUntilFig<T>(
             Vector2Int pos,
             LinearMovement linear,
             Option<T>[,] board
         ) {
             if (board == null) {
-                return Result<int, BoardErr>.Err(BoardErr.BoardIsNull);
+                return (-1, BoardErr.BoardIsNull);
             }
 
             if (!IsOnBoard(pos, board)) {
-                return Result<int, BoardErr>.Err(BoardErr.PosOutsideBoard);
+                return (-1, BoardErr.PosOutsideBoard);
             }
 
             var maxLength = Mathf.Max(board.GetLength(0), board.GetLength(1));
@@ -106,7 +107,8 @@ namespace board {
                     break;
                 }
             }
-            return Result<int, BoardErr>.Ok(length);
+
+            return (length, BoardErr.None);
         }
 
         public static List<Vector2Int> GetSquarePoints(Vector2Int pos, SquareMovement square) {

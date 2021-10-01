@@ -47,7 +47,6 @@ namespace controller {
         public CellInfo cellInfo;
         public Highlights highlights;
         public FigureResourses figContent;
-        public MoveInfo lastMove;
 
         private List<MoveInfo> possibleMoves = new List<MoveInfo>();
         private Vector2Int selectFigurePos;
@@ -118,6 +117,7 @@ namespace controller {
 
             var hitOffcet = (localHit - boardInfo.leftTop.position) / cellInfo.size;
             var pos = new Vector2Int(Mathf.Abs((int)hitOffcet.x), Mathf.Abs((int)hitOffcet.z));
+            Debug.Log(pos.x + " " + pos.y);
 
             if (!BoardEngine.IsOnBoard(pos, map.board)) {
                 return;
@@ -149,7 +149,7 @@ namespace controller {
 
                     possibleMoves = MoveEngine.GetFigMoves(
                         new FigLoc {pos = pos, board = map.board}
-                    ).AsOk();
+                    ).Item1;
 
                     CreatePossibleHighlights(possibleMoves);
                     playerAction = PlayerAction.Move;
@@ -226,8 +226,6 @@ namespace controller {
                 MoveEngine.MoveFigure(moveInfo.move.second.Value, board);
                 Relocate(moveInfo.move.second.Value, board);
             }
-
-            lastMove = moveInfo;
 
             if (moveColor == FigColor.White) {
                 moveColor = FigColor.Black;

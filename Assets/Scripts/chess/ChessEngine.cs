@@ -24,11 +24,14 @@ namespace chess {
     }
 
     public enum ChessErr {
+        None,
         CantInterpMoveErr,
         PosOutsideBoard,
         BoardIsNull,
         NoFigureOnPos,
-        NoSquareFig
+        NoSquareFig,
+        MaxLengthErr,
+        LastLinearPosErr
     }
 
     public struct FigMovement {
@@ -97,33 +100,33 @@ namespace chess {
     }
 
     public static class ChessEngine {
-        public static Result<int, ChessErr> GetMoveLength(
+        public static (int, ChessErr) GetMoveLength(
             Vector2Int pos,
             FigMovement figMovement,
             Option<Fig>[,] board
         ) {
             if (board == null) {
-                return Result<int, ChessErr>.Err(ChessErr.BoardIsNull);
+                return (-1, ChessErr.BoardIsNull);
             }
 
             if (!BoardEngine.IsOnBoard(pos, board)) {
-                return Result<int, ChessErr>.Err(ChessErr.PosOutsideBoard);
+                return(-1, ChessErr.PosOutsideBoard);
             }
 
             var linear = figMovement.movement.linear.Value;
             var length = figMovement.movement.linear.Value.length;
-            var maxLengthRes = BoardEngine.GetMaxLength(pos,linear, board);
-            if (maxLengthRes.IsErr()) {
-                return Result<int, ChessErr>.Err(InterpMoveEngineErr(maxLengthRes.AsErr()));
+            var (maxLengthRes, err) = BoardEngine.GetLenUntilFig(pos,linear, board);
+            if (err != BoardErr.None) {
+                return (-1, ChessErr.MaxLengthErr);
             }
-            var maxLength = maxLengthRes.AsOk();
+            var maxLength = maxLengthRes;
             if (length < 0) {
                 length = maxLength;
             }
 
             var movementLocRes = BoardEngine.GetMovementLoc(pos, linear, board);
             if (movementLocRes.IsErr()) {
-                return Result<int, ChessErr>.Err(InterpMoveEngineErr(movementLocRes.AsErr()));
+                return (-1, ChessErr.LastLinearPosErr);
             }
 
             var movementLoc = movementLocRes.AsOk();
@@ -139,21 +142,21 @@ namespace chess {
                 }
             }
 
-            return Result<int, ChessErr>.Ok(length);
+            return (length, ChessErr.None);
         }
 
-        public static Result<List<Vector2Int>, ChessErr> GetRealSquarePoints(
+        public static (List<Vector2Int>, ChessErr) GetRealSquarePoints(
             FixedMovement fixedMovement,
             Option<Fig>[,] board
         ) {
             if (board == null) {
-                return Result<List<Vector2Int>, ChessErr>.Err(ChessErr.BoardIsNull);
+                return (null, ChessErr.BoardIsNull);
             }
 
             var pos = fixedMovement.start;
             var figOpt = board[pos.x, pos.y];
             if (figOpt.IsNone()) {
-                return Result<List<Vector2Int>, ChessErr>.Err(ChessErr.NoFigureOnPos);
+                return (null, ChessErr.NoFigureOnPos);
             }
 
             var fig = figOpt.Peel();
@@ -165,15 +168,15 @@ namespace chess {
 
             if (fig.type == FigureType.Knight) {
                 var newSquare = BoardEngine.RemoveSquareParts(square, 0, 1, board);
-                return Result<List<Vector2Int>, ChessErr>.Ok(newSquare);
+                return (newSquare, ChessErr.None);
             }
 
             if (fig.type == FigureType.King) {
                 var newSquare = BoardEngine.RemoveSquareParts(square, 0, 0, board);
-                return Result<List<Vector2Int>, ChessErr>.Ok(newSquare);
+                return (newSquare, ChessErr.None);
             }
 
-            return Result<List<Vector2Int>, ChessErr>.Err(ChessErr.NoSquareFig);
+            return (null, ChessErr.NoSquareFig);
         }
 
         public static bool IsPossibleMove(Move move, Option<Fig>[,] board) {
