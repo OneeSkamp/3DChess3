@@ -124,7 +124,7 @@ namespace chess {
                 length = maxLength;
             }
 
-            var movementLocRes = BoardEngine.GetMovementLoc(pos, linear, board);
+            var movementLocRes = BoardEngine.GetLastLinearPoint(pos, linear, board);
             if (movementLocRes.IsErr()) {
                 return (-1, ChessErr.LastLinearPosErr);
             }
@@ -146,14 +146,14 @@ namespace chess {
         }
 
         public static (List<Vector2Int>, ChessErr) GetRealSquarePoints(
-            FixedMovement fixedMovement,
+            Vector2Int pos,
+            SquareMovement square,
             Option<Fig>[,] board
         ) {
             if (board == null) {
                 return (null, ChessErr.BoardIsNull);
             }
 
-            var pos = fixedMovement.start;
             var figOpt = board[pos.x, pos.y];
             if (figOpt.IsNone()) {
                 return (null, ChessErr.NoFigureOnPos);
@@ -161,18 +161,18 @@ namespace chess {
 
             var fig = figOpt.Peel();
 
-            var square = BoardEngine.GetSquarePoints(
+            var squareList = BoardEngine.GetSquarePoints(
                 pos,
-                fixedMovement.figMovement.movement.square.Value
+                square
             );
 
             if (fig.type == FigureType.Knight) {
-                var newSquare = BoardEngine.RemoveSquareParts(square, 0, 1, board);
+                var newSquare = BoardEngine.RemoveSquareParts(squareList, 0, 1, board);
                 return (newSquare, ChessErr.None);
             }
 
             if (fig.type == FigureType.King) {
-                var newSquare = BoardEngine.RemoveSquareParts(square, 0, 0, board);
+                var newSquare = BoardEngine.RemoveSquareParts(squareList, 0, 0, board);
                 return (newSquare, ChessErr.None);
             }
 
@@ -202,17 +202,6 @@ namespace chess {
                 }
             }
             return false;
-        }
-
-        public static ChessErr InterpMoveEngineErr(BoardErr err) {
-            switch (err) {
-                case BoardErr.BoardIsNull:
-                    return ChessErr.BoardIsNull;
-                case BoardErr.PosOutsideBoard:
-                    return ChessErr.PosOutsideBoard;
-            }
-
-            return ChessErr.CantInterpMoveErr;
         }
     }
 }

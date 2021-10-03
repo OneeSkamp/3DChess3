@@ -117,7 +117,6 @@ namespace controller {
 
             var hitOffcet = (localHit - boardInfo.leftTop.position) / cellInfo.size;
             var pos = new Vector2Int(Mathf.Abs((int)hitOffcet.x), Mathf.Abs((int)hitOffcet.z));
-            Debug.Log(pos.x + " " + pos.y);
 
             if (!BoardEngine.IsOnBoard(pos, map.board)) {
                 return;

@@ -49,7 +49,7 @@ namespace board {
     }
 
     public static class BoardEngine {
-        public static Result<MovementLoc, BoardErr> GetMovementLoc<T>(
+        public static Result<MovementLoc, BoardErr> GetLastLinearPoint<T>(
             Vector2Int pos,
             LinearMovement linear,
             Option<T>[,] board
