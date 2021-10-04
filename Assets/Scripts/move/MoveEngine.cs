@@ -19,7 +19,8 @@ namespace move {
         FigMovesErr,
         LinearMovesErr,
         SquareMovesErr,
-        SquarePointsErr
+        SquarePointsErr,
+        LastLinearPointErr
     }
 
     public struct KingsPos {
@@ -29,9 +30,9 @@ namespace move {
 
     public struct AttackInfo {
         public Option<Vector2Int> defPos;
-        public FigMovement attack;
+        public FixedMovement attack;
 
-        public static AttackInfo Mk(Option<Vector2Int> defPos, FigMovement attack) {
+        public static AttackInfo Mk(Option<Vector2Int> defPos, FixedMovement attack) {
             return new AttackInfo{ defPos = defPos, attack = attack };
         }
     }
@@ -120,31 +121,49 @@ namespace move {
                 kingPos = kingsPosRes.AsOk().white;
             }
 
-            boardClone[kingPos.x, kingPos.y] = Option<Fig>.Some(Fig.CreateFig(color, FigureType.Queen));
+            boardClone[kingPos.x, kingPos.y] = Option<Fig>.Some(
+                Fig.CreateFig(color, FigureType.Queen)
+            );
+
             var queenCloneLoc = FigLoc.Mk(kingPos, boardClone);
-            var (queenMovements, err) = GetFigMovements(queenCloneLoc);
+            var (queenMovements, err) = GetPotentialFigMovements(queenCloneLoc);
             if (err != MoveErr.None) {
                 return (null, MoveErr.FigMovesErr);
             }
 
             var attackInfos = new List<AttackInfo>();
 
-            foreach (var movement in queenMovements) {
-                var linear = movement.movement.linear.Value;
-                var last = BoardEngine.GetLastLinearPoint(kingPos, linear, boardClone).AsOk();
+            foreach (var queenMovement in queenMovements) {
+                var linear = queenMovement.movement.linear.Value;
+                var (last, lastErr) = BoardEngine.GetLastLinearPoint(kingPos, linear, boardClone);
+                if (lastErr != BoardErr.None) {
+                    return (null, MoveErr.LastLinearPointErr);
+                }
                 if (last.pos.IsNone()) {
                     continue;
                 }
 
                 var attackFigOpt = boardClone[last.pos.Peel().x, last.pos.Peel().y];
                 var figCloneLoc = FigLoc.Mk(last.pos.Peel(), boardClone);
-                var (figMovements, error) = GetFigMovements(queenCloneLoc);
+                var (figMovements, error) = GetPotentialFigMovements(figCloneLoc);
                 if (error != MoveErr.None) {
                     return (null, MoveErr.FigMovesErr);
                 }
                 foreach (var figMovement in figMovements) {
-                    if (movement.movement.linear.Value.dir == figMovement.movement.linear.Value.dir) {
-                        attackInfos.Add(AttackInfo.Mk(Option<Vector2Int>.None(), figMovement));
+                    if (figMovement.movement.square.HasValue) {
+                        continue;
+                    }
+
+                    var queenDir = queenMovement.movement.linear.Value.dir;
+                    var figDir = figMovement.movement.linear.Value.dir;
+
+                    if (queenDir == -figDir && figMovement.type == MoveType.Attack) {
+                        attackInfos.Add(
+                            AttackInfo.Mk(
+                                Option<Vector2Int>.None(),
+                                FixedMovement.Mk(last.pos.Peel(), figMovement)
+                            )
+                        );
                     }
                 }
             }
@@ -152,7 +171,99 @@ namespace move {
             return (attackInfos, MoveErr.None);
         }
 
+        public static (List<AttackInfo>, MoveErr) GetLinearAttackInfo(FigLoc figLoc) {
+            var (potencialAttackInfos, err) = GetPotentialAttackInfos(figLoc);
+
+            var attackInfos = new List<AttackInfo>();
+            foreach (var potAttack in potencialAttackInfos) {
+                var linear = potAttack.attack.figMovement.movement.linear.Value;
+                var length = linear.length;
+                var pos = potAttack.attack.start;
+                var dir = linear.dir;
+                var attackFig = figLoc.board[pos.x, pos.y];
+
+                var counter = 0;
+                var defPos = new Vector2Int();
+                for (int i = 1; i <= length; i++) {
+                    var nextPos = pos + i * dir;
+                    if (!BoardEngine.IsOnBoard(nextPos, figLoc.board)) {
+                        break;
+                    }
+
+                    var figOpt = figLoc.board[nextPos.x, nextPos.y];
+                    if (figOpt.IsNone()) {
+                        continue;
+                    }
+
+                    var fig = figOpt.Peel();
+                    if (fig.color != attackFig.Peel().color && fig.type != FigureType.King) {
+                        defPos = nextPos;
+                        counter++;
+                    }
+
+                    if (fig.color == attackFig.Peel().color) {
+                        break;
+                    }
+                }
+
+                if (counter == 1) {
+                    var attackInfo = potAttack;
+                    attackInfo.defPos = Option<Vector2Int>.Some(defPos);
+                    attackInfos.Add(attackInfo);
+                }
+
+                if (counter == 0) {
+                    attackInfos.Add(potAttack);
+                }
+            }
+
+            return (attackInfos, MoveErr.None);
+        }
+
         public static (List<FigMovement>, MoveErr) GetFigMovements(FigLoc figLoc) {
+            var (potencialFigMovements, err) = GetPotentialFigMovements(figLoc);
+            var (linearAttackInfos, error) = GetLinearAttackInfo(figLoc);
+
+            var realFigMovement = new FigMovement();
+            var realFigMovements = new List<FigMovement>();
+
+            foreach (var lineAttackInfo in linearAttackInfos) {
+                foreach (var figMovement in potencialFigMovements) {
+                    if (linearAttackInfos.Count == 0) {
+                        realFigMovements.Add(figMovement);
+                        continue;
+                    }
+
+                    if (lineAttackInfo.defPos.IsNone()) {
+                        continue;
+                    }
+
+                    var defPos = lineAttackInfo.defPos.Peel();
+                    if (defPos != figLoc.pos) {
+                        continue;
+                    }
+
+                    var defLinear = figMovement.movement.linear.Value;
+                    var attackLinear = lineAttackInfo.attack.figMovement.movement.linear.Value;
+                    if (defLinear.dir == -attackLinear.dir || defLinear.dir == attackLinear.dir) {
+                        var linear = LinearMovement.Mk(defLinear.length, defLinear.dir);
+
+                        realFigMovement = FigMovement.Mk(
+                            figMovement.type,
+                            Movement.Linear(linear)
+                        );
+                        realFigMovements.Add(realFigMovement);
+                    }
+                }
+            }
+            if (realFigMovements.Count != 0) {
+                return (realFigMovements, MoveErr.None);
+            }
+
+            return (potencialFigMovements, MoveErr.None);
+        }
+
+        public static (List<FigMovement>, MoveErr) GetPotentialFigMovements(FigLoc figLoc) {
             if (figLoc.board == null) {
                 return (null, MoveErr.BoardIsNull);
             }
@@ -215,6 +326,10 @@ namespace move {
                 var move = Move.Mk(pos, to);
                 var moveInfo = new MoveInfo();
 
+                if (!BoardEngine.IsOnBoard(to, board)) {
+                    break;
+                }
+
                 if (board[to.x, to.y].IsSome()) {
                     moveInfo.sentenced = to;
                 }
@@ -273,12 +388,11 @@ namespace move {
             }
 
             var figMoves = new List<MoveInfo>();
-            var (figMovementsRes, err) = GetFigMovements(figLoc);
+            var (figMovements, err) = GetFigMovements(figLoc);
             if (err != MoveErr.None) {
                 return (null, MoveErr.FigMovementsErr);
             }
 
-            var figMovements = figMovementsRes;
             foreach (var figMovement in figMovements) {
                 var fixedMovement = FixedMovement.Mk(figLoc.pos, figMovement);
                 if (figMovement.movement.linear.HasValue) {

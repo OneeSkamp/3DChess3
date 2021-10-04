@@ -49,17 +49,17 @@ namespace board {
     }
 
     public static class BoardEngine {
-        public static Result<MovementLoc, BoardErr> GetLastLinearPoint<T>(
+        public static (MovementLoc, BoardErr) GetLastLinearPoint<T>(
             Vector2Int pos,
             LinearMovement linear,
             Option<T>[,] board
         ) {
             if (board == null) {
-                return Result<MovementLoc, BoardErr>.Err(BoardErr.BoardIsNull);
+                return (new MovementLoc(), BoardErr.BoardIsNull);
             }
 
             if (!IsOnBoard(pos, board)) {
-                return Result<MovementLoc, BoardErr>.Err(BoardErr.PosOutsideBoard);
+                return (new MovementLoc(), BoardErr.PosOutsideBoard);
             }
 
             var movementLoc = MovementLoc.Mk(linear.length, Option<Vector2Int>.None());
@@ -67,16 +67,16 @@ namespace board {
                 var nextPos = pos + i * linear.dir;
                 if (!IsOnBoard(nextPos, board)) {
                     movementLoc = MovementLoc.Mk(i - 1, Option<Vector2Int>.None());
-                    return Result<MovementLoc, BoardErr>.Ok(movementLoc);
+                    return (movementLoc, BoardErr.None);
                 }
 
                 if (board[nextPos.x, nextPos.y].IsSome()) {
                     movementLoc = MovementLoc.Mk(i, Option<Vector2Int>.Some(nextPos));
-                    return Result<MovementLoc, BoardErr>.Ok(movementLoc);
+                    return (movementLoc, BoardErr.None);
                 }
             }
 
-            return Result<MovementLoc, BoardErr>.Ok(movementLoc);
+            return (movementLoc, BoardErr.None);
         }
 
         public static (int, BoardErr) GetLenUntilFig<T>(

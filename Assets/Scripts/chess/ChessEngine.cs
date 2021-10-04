@@ -124,20 +124,19 @@ namespace chess {
                 length = maxLength;
             }
 
-            var movementLocRes = BoardEngine.GetLastLinearPoint(pos, linear, board);
-            if (movementLocRes.IsErr()) {
+            var (lastLinearPoint, error) = BoardEngine.GetLastLinearPoint(pos, linear, board);
+            if (error != BoardErr.None) {
                 return (-1, ChessErr.LastLinearPosErr);
             }
 
-            var movementLoc = movementLocRes.AsOk();
             if (figMovement.type == MoveType.Move) {
-                if (movementLoc.pos.IsSome()) {
+                if (lastLinearPoint.pos.IsSome()) {
                     length--;
                 }
             }
 
             if (figMovement.type == MoveType.Attack) {
-                if (movementLoc.pos.IsNone()) {
+                if (lastLinearPoint.pos.IsNone()) {
                     length--;
                 }
             }
