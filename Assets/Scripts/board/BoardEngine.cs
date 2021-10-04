@@ -111,52 +111,46 @@ namespace board {
             return (length, BoardErr.None);
         }
 
-        public static List<Vector2Int> GetSquarePoints(Vector2Int pos, SquareMovement square) {
-            var squareMoves = new List<Vector2Int>();
-            var startPos = new Vector2Int(pos.x - square.side/2, pos.y - square.side/2);
-            var nextPos = new Vector2Int();
-            var dir = new Vector2Int(1, 0);
-
-            for (int i = 1; i < square.side; i++) {
-                nextPos = new Vector2Int(startPos.x, startPos.y + i);
-                squareMoves.Add(nextPos);
-            }
-            startPos = nextPos;
-
-            for (int i = 1; i < square.side; i++) {
-                nextPos = new Vector2Int(startPos.x + i, startPos.y);
-                squareMoves.Add(nextPos);
-            }
-            startPos = nextPos;
-
-            for (int i = 1; i < square.side; i++) {
-                nextPos = new Vector2Int(startPos.x, startPos.y - i);
-                squareMoves.Add(nextPos);
-            }
-            startPos = nextPos;
-
-            for (int i = 1; i < square.side; i++) {
-                nextPos = new Vector2Int(startPos.x - i, startPos.y);
-                squareMoves.Add(nextPos);
+        public static Option<Vector2Int> GetSquarePoint(Vector2Int pos, SquareMovement square, int index) {
+            var point = new Vector2Int();
+            var maxIndex = (square.side - 1) * 4;
+            if (index < square.side - 1) {
+                point.x = pos.x - (square.side - 1) / 2;
+                point.y = pos.y - (square.side - 1) / 2 + index;
+            } else if (index < (square.side - 1) * 2) {
+                point.x = pos.x - 3 * (square.side - 1) / 2 + index;
+                point.y = pos.y + (square.side - 1) / 2;
+            } else if (index < (square.side - 1) * 3) {
+                point.x = pos.x + (square.side - 1) / 2;
+                point.y = pos.y + 5 * (square.side - 1) /2 - index;
+            } else if (index < maxIndex) {
+                point.x = pos.x + 7 * (square.side - 1) / 2 - index;
+                point.y = pos.y - (square.side - 1) / 2;
+            } else {
+                return Option<Vector2Int>.None();
             }
 
-            return squareMoves;
+            return Option<Vector2Int>.Some(point);
         }
 
-        public static List<Vector2Int> RemoveSquareParts<T>(
-            List<Vector2Int> square,
-            int start,
-            int skipValue,
-            Option<T>[,] board
+        public static List<Vector2Int> GetSquarePoints2<T>(
+            Vector2Int pos,
+            SquareMovement square,
+            Option<T>[,] board,
+            int skipValue
         ) {
-            var newSquare = new List<Vector2Int>();
-            for (int i = start; i < square.Count; i = i + 1 + skipValue) {
-                if (IsOnBoard(square[i], board)){
-                    newSquare.Add(square[i]);
+            var maxIndex = (square.side - 1) * 4;
+            var points = new List<Vector2Int>();
+            for (int i = skipValue; i < maxIndex; i += 1 + skipValue) {
+                var point = GetSquarePoint(pos, square, i);
+                if (point.IsSome()) {
+                    if (IsOnBoard(point.Peel(), board)) {
+                        points.Add(point.Peel());
+                    }
                 }
             }
 
-            return newSquare;
+            return points;
         }
 
         public static Option<T>[,] CopyBoard<T>(Option<T>[,] board) {

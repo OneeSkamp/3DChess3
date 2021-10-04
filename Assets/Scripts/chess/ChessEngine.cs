@@ -160,19 +160,14 @@ namespace chess {
 
             var fig = figOpt.Peel();
 
-            var squareList = BoardEngine.GetSquarePoints(
-                pos,
-                square
-            );
-
             if (fig.type == FigureType.Knight) {
-                var newSquare = BoardEngine.RemoveSquareParts(squareList, 0, 1, board);
-                return (newSquare, ChessErr.None);
+                var squareList = BoardEngine.GetSquarePoints2(pos, square, board, 1);
+                return (squareList, ChessErr.None);
             }
 
             if (fig.type == FigureType.King) {
-                var newSquare = BoardEngine.RemoveSquareParts(squareList, 0, 0, board);
-                return (newSquare, ChessErr.None);
+                var squareList = BoardEngine.GetSquarePoints2(pos, square, board, 0);
+                return (squareList, ChessErr.None);
             }
 
             return (null, ChessErr.NoSquareFig);
