@@ -49,34 +49,12 @@ namespace board {
     }
 
     public static class BoardEngine {
-        public static (LastLinearPos, BoardErr) GetLastLinearPoint<T>(
-            Vector2Int pos,
+        public static Vector2Int GetLinearPoint(
+            Vector2Int start,
             LinearMovement linear,
-            Option<T>[,] board
+            int index
         ) {
-            if (board == null) {
-                return (new LastLinearPos(), BoardErr.BoardIsNull);
-            }
-
-            if (!IsOnBoard(pos, board)) {
-                return (new LastLinearPos(), BoardErr.PosOutsideBoard);
-            }
-
-            var movementLoc = LastLinearPos.Mk(Option<Vector2Int>.None());
-            for (int i = 1; i <= linear.length; i++) {
-                var nextPos = pos + i * linear.dir;
-                if (!IsOnBoard(nextPos, board)) {
-                    movementLoc = LastLinearPos.Mk(Option<Vector2Int>.None());
-                    return (movementLoc, BoardErr.None);
-                }
-
-                if (board[nextPos.x, nextPos.y].IsSome()) {
-                    movementLoc = LastLinearPos.Mk(Option<Vector2Int>.Some(nextPos));
-                    return (movementLoc, BoardErr.None);
-                }
-            }
-
-            return (movementLoc, BoardErr.None);
+            return start + linear.dir * index;
         }
 
         public static (int, BoardErr) GetLenUntilFig<T>(
@@ -112,24 +90,24 @@ namespace board {
         }
 
         public static (Option<Vector2Int>, BoardErr) GetSquarePoint(
-            Vector2Int pos,
+            Vector2Int center,
             SquareMovement square,
             int index
         ) {
             var point = new Vector2Int();
             var maxIndex = (square.side - 1) * 4;
             if (index < square.side - 1) {
-                point.x = pos.x - (square.side - 1) / 2;
-                point.y = pos.y - (square.side - 1) / 2 + index;
+                point.x = center.x - (square.side - 1) / 2;
+                point.y = center.y - (square.side - 1) / 2 + index;
             } else if (index < (square.side - 1) * 2) {
-                point.x = pos.x - 3 * (square.side - 1) / 2 + index;
-                point.y = pos.y + (square.side - 1) / 2;
+                point.x = center.x - 3 * (square.side - 1) / 2 + index;
+                point.y = center.y + (square.side - 1) / 2;
             } else if (index < (square.side - 1) * 3) {
-                point.x = pos.x + (square.side - 1) / 2;
-                point.y = pos.y + 5 * (square.side - 1) /2 - index;
+                point.x = center.x + (square.side - 1) / 2;
+                point.y = center.y + 5 * (square.side - 1) /2 - index;
             } else if (index < maxIndex) {
-                point.x = pos.x + 7 * (square.side - 1) / 2 - index;
-                point.y = pos.y - (square.side - 1) / 2;
+                point.x = center.x + 7 * (square.side - 1) / 2 - index;
+                point.y = center.y - (square.side - 1) / 2;
             } else {
                 return (Option<Vector2Int>.None(), BoardErr.None);
             }
@@ -138,7 +116,7 @@ namespace board {
         }
 
         public static (List<Vector2Int>, BoardErr) GetSquarePointsWithSkipValue<T>(
-            Vector2Int pos,
+            Vector2Int center,
             SquareMovement square,
             Option<T>[,] board,
             int skipValue
@@ -147,14 +125,14 @@ namespace board {
                 return (null, BoardErr.BoardIsNull);
             }
 
-            if (!IsOnBoard(pos, board)) {
+            if (!IsOnBoard(center, board)) {
                 return (null, BoardErr.PosOutsideBoard);
             }
 
             var maxIndex = (square.side - 1) * 4;
             var points = new List<Vector2Int>();
             for (int i = skipValue; i < maxIndex; i += 1 + skipValue) {
-                var (point, err) = GetSquarePoint(pos, square, i);
+                var (point, err) = GetSquarePoint(center, square, i);
                 if (err != BoardErr.None) {
                     return (null, BoardErr.SquarePointErr);
                 }

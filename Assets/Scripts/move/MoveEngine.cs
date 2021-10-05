@@ -3,7 +3,6 @@ using UnityEngine;
 using option;
 using board;
 using chess;
-using movements;
 
 namespace move {
     public enum MoveErr {
@@ -140,16 +139,14 @@ namespace move {
                 }
 
                 var linear = queenMovement.movement.linear.Value;
-                var (last, lastErr) = BoardEngine.GetLastLinearPoint(kingPos, linear, boardClone);
-                if (lastErr != BoardErr.None) {
-                    return (null, MoveErr.LastLinearPointErr);
-                }
-                if (last.pos.IsNone()) {
+                var last = BoardEngine.GetLinearPoint(kingPos, linear, linear.length);
+
+                if (boardClone[last.x, last.y].IsNone()) {
                     continue;
                 }
 
-                var attackFigOpt = boardClone[last.pos.Peel().x, last.pos.Peel().y];
-                var figCloneLoc = FigLoc.Mk(last.pos.Peel(), boardClone);
+                var attackFigOpt = boardClone[last.x, last.y];
+                var figCloneLoc = FigLoc.Mk(last, boardClone);
                 var (figMovements, lineErr) = GetPotentialLineFigMovements(figCloneLoc);
                 if (lineErr != MoveErr.None) {
                     return (null, MoveErr.FigMovesErr);
@@ -166,7 +163,7 @@ namespace move {
                         attackInfos.Add(
                             AttackInfo.Mk(
                                 Option<Vector2Int>.None(),
-                                FixedMovement.Mk(last.pos.Peel(), figMovement)
+                                FixedMovement.Mk(last, figMovement)
                             )
                         );
                     }
@@ -304,42 +301,88 @@ namespace move {
             }
 
             var fig = figOpt.Peel();
-            var figMovements = Movements.movements[fig.type];
-            var newFigMovements = new List<FigMovement>();
-            foreach (var figMovement in figMovements) {
-                if (figMovement.movement.square.HasValue) {
-                    return (figMovements, MoveErr.None);
-                }
-
-                var length = figMovement.movement.linear.Value.length;
-                var dir = figMovement.movement.linear.Value.dir;
-
-                if (fig.type == FigureType.Pawn) {
-                    if (fig.color == FigColor.Black) {
-                        dir = dir * -1;
-                    }
-
-                    if (fig.counter == 0 && figMovement.type == MoveType.Move) {
+            var figMovements = new List<FigMovement>();
+            switch (fig.type) {
+                case FigureType.Pawn:
+                    var length = 1;
+                    if (fig.counter == 0) {
                         length = 2;
                     }
-                }
 
-                var movement = Movement.Linear(LinearMovement.Mk(length, dir));
-                var newFigMovement = FigMovement.Mk(figMovement.type, movement);
-                var (movelengthRes, err) = ChessEngine.GetLengthFromMoveType(
-                    figLoc.pos,
-                    newFigMovement,
-                    figLoc.board
-                );
-                if (err != ChessErr.None) {
-                    return (null, MoveErr.MoveLengthErr);
-                }
-                var movelength = movelengthRes;
-                movement = Movement.Linear(LinearMovement.Mk(movelength, dir));
-                newFigMovements.Add(FigMovement.Mk(figMovement.type, movement));
+                    if (fig.color == FigColor.White) {
+                        figMovements = new List<FigMovement> {
+                            FigMovement.Linear(MoveType.Move, new Vector2Int(-1, 0), length),
+                            FigMovement.Linear(MoveType.Attack, new Vector2Int(-1, 1), 1),
+                            FigMovement.Linear(MoveType.Attack, new Vector2Int(-1, -1), 1)
+                        };
+                    }
+
+                    if (fig.color == FigColor.Black) {
+                        figMovements = new List<FigMovement> {
+                            FigMovement.Linear(MoveType.Move, new Vector2Int(1, 0), length),
+                            FigMovement.Linear(MoveType.Attack, new Vector2Int(1, 1), 1),
+                            FigMovement.Linear(MoveType.Attack, new Vector2Int(1, -1), 1)
+                        };
+                    }
+                    break;
+                case FigureType.Bishop:
+                    figMovements = new List<FigMovement> {
+                        FigMovement.Linear(MoveType.Move, new Vector2Int(1, 1), -1),
+                        FigMovement.Linear(MoveType.Move, new Vector2Int(-1, 1), -1),
+                        FigMovement.Linear(MoveType.Move, new Vector2Int(1, -1), -1),
+                        FigMovement.Linear(MoveType.Move, new Vector2Int(-1, -1), -1),
+                        FigMovement.Linear(MoveType.Attack, new Vector2Int(1, 1), -1),
+                        FigMovement.Linear(MoveType.Attack, new Vector2Int(-1, 1), -1),
+                        FigMovement.Linear(MoveType.Attack, new Vector2Int(1, -1), -1),
+                        FigMovement.Linear(MoveType.Attack, new Vector2Int(-1, -1), -1)
+                    };
+                    break;
+                case FigureType.Rook:
+                    figMovements = new List<FigMovement> {
+                        FigMovement.Linear(MoveType.Move, new Vector2Int(0, 1), -1),
+                        FigMovement.Linear(MoveType.Move, new Vector2Int(0, -1), -1),
+                        FigMovement.Linear(MoveType.Move, new Vector2Int(1, 0), -1),
+                        FigMovement.Linear(MoveType.Move, new Vector2Int(-1, 0), -1),
+                        FigMovement.Linear(MoveType.Attack, new Vector2Int(0, 1), -1),
+                        FigMovement.Linear(MoveType.Attack, new Vector2Int(0, -1), -1),
+                        FigMovement.Linear(MoveType.Attack, new Vector2Int(1, 0), -1),
+                        FigMovement.Linear(MoveType.Attack, new Vector2Int(-1, 0), -1)
+                    };
+                    break;
+                case FigureType.Knight:
+                    figMovements = new List<FigMovement> {
+                        FigMovement.Square(MoveType.Attack, 5)
+                    };
+                    break;
+                case FigureType.King:
+                    figMovements = new List<FigMovement> {
+                        FigMovement.Square(MoveType.Attack, 3)
+                    };
+                    break;
+                case FigureType.Queen:
+                    figMovements = new List<FigMovement> {
+                        FigMovement.Linear(MoveType.Move, new Vector2Int(1, 1), -1),
+                        FigMovement.Linear(MoveType.Move, new Vector2Int(-1, 1), -1),
+                        FigMovement.Linear(MoveType.Move, new Vector2Int(1, -1), -1),
+                        FigMovement.Linear(MoveType.Move, new Vector2Int(-1, -1), -1),
+                        FigMovement.Linear(MoveType.Move, new Vector2Int(0, 1), -1),
+                        FigMovement.Linear(MoveType.Move, new Vector2Int(0, -1), -1),
+                        FigMovement.Linear(MoveType.Move, new Vector2Int(1, 0), -1),
+                        FigMovement.Linear(MoveType.Move, new Vector2Int(-1, 0), -1),
+                        FigMovement.Linear(MoveType.Attack, new Vector2Int(1, 1), -1),
+                        FigMovement.Linear(MoveType.Attack, new Vector2Int(-1, 1), -1),
+                        FigMovement.Linear(MoveType.Attack, new Vector2Int(1, -1), -1),
+                        FigMovement.Linear(MoveType.Attack, new Vector2Int(-1, -1), -1),
+                        FigMovement.Linear(MoveType.Attack, new Vector2Int(0, 1), -1),
+                        FigMovement.Linear(MoveType.Attack, new Vector2Int(0, -1), -1),
+                        FigMovement.Linear(MoveType.Attack, new Vector2Int(1, 0), -1),
+                        FigMovement.Linear(MoveType.Attack, new Vector2Int(-1, 0), -1)
+                    };
+                    break;
             }
+            figMovements = ChessEngine.CorrectFigMovementsLength(figLoc, figMovements);
 
-            return (newFigMovements, MoveErr.None);
+            return (figMovements, MoveErr.None);
         }
         public static (List<MoveInfo>, MoveErr) GetLinearMoves(
             FigLoc figLoc,

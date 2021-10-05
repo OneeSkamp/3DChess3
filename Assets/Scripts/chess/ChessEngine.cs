@@ -43,6 +43,16 @@ namespace chess {
         public static FigMovement Mk(MoveType type, Movement movement) {
             return new FigMovement { type = type, movement = movement };
         }
+
+        public static FigMovement Linear(MoveType type, Vector2Int dir, int length) {
+            var movement = Movement.Linear(LinearMovement.Mk(length, dir));
+            return new FigMovement { type = type, movement = movement };
+        }
+
+        public static FigMovement Square(MoveType type, int side) {
+            var movement = Movement.Square(SquareMovement.Mk(side));
+            return new FigMovement { type = type, movement = movement };
+        }
     }
 
     public struct FixedMovement {
@@ -101,6 +111,53 @@ namespace chess {
     }
 
     public static class ChessEngine {
+        public static List<FigMovement> CorrectFigMovementsLength(
+            FigLoc figLoc,
+            List<FigMovement> baseFigMovements
+        ) {
+            var figMovements = new List<FigMovement>();
+            foreach (var baseFigMovement in baseFigMovements) {
+                if (baseFigMovement.movement.square.HasValue) {
+                    return baseFigMovements;
+                }
+
+                if (baseFigMovement.movement.linear.HasValue) {
+                    var figMovement = new FigMovement();
+                    var linear = baseFigMovement.movement.linear.Value;
+                    var length = linear.length;
+                    var (maxLength, err) = BoardEngine.GetLenUntilFig(figLoc.pos,linear, figLoc.board);
+
+                    if (length < 0) {
+                    length = maxLength;
+                    }
+
+                    var lastLinearPoint = BoardEngine.GetLinearPoint(figLoc.pos, linear, length);
+                    if (baseFigMovement.type == MoveType.Move) {
+                        if (BoardEngine.IsOnBoard(lastLinearPoint, figLoc.board)) {
+                            if (figLoc.board[lastLinearPoint.x, lastLinearPoint.y].IsSome()) {
+                                length--;
+                            }
+                        }
+                    }
+
+                    if (baseFigMovement.type == MoveType.Attack) {
+                        if (BoardEngine.IsOnBoard(lastLinearPoint, figLoc.board)) {
+                            if (figLoc.board[lastLinearPoint.x, lastLinearPoint.y].IsNone()) {
+                                length--;
+                            }
+                        }
+                    }
+                    figMovement = FigMovement.Mk(
+                        baseFigMovement.type,
+                        Movement.Linear(LinearMovement.Mk(length, linear.dir))
+                    );
+
+                    figMovements.Add(figMovement);
+                }
+            }
+
+            return figMovements;
+        }
         public static (int, ChessErr) GetLengthFromMoveType(
             Vector2Int pos,
             FigMovement figMovement,
@@ -129,20 +186,21 @@ namespace chess {
                 length = maxLength;
             }
 
-            var (lastLinearPoint, error) = BoardEngine.GetLastLinearPoint(pos, linear, board);
-            if (error != BoardErr.None) {
-                return (-1, ChessErr.LastLinearPosErr);
-            }
+            var lastLinearPoint = BoardEngine.GetLinearPoint(pos, linear, length);
 
             if (figMovement.type == MoveType.Move) {
-                if (lastLinearPoint.pos.IsSome()) {
-                    length--;
+                if (BoardEngine.IsOnBoard(lastLinearPoint, board)) {
+                    if (board[lastLinearPoint.x, lastLinearPoint.y].IsSome()) {
+                        length--;
+                    }
                 }
             }
 
             if (figMovement.type == MoveType.Attack) {
-                if (lastLinearPoint.pos.IsNone()) {
-                    length--;
+                if (BoardEngine.IsOnBoard(lastLinearPoint, board)) {
+                    if (board[lastLinearPoint.x, lastLinearPoint.y].IsNone()) {
+                        length--;
+                    }
                 }
             }
 
