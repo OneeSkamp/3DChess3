@@ -40,39 +40,38 @@ namespace board {
         }
     }
 
-    public struct MovementLoc {
-        public int index;
+    public struct LastLinearPos {
         public Option<Vector2Int> pos;
 
-        public static MovementLoc Mk(int index, Option<Vector2Int> pos) {
-            return new MovementLoc { index = index, pos = pos };
+        public static LastLinearPos Mk(Option<Vector2Int> pos) {
+            return new LastLinearPos { pos = pos };
         }
     }
 
     public static class BoardEngine {
-        public static (MovementLoc, BoardErr) GetLastLinearPoint<T>(
+        public static (LastLinearPos, BoardErr) GetLastLinearPoint<T>(
             Vector2Int pos,
             LinearMovement linear,
             Option<T>[,] board
         ) {
             if (board == null) {
-                return (new MovementLoc(), BoardErr.BoardIsNull);
+                return (new LastLinearPos(), BoardErr.BoardIsNull);
             }
 
             if (!IsOnBoard(pos, board)) {
-                return (new MovementLoc(), BoardErr.PosOutsideBoard);
+                return (new LastLinearPos(), BoardErr.PosOutsideBoard);
             }
 
-            var movementLoc = MovementLoc.Mk(linear.length, Option<Vector2Int>.None());
+            var movementLoc = LastLinearPos.Mk(Option<Vector2Int>.None());
             for (int i = 1; i <= linear.length; i++) {
                 var nextPos = pos + i * linear.dir;
                 if (!IsOnBoard(nextPos, board)) {
-                    movementLoc = MovementLoc.Mk(i - 1, Option<Vector2Int>.None());
+                    movementLoc = LastLinearPos.Mk(Option<Vector2Int>.None());
                     return (movementLoc, BoardErr.None);
                 }
 
                 if (board[nextPos.x, nextPos.y].IsSome()) {
-                    movementLoc = MovementLoc.Mk(i, Option<Vector2Int>.Some(nextPos));
+                    movementLoc = LastLinearPos.Mk(Option<Vector2Int>.Some(nextPos));
                     return (movementLoc, BoardErr.None);
                 }
             }

@@ -135,6 +135,10 @@ namespace move {
             var attackInfos = new List<AttackInfo>();
 
             foreach (var queenMovement in queenMovements) {
+                if (queenMovement.movement.square.HasValue) {
+                    continue;
+                }
+
                 var linear = queenMovement.movement.linear.Value;
                 var (last, lastErr) = BoardEngine.GetLastLinearPoint(kingPos, linear, boardClone);
                 if (lastErr != BoardErr.None) {
@@ -262,6 +266,10 @@ namespace move {
 
                     var defPos = lineAttackInfo.defPos.Peel();
                     if (defPos != figLoc.pos) {
+                        continue;
+                    }
+
+                    if (figMovement.movement.square.HasValue) {
                         continue;
                     }
 
