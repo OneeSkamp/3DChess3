@@ -31,7 +31,9 @@ namespace chess {
         NoFigureOnPos,
         NoSquareFig,
         MaxLengthErr,
-        LastLinearPosErr
+        LastLinearPosErr,
+        SquarePointsErr,
+        FigMovementHasSquareMovement,
     }
 
     public struct FigMovement {
@@ -77,7 +79,6 @@ namespace chess {
     public struct MoveInfo {
         public DoubleMove move;
         public Vector2Int? sentenced;
-        public Vector2Int? shadow;
         public Vector2Int? promote;
     }
 
@@ -100,7 +101,7 @@ namespace chess {
     }
 
     public static class ChessEngine {
-        public static (int, ChessErr) GetMoveLength(
+        public static (int, ChessErr) GetLengthFromMoveType(
             Vector2Int pos,
             FigMovement figMovement,
             Option<Fig>[,] board
@@ -110,7 +111,11 @@ namespace chess {
             }
 
             if (!BoardEngine.IsOnBoard(pos, board)) {
-                return(-1, ChessErr.PosOutsideBoard);
+                return (-1, ChessErr.PosOutsideBoard);
+            }
+
+            if (figMovement.movement.square.HasValue) {
+                return (-1, ChessErr.FigMovementHasSquareMovement);
             }
 
             var linear = figMovement.movement.linear.Value;
@@ -144,16 +149,15 @@ namespace chess {
             return (length, ChessErr.None);
         }
 
-        public static (List<Vector2Int>, ChessErr) GetRealSquarePoints(
-            Vector2Int pos,
-            SquareMovement square,
-            Option<Fig>[,] board
+        public static (List<Vector2Int>, ChessErr) GetFigureSquarePoints(
+            FigLoc figLoc,
+            SquareMovement square
         ) {
-            if (board == null) {
+            if (figLoc.board == null) {
                 return (null, ChessErr.BoardIsNull);
             }
 
-            var figOpt = board[pos.x, pos.y];
+            var figOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
             if (figOpt.IsNone()) {
                 return (null, ChessErr.NoFigureOnPos);
             }
@@ -161,12 +165,29 @@ namespace chess {
             var fig = figOpt.Peel();
 
             if (fig.type == FigureType.Knight) {
-                var squareList = BoardEngine.GetSquarePoints2(pos, square, board, 1);
+                var (squareList, err) = BoardEngine.GetSquarePointsWithSkipValue(
+                    figLoc.pos, square,
+                    figLoc.board,
+                    1
+                );
+                if (err != BoardErr.None) {
+                    return (null, ChessErr.SquarePointsErr);
+                }
+
                 return (squareList, ChessErr.None);
             }
 
             if (fig.type == FigureType.King) {
-                var squareList = BoardEngine.GetSquarePoints2(pos, square, board, 0);
+                var (squareList, err) = BoardEngine.GetSquarePointsWithSkipValue(
+                    figLoc.pos,
+                    square,
+                    figLoc.board,
+                    0
+                );
+                if (err != BoardErr.None) {
+                    return (null, ChessErr.SquarePointsErr);
+                }
+
                 return (squareList, ChessErr.None);
             }
 

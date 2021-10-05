@@ -7,6 +7,7 @@ namespace board {
         None,
         PosOutsideBoard,
         BoardIsNull,
+        SquarePointErr
     }
 
     public struct LinearMovement {
@@ -111,7 +112,11 @@ namespace board {
             return (length, BoardErr.None);
         }
 
-        public static Option<Vector2Int> GetSquarePoint(Vector2Int pos, SquareMovement square, int index) {
+        public static (Option<Vector2Int>, BoardErr) GetSquarePoint(
+            Vector2Int pos,
+            SquareMovement square,
+            int index
+        ) {
             var point = new Vector2Int();
             var maxIndex = (square.side - 1) * 4;
             if (index < square.side - 1) {
@@ -127,22 +132,33 @@ namespace board {
                 point.x = pos.x + 7 * (square.side - 1) / 2 - index;
                 point.y = pos.y - (square.side - 1) / 2;
             } else {
-                return Option<Vector2Int>.None();
+                return (Option<Vector2Int>.None(), BoardErr.None);
             }
 
-            return Option<Vector2Int>.Some(point);
+            return (Option<Vector2Int>.Some(point), BoardErr.None);
         }
 
-        public static List<Vector2Int> GetSquarePoints2<T>(
+        public static (List<Vector2Int>, BoardErr) GetSquarePointsWithSkipValue<T>(
             Vector2Int pos,
             SquareMovement square,
             Option<T>[,] board,
             int skipValue
         ) {
+            if (board == null) {
+                return (null, BoardErr.BoardIsNull);
+            }
+
+            if (!IsOnBoard(pos, board)) {
+                return (null, BoardErr.PosOutsideBoard);
+            }
+
             var maxIndex = (square.side - 1) * 4;
             var points = new List<Vector2Int>();
             for (int i = skipValue; i < maxIndex; i += 1 + skipValue) {
-                var point = GetSquarePoint(pos, square, i);
+                var (point, err) = GetSquarePoint(pos, square, i);
+                if (err != BoardErr.None) {
+                    return (null, BoardErr.SquarePointErr);
+                }
                 if (point.IsSome()) {
                     if (IsOnBoard(point.Peel(), board)) {
                         points.Add(point.Peel());
@@ -150,7 +166,7 @@ namespace board {
                 }
             }
 
-            return points;
+            return (points, BoardErr.None);
         }
 
         public static Option<T>[,] CopyBoard<T>(Option<T>[,] board) {

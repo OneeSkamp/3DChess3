@@ -20,7 +20,9 @@ namespace move {
         LinearMovesErr,
         SquareMovesErr,
         SquarePointsErr,
-        LastLinearPointErr
+        LastLinearPointErr,
+        PotentialAttackInfosErr,
+        BoardWithoutColorErr
     }
 
     public struct KingsPos {
@@ -38,12 +40,12 @@ namespace move {
     }
 
     public class MoveEngine {
-        public static Result<Option<Fig>[,], MoveErr> GetBoardWithoutColor(
+        public static (Option<Fig>[,], MoveErr) GetBoardWithoutColor(
             Option<Fig>[,] board,
             FigColor color
         ) {
             if (board == null) {
-                return Result<Option<Fig>[,], MoveErr>.Err(MoveErr.BoardIsNull);
+                return (new Option<Fig>[1,1], MoveErr.BoardIsNull);
             }
 
             var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
@@ -61,7 +63,7 @@ namespace move {
                 }
             }
 
-            return Result<Option<Fig>[,], MoveErr>.Ok(boardClone);
+            return (boardClone, MoveErr.None);
         }
 
         public static Result<KingsPos, MoveErr> FindKingsPos(Option<Fig>[,] board) {
@@ -105,11 +107,10 @@ namespace move {
             }
 
             var color = figOpt.Peel().color;
-            var boardCloneRes = GetBoardWithoutColor(figLoc.board, color);
-            if (boardCloneRes.IsErr()) {
-                return (null, boardCloneRes.AsErr());
+            var (boardClone, err) = GetBoardWithoutColor(figLoc.board, color);
+            if (err != MoveErr.None) {
+                return (null, MoveErr.BoardWithoutColorErr);
             }
-            var boardClone = boardCloneRes.AsOk();
 
             var kingsPosRes = FindKingsPos(figLoc.board);
             if (kingsPosRes.IsErr()) {
@@ -126,8 +127,8 @@ namespace move {
             );
 
             var queenCloneLoc = FigLoc.Mk(kingPos, boardClone);
-            var (queenMovements, err) = GetPotentialFigMovements(queenCloneLoc);
-            if (err != MoveErr.None) {
+            var (queenMovements, error) = GetPotentialLineFigMovements(queenCloneLoc);
+            if (error != MoveErr.None) {
                 return (null, MoveErr.FigMovesErr);
             }
 
@@ -145,8 +146,8 @@ namespace move {
 
                 var attackFigOpt = boardClone[last.pos.Peel().x, last.pos.Peel().y];
                 var figCloneLoc = FigLoc.Mk(last.pos.Peel(), boardClone);
-                var (figMovements, error) = GetPotentialFigMovements(figCloneLoc);
-                if (error != MoveErr.None) {
+                var (figMovements, lineErr) = GetPotentialLineFigMovements(figCloneLoc);
+                if (lineErr != MoveErr.None) {
                     return (null, MoveErr.FigMovesErr);
                 }
                 foreach (var figMovement in figMovements) {
@@ -172,7 +173,19 @@ namespace move {
         }
 
         public static (List<AttackInfo>, MoveErr) GetLinearAttackInfo(FigLoc figLoc) {
+            if (figLoc.board == null) {
+                return (null, MoveErr.BoardIsNull);
+            }
+
+            var figOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
+            if (figOpt.IsNone()) {
+                return (null, MoveErr.NoFigureOnPos);
+            }
+
             var (potencialAttackInfos, err) = GetPotentialAttackInfos(figLoc);
+            if (err != MoveErr.None) {
+                return (null, MoveErr.PotentialAttackInfosErr);
+            }
 
             var attackInfos = new List<AttackInfo>();
             foreach (var potAttack in potencialAttackInfos) {
@@ -190,12 +203,12 @@ namespace move {
                         break;
                     }
 
-                    var figOpt = figLoc.board[nextPos.x, nextPos.y];
-                    if (figOpt.IsNone()) {
+                    var nextFigOpt = figLoc.board[nextPos.x, nextPos.y];
+                    if (nextFigOpt.IsNone()) {
                         continue;
                     }
 
-                    var fig = figOpt.Peel();
+                    var fig = nextFigOpt.Peel();
                     if (fig.color != attackFig.Peel().color && fig.type != FigureType.King) {
                         defPos = nextPos;
                         counter++;
@@ -221,7 +234,16 @@ namespace move {
         }
 
         public static (List<FigMovement>, MoveErr) GetFigMovements(FigLoc figLoc) {
-            var (potencialFigMovements, err) = GetPotentialFigMovements(figLoc);
+            if (figLoc.board == null) {
+                return (null, MoveErr.BoardIsNull);
+            }
+
+            var figOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
+            if (figOpt.IsNone()) {
+                return (null, MoveErr.NoFigureOnPos);
+            }
+
+            var (potencialFigMovements, err) = GetPotentialLineFigMovements(figLoc);
             var (linearAttackInfos, error) = GetLinearAttackInfo(figLoc);
 
             var realFigMovement = new FigMovement();
@@ -263,7 +285,7 @@ namespace move {
             return (potencialFigMovements, MoveErr.None);
         }
 
-        public static (List<FigMovement>, MoveErr) GetPotentialFigMovements(FigLoc figLoc) {
+        public static (List<FigMovement>, MoveErr) GetPotentialLineFigMovements(FigLoc figLoc) {
             if (figLoc.board == null) {
                 return (null, MoveErr.BoardIsNull);
             }
@@ -296,7 +318,7 @@ namespace move {
 
                 var movement = Movement.Linear(LinearMovement.Mk(length, dir));
                 var newFigMovement = FigMovement.Mk(figMovement.type, movement);
-                var (movelengthRes, err) = ChessEngine.GetMoveLength(
+                var (movelengthRes, err) = ChessEngine.GetLengthFromMoveType(
                     figLoc.pos,
                     newFigMovement,
                     figLoc.board
@@ -312,29 +334,33 @@ namespace move {
             return (newFigMovements, MoveErr.None);
         }
         public static (List<MoveInfo>, MoveErr) GetLinearMoves(
-            Vector2Int pos,
-            LinearMovement linear,
-            Option<Fig>[,] board
+            FigLoc figLoc,
+            LinearMovement linear
         ) {
-            if (board == null) {
+            if (figLoc.board == null) {
                 return (null, MoveErr.BoardIsNull);
+            }
+
+            var figOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
+            if (figOpt.IsNone()) {
+                return (null, MoveErr.NoFigureOnPos);
             }
 
             var linearMoves = new List<MoveInfo>();
             for (int i = 1; i <= linear.length; i++) {
-                var to = pos + i * linear.dir;
-                var move = Move.Mk(pos, to);
+                var to = figLoc.pos + i * linear.dir;
+                var move = Move.Mk(figLoc.pos, to);
                 var moveInfo = new MoveInfo();
 
-                if (!BoardEngine.IsOnBoard(to, board)) {
+                if (!BoardEngine.IsOnBoard(to, figLoc.board)) {
                     break;
                 }
 
-                if (board[to.x, to.y].IsSome()) {
+                if (figLoc.board[to.x, to.y].IsSome()) {
                     moveInfo.sentenced = to;
                 }
 
-                if (ChessEngine.IsPossibleMove(move, board)) {
+                if (ChessEngine.IsPossibleMove(move, figLoc.board)) {
                     moveInfo.move = DoubleMove.Mk(move, null);
                     linearMoves.Add(moveInfo);
                 }
@@ -344,15 +370,14 @@ namespace move {
         }
 
         public static (List<MoveInfo>, MoveErr) GetSquareMoves(
-            Vector2Int pos,
-            SquareMovement square,
-            Option<Fig>[,] board
+            FigLoc figLoc,
+            SquareMovement square
         ) {
-            if (board == null) {
+            if (figLoc.board == null) {
                 return (null, MoveErr.BoardIsNull);
             }
 
-            var (squarePointsRes, err) = ChessEngine.GetRealSquarePoints(pos, square, board);
+            var (squarePointsRes, err) = ChessEngine.GetFigureSquarePoints(figLoc, square);
             if (err != ChessErr.None) {
                 return (null, MoveErr.SquareMovesErr);
             }
@@ -361,14 +386,14 @@ namespace move {
             var squareMoves = new List<MoveInfo>();
             foreach (var point in squarePoints) {
                 var to = point;
-                var move = Move.Mk(pos, to);
+                var move = Move.Mk(figLoc.pos, to);
                 var moveInfo = new MoveInfo();
 
-                if (board[to.x, to.y].IsSome()) {
+                if (figLoc.board[to.x, to.y].IsSome()) {
                     moveInfo.sentenced = to;
                 }
 
-                if (ChessEngine.IsPossibleMove(move, board)) {
+                if (ChessEngine.IsPossibleMove(move, figLoc.board)) {
                     moveInfo.move = DoubleMove.Mk(move, null);
                     squareMoves.Add(moveInfo);
                 }
@@ -397,7 +422,7 @@ namespace move {
                 var fixedMovement = FixedMovement.Mk(figLoc.pos, figMovement);
                 if (figMovement.movement.linear.HasValue) {
                     var linear = figMovement.movement.linear.Value;
-                    var (linearMovesRes, error) = GetLinearMoves(figLoc.pos, linear, figLoc.board);
+                    var (linearMovesRes, error) = GetLinearMoves(figLoc, linear);
                     if (error != MoveErr.None) {
                         return (null, MoveErr.LinearMovesErr);
                     }
@@ -406,7 +431,7 @@ namespace move {
                     figMoves.AddRange(linearMoves);
                 } else if (figMovement.movement.square.HasValue) {
                     var square = figMovement.movement.square.Value;
-                    var (squareMovesRes, error) = GetSquareMoves(figLoc.pos, square, figLoc.board);
+                    var (squareMovesRes, error) = GetSquareMoves(figLoc, square);
                     if (error != MoveErr.None) {
                         return (null, MoveErr.SquareMovesErr);
                     }
