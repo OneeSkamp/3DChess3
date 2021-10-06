@@ -100,6 +100,14 @@ namespace controller {
             map.startBoard = BoardEngine.CopyBoard(map.board);
         }
 
+        private void Start() {
+            var n1 = MoveEngine.GetSegmentInfo(new Vector2Int(2, 1), new Vector2Int(4,3));
+            var n2 = MoveEngine.GetSegmentInfo(new Vector2Int(2,3), new Vector2Int(4,1));
+
+            var a = MoveEngine.GetIntersectionPoint(n1, n2);
+            Debug.Log(a.Peel());
+        }
+
         private void Update() {
             if (!Input.GetMouseButtonDown(0)) {
                 return;

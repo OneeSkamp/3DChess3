@@ -158,54 +158,6 @@ namespace chess {
 
             return figMovements;
         }
-        public static (int, ChessErr) GetLengthFromMoveType(
-            Vector2Int pos,
-            FigMovement figMovement,
-            Option<Fig>[,] board
-        ) {
-            if (board == null) {
-                return (-1, ChessErr.BoardIsNull);
-            }
-
-            if (!BoardEngine.IsOnBoard(pos, board)) {
-                return (-1, ChessErr.PosOutsideBoard);
-            }
-
-            if (figMovement.movement.square.HasValue) {
-                return (-1, ChessErr.FigMovementHasSquareMovement);
-            }
-
-            var linear = figMovement.movement.linear.Value;
-            var length = figMovement.movement.linear.Value.length;
-            var (maxLengthRes, err) = BoardEngine.GetLenUntilFig(pos,linear, board);
-            if (err != BoardErr.None) {
-                return (-1, ChessErr.MaxLengthErr);
-            }
-            var maxLength = maxLengthRes;
-            if (length < 0) {
-                length = maxLength;
-            }
-
-            var lastLinearPoint = BoardEngine.GetLinearPoint(pos, linear, length);
-
-            if (figMovement.type == MoveType.Move) {
-                if (BoardEngine.IsOnBoard(lastLinearPoint, board)) {
-                    if (board[lastLinearPoint.x, lastLinearPoint.y].IsSome()) {
-                        length--;
-                    }
-                }
-            }
-
-            if (figMovement.type == MoveType.Attack) {
-                if (BoardEngine.IsOnBoard(lastLinearPoint, board)) {
-                    if (board[lastLinearPoint.x, lastLinearPoint.y].IsNone()) {
-                        length--;
-                    }
-                }
-            }
-
-            return (length, ChessErr.None);
-        }
 
         public static (List<Vector2Int>, ChessErr) GetFigureSquarePoints(
             FigLoc figLoc,
