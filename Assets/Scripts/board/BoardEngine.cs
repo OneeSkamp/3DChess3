@@ -20,10 +20,10 @@ namespace board {
     }
 
     public struct SquareMovement {
-        public int side;
+        public int halfSide;
 
-        public static SquareMovement Mk(int side) {
-            return new SquareMovement { side = side };
+        public static SquareMovement Mk(int halfSide) {
+            return new SquareMovement { halfSide = halfSide };
         }
     }
 
@@ -95,19 +95,19 @@ namespace board {
             int index
         ) {
             var point = new Vector2Int();
-            var maxIndex = (square.side - 1) * 4;
-            if (index < square.side - 1) {
-                point.x = center.x - (square.side - 1) / 2;
-                point.y = center.y - (square.side - 1) / 2 + index;
-            } else if (index < (square.side - 1) * 2) {
-                point.x = center.x - 3 * (square.side - 1) / 2 + index;
-                point.y = center.y + (square.side - 1) / 2;
-            } else if (index < (square.side - 1) * 3) {
-                point.x = center.x + (square.side - 1) / 2;
-                point.y = center.y + 5 * (square.side - 1) /2 - index;
+            var maxIndex = square.halfSide * 8;
+            if (index < square.halfSide * 2) {
+                point.x = center.x - square.halfSide;
+                point.y = center.y - square.halfSide + index;
+            } else if (index < square.halfSide * 4) {
+                point.x = center.x - 3 * square.halfSide + index;
+                point.y = center.y + square.halfSide;
+            } else if (index < square.halfSide * 6) {
+                point.x = center.x + square.halfSide;
+                point.y = center.y + 5 * square.halfSide - index;
             } else if (index < maxIndex) {
-                point.x = center.x + 7 * (square.side - 1) / 2 - index;
-                point.y = center.y - (square.side - 1) / 2;
+                point.x = center.x + 7 * square.halfSide - index;
+                point.y = center.y - square.halfSide;
             } else {
                 return (Option<Vector2Int>.None(), BoardErr.None);
             }
@@ -129,7 +129,7 @@ namespace board {
                 return (null, BoardErr.PosOutsideBoard);
             }
 
-            var maxIndex = (square.side - 1) * 4;
+            var maxIndex = square.halfSide * 8;
             var points = new List<Vector2Int>();
             for (int i = skipValue; i < maxIndex; i += 1 + skipValue) {
                 var (point, err) = GetSquarePoint(center, square, i);

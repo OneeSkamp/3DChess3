@@ -125,7 +125,11 @@ namespace chess {
                     var figMovement = new FigMovement();
                     var linear = baseFigMovement.movement.linear.Value;
                     var length = linear.length;
-                    var (maxLength, err) = BoardEngine.GetLenUntilFig(figLoc.pos,linear, figLoc.board);
+                    var (maxLength, err) = BoardEngine.GetLenUntilFig(
+                        figLoc.pos,
+                        linear,
+                        figLoc.board
+                    );
 
                     if (length < 0) {
                     length = maxLength;
