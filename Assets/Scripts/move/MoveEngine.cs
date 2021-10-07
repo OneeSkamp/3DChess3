@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using option;
@@ -118,14 +119,14 @@ namespace move {
                         attackLinear,
                         attackLinear.length
                     );
-                    var attackSegmentInfo = MathEngine.GetSegmentInfo(attackStart, attackEnd);
+                    var attackSegmentInfo = MathEngine.FormStrLine(attackStart, attackEnd);
                     var figLinear = figMovement.movement.linear.Value;
                     var figEnd = BoardEngine.GetLinearPoint(
                         figLoc.pos,
                         figLinear,
                         figLinear.length
                     );
-                    var figSegmentInfo = MathEngine.GetSegmentInfo(figLoc.pos, figEnd);
+                    var figSegmentInfo = MathEngine.FormStrLine(figLoc.pos, figEnd);
                     var attackSegment = Segment.Mk(attackStart, attackEnd);
                     var figSegment = Segment.Mk(figLoc.pos, figEnd);
                     var point = MathEngine.GetIntersectionPoint(attackSegmentInfo, figSegmentInfo);
@@ -378,28 +379,12 @@ namespace move {
                     }
                     break;
                 case FigureType.Bishop:
-                    figMovements = new List<FigMovement> {
-                        FigMovement.Linear(MoveType.Move, new Vector2Int(1, 1), -1),
-                        FigMovement.Linear(MoveType.Move, new Vector2Int(-1, 1), -1),
-                        FigMovement.Linear(MoveType.Move, new Vector2Int(1, -1), -1),
-                        FigMovement.Linear(MoveType.Move, new Vector2Int(-1, -1), -1),
-                        FigMovement.Linear(MoveType.Attack, new Vector2Int(1, 1), -1),
-                        FigMovement.Linear(MoveType.Attack, new Vector2Int(-1, 1), -1),
-                        FigMovement.Linear(MoveType.Attack, new Vector2Int(1, -1), -1),
-                        FigMovement.Linear(MoveType.Attack, new Vector2Int(-1, -1), -1)
-                    };
+                    Func<int, int, bool> bishopCond = (int i, int j) => i == 0 || j == 0;
+                    figMovements = CreateFigMovements(bishopCond);
                     break;
                 case FigureType.Rook:
-                    figMovements = new List<FigMovement> {
-                        FigMovement.Linear(MoveType.Move, new Vector2Int(0, 1), -1),
-                        FigMovement.Linear(MoveType.Move, new Vector2Int(0, -1), -1),
-                        FigMovement.Linear(MoveType.Move, new Vector2Int(1, 0), -1),
-                        FigMovement.Linear(MoveType.Move, new Vector2Int(-1, 0), -1),
-                        FigMovement.Linear(MoveType.Attack, new Vector2Int(0, 1), -1),
-                        FigMovement.Linear(MoveType.Attack, new Vector2Int(0, -1), -1),
-                        FigMovement.Linear(MoveType.Attack, new Vector2Int(1, 0), -1),
-                        FigMovement.Linear(MoveType.Attack, new Vector2Int(-1, 0), -1)
-                    };
+                    Func<int, int, bool> rookCond = (int i, int j) => i == j || -i == j || i == -j;
+                    figMovements = CreateFigMovements(rookCond);
                     break;
                 case FigureType.Knight:
                     figMovements = new List<FigMovement> {
@@ -412,29 +397,28 @@ namespace move {
                     };
                     break;
                 case FigureType.Queen:
-                    figMovements = new List<FigMovement> {
-                        FigMovement.Linear(MoveType.Move, new Vector2Int(1, 1), -1),
-                        FigMovement.Linear(MoveType.Move, new Vector2Int(-1, 1), -1),
-                        FigMovement.Linear(MoveType.Move, new Vector2Int(1, -1), -1),
-                        FigMovement.Linear(MoveType.Move, new Vector2Int(-1, -1), -1),
-                        FigMovement.Linear(MoveType.Move, new Vector2Int(0, 1), -1),
-                        FigMovement.Linear(MoveType.Move, new Vector2Int(0, -1), -1),
-                        FigMovement.Linear(MoveType.Move, new Vector2Int(1, 0), -1),
-                        FigMovement.Linear(MoveType.Move, new Vector2Int(-1, 0), -1),
-                        FigMovement.Linear(MoveType.Attack, new Vector2Int(1, 1), -1),
-                        FigMovement.Linear(MoveType.Attack, new Vector2Int(-1, 1), -1),
-                        FigMovement.Linear(MoveType.Attack, new Vector2Int(1, -1), -1),
-                        FigMovement.Linear(MoveType.Attack, new Vector2Int(-1, -1), -1),
-                        FigMovement.Linear(MoveType.Attack, new Vector2Int(0, 1), -1),
-                        FigMovement.Linear(MoveType.Attack, new Vector2Int(0, -1), -1),
-                        FigMovement.Linear(MoveType.Attack, new Vector2Int(1, 0), -1),
-                        FigMovement.Linear(MoveType.Attack, new Vector2Int(-1, 0), -1)
-                    };
+                    Func<int, int, bool> condition = (int i, int j) => i == 0 && j == 0;
+                    figMovements = CreateFigMovements(condition);
                     break;
             }
             figMovements = ChessEngine.CorrectFigMovementsLength(figLoc, figMovements);
 
             return (figMovements, MoveErr.None);
+        }
+
+        public static List<FigMovement> CreateFigMovements(Func<int, int, bool> condition) {
+            var figMovements = new List<FigMovement>();
+            for (int i = -1; i <= 1; i++) {
+                for (int j = -1; j <= 1; j++) {
+                    if (condition(i, j)) continue;
+
+                    var dir = new Vector2Int(i, j);
+                    figMovements.Add(FigMovement.Linear(MoveType.Move, dir, -1));
+                    figMovements.Add(FigMovement.Linear(MoveType.Attack, dir, -1));
+                }
+            }
+
+            return figMovements;
         }
 
         public static (List<MoveInfo>, MoveErr) GetLinearMoves(
