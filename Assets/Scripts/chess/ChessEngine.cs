@@ -125,21 +125,23 @@ namespace chess {
                     var figMovement = new FigMovement();
                     var linear = baseFigMovement.movement.linear.Value;
                     var length = linear.length;
-                    var (maxLength, err) = BoardEngine.GetLenUntilFig(
-                        figLoc.pos,
-                        linear,
-                        figLoc.board
-                    );
-
                     if (length < 0) {
-                    length = maxLength;
+                        length = Mathf.Max(figLoc.board.GetLength(0), figLoc.board.GetLength(1));
                     }
 
-                    var lastLinearPoint = BoardEngine.GetLinearPoint(figLoc.pos, linear, length);
+                    var (reslength, err) = BoardEngine.GetLenUntilFig(
+                        figLoc.pos,
+                        linear,
+                        figLoc.board,
+                        length
+                    );
+
+
+                    var lastLinearPoint = BoardEngine.GetLinearPoint(figLoc.pos, linear, reslength);
                     if (baseFigMovement.type == MoveType.Move) {
                         if (BoardEngine.IsOnBoard(lastLinearPoint, figLoc.board)) {
                             if (figLoc.board[lastLinearPoint.x, lastLinearPoint.y].IsSome()) {
-                                length--;
+                                reslength--;
                             }
                         }
                     }
@@ -147,13 +149,13 @@ namespace chess {
                     if (baseFigMovement.type == MoveType.Attack) {
                         if (BoardEngine.IsOnBoard(lastLinearPoint, figLoc.board)) {
                             if (figLoc.board[lastLinearPoint.x, lastLinearPoint.y].IsNone()) {
-                                length--;
+                                reslength--;
                             }
                         }
                     }
                     figMovement = FigMovement.Mk(
                         baseFigMovement.type,
-                        Movement.Linear(LinearMovement.Mk(length, linear.dir))
+                        Movement.Linear(LinearMovement.Mk(reslength, linear.dir))
                     );
 
                     figMovements.Add(figMovement);

@@ -60,7 +60,8 @@ namespace board {
         public static (int, BoardErr) GetLenUntilFig<T>(
             Vector2Int pos,
             LinearMovement linear,
-            Option<T>[,] board
+            Option<T>[,] board,
+            int maxLength
         ) {
             if (board == null) {
                 return (-1, BoardErr.BoardIsNull);
@@ -70,7 +71,6 @@ namespace board {
                 return (-1, BoardErr.PosOutsideBoard);
             }
 
-            var maxLength = Mathf.Max(board.GetLength(0), board.GetLength(1));
             var length = 0;
 
             for (int i = 1; i <= maxLength; i++) {
