@@ -125,9 +125,6 @@ namespace chess {
                     var figMovement = new FigMovement();
                     var linear = baseFigMovement.movement.linear.Value;
                     var length = linear.length;
-                    if (length < 0) {
-                        length = Mathf.Max(figLoc.board.GetLength(0), figLoc.board.GetLength(1));
-                    }
 
                     var (reslength, err) = BoardEngine.GetLenUntilFig(
                         figLoc.pos,
@@ -136,8 +133,16 @@ namespace chess {
                         length
                     );
 
+                    if (reslength == 0) {
+                        continue;
+                    }
 
-                    var lastLinearPoint = BoardEngine.GetLinearPoint(figLoc.pos, linear, reslength);
+                    var lastLinearPoint = BoardEngine.GetLinearPoint(
+                        figLoc.pos,
+                        linear,
+                        reslength
+                    );
+
                     if (baseFigMovement.type == MoveType.Move) {
                         if (BoardEngine.IsOnBoard(lastLinearPoint, figLoc.board)) {
                             if (figLoc.board[lastLinearPoint.x, lastLinearPoint.y].IsSome()) {
@@ -153,6 +158,7 @@ namespace chess {
                             }
                         }
                     }
+
                     figMovement = FigMovement.Mk(
                         baseFigMovement.type,
                         Movement.Linear(LinearMovement.Mk(reslength, linear.dir))

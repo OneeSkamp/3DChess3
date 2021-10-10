@@ -54,6 +54,7 @@ namespace board {
             LinearMovement linear,
             int index
         ) {
+
             return start + linear.dir * index;
         }
 

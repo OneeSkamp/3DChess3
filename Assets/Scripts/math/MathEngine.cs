@@ -48,10 +48,10 @@ namespace math {
         }
 
         public static (float, float) SortTwo(float v1, float v2) {
-            if (v1 < v2) {
-                return (v1, v2);
-            } else {
+            if (v1 > v2) {
                 return (v2, v1);
+            } else {
+                return (v1, v2);
             }
         }
 
@@ -62,17 +62,10 @@ namespace math {
             if (System.Math.Abs(a * point.x + b * point.y + c) > 0) {
                 return false;
             }
-            // var (minX, maxX) = SortTwo(segment.start.x, segment.end.x);
-            // var (minY, maxY) = SortTwo(segment.start.y, segment.end.y);
-            // return point.x >= minX && point.x <= maxX && point.y >= minY && point.y >= maxY;
-            if ((point.x >= segment.start.x && point.x <= segment.end.x
-                || point.x <= segment.start.x && point.x >= segment.end.x)
-                && (point.y >= segment.start.y && point.y <= segment.end.y 
-                || point.y <= segment.start.y && point.y >= segment.end.y)) {
-                return true;
-            } else {
-                return false;
-            }
+            var (minX, maxX) = SortTwo(segment.start.x, segment.end.x);
+            var (minY, maxY) = SortTwo(segment.start.y, segment.end.y);
+
+            return point.x >= minX && point.x <= maxX && point.y >= minY && point.y <= maxY;
         }
     }
 }
