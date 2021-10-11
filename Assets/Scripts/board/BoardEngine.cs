@@ -19,11 +19,15 @@ namespace board {
         }
     }
 
+    public struct SquareHoles {
+        public int mod;
+    }
+
     public struct SquareMovement {
         public int halfSide;
-
-        public static SquareMovement Mk(int halfSide) {
-            return new SquareMovement { halfSide = halfSide };
+        public SquareHoles squareHoles;
+        public static SquareMovement Mk(int halfSide, SquareHoles squareHoles) {
+            return new SquareMovement { halfSide = halfSide, squareHoles = squareHoles };
         }
     }
 
@@ -116,11 +120,10 @@ namespace board {
             return (Option<Vector2Int>.Some(point), BoardErr.None);
         }
 
-        public static (List<Vector2Int>, BoardErr) GetSquarePointsWithSkipValue<T>(
+        public static (List<Vector2Int>, BoardErr) GetSquarePoints<T>(
             Vector2Int center,
             SquareMovement square,
-            Option<T>[,] board,
-            int skipValue
+            Option<T>[,] board
         ) {
             if (board == null) {
                 return (null, BoardErr.BoardIsNull);
@@ -132,7 +135,10 @@ namespace board {
 
             var maxIndex = square.halfSide * 8;
             var points = new List<Vector2Int>();
-            for (int i = skipValue; i < maxIndex; i += 1 + skipValue) {
+            for (int i = 0; i < maxIndex; i ++) {
+                if (i % square.squareHoles.mod == 0) {
+                    continue;
+                }
                 var (point, err) = GetSquarePoint(center, square, i);
                 if (err != BoardErr.None) {
                     return (null, BoardErr.SquarePointErr);

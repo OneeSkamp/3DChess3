@@ -136,10 +136,6 @@ namespace move {
                     var figSegment = Segment.Mk(figLoc.pos, figEnd);
                     var pointOpt = MathEngine.GetIntersectionPoint(attackSegmentInfo, figSegmentInfo);
                     if (pointOpt.IsSome()) {
-                        if (figLoc.board[pointOpt.Peel().x, pointOpt.Peel().y].IsNone()) {
-                            continue;
-                        }
-
                         var pointFigOpt = figLoc.board[pointOpt.Peel().x, pointOpt.Peel().y];
                         var figLocOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
                         if (pointFigOpt.Peel().color == figLocOpt.Peel().color){
@@ -211,11 +207,10 @@ namespace move {
             foreach (var movement in allMovements) {
                 if (movement.movement.square.HasValue) {
                     var square = movement.movement.square.Value;
-                    var (squarePoints, error) = BoardEngine.GetSquarePointsWithSkipValue(
+                    var (squarePoints, error) = BoardEngine.GetSquarePoints(
                         queenCloneLoc.pos,
                         square,
-                        boardClone,
-                        1
+                        boardClone
                     );
                     foreach (var point in squarePoints) {
                         var knightOpt = boardClone[point.x, point.y];
@@ -427,6 +422,7 @@ namespace move {
 
             var fig = figOpt.Peel();
             var figMovements = new List<FigMovement>();
+            Func<int, int, bool> cond;
             switch (fig.type) {
                 case FigureType.Pawn:
                     var length = 1;
@@ -451,26 +447,26 @@ namespace move {
                     }
                     break;
                 case FigureType.Bishop:
-                    Func<int, int, bool> bishopCond = (int i, int j) => i == 0 || j == 0;
-                    figMovements = CreateFigMovements(bishopCond, figLoc.board);
+                    cond = (int i, int j) => i == 0 || j == 0;
+                    figMovements = CreateFigMovements(cond, figLoc.board);
                     break;
                 case FigureType.Rook:
-                    Func<int, int, bool> rookCond = (int i, int j) => i == j || -i == j || i == -j;
-                    figMovements = CreateFigMovements(rookCond, figLoc.board);
+                    cond = (int i, int j) => i == j || -i == j || i == -j;
+                    figMovements = CreateFigMovements(cond, figLoc.board);
                     break;
                 case FigureType.Knight:
                     figMovements = new List<FigMovement> {
-                        FigMovement.Square(MoveType.Attack, 2)
+                        FigMovement.Square(MoveType.Attack, 2, 2)
                     };
                     break;
                 case FigureType.King:
                     figMovements = new List<FigMovement> {
-                        FigMovement.Square(MoveType.Attack, 1)
+                        FigMovement.Square(MoveType.Attack, 1, 1)
                     };
                     break;
                 case FigureType.Queen:
-                    Func<int, int, bool> condition = (int i, int j) => i == 0 && j == 0;
-                    figMovements = CreateFigMovements(condition, figLoc.board);
+                    cond = (int i, int j) => i == 0 && j == 0;
+                    figMovements = CreateFigMovements(cond, figLoc.board);
                     break;
             }
             figMovements = ChessEngine.CorrectFigMovementsLength(figLoc, figMovements);
@@ -572,12 +568,12 @@ namespace move {
                 return (null, MoveErr.BoardIsNull);
             }
 
-            var (squarePointsRes, err) = ChessEngine.GetFigureSquarePoints(figLoc, square);
-            if (err != ChessErr.None) {
-                return (null, MoveErr.SquareMovesErr);
-            }
+            var (squarePoints, err) = BoardEngine.GetSquarePoints(
+                figLoc.pos,
+                square,
+                figLoc.board
+            );
 
-            var squarePoints = squarePointsRes;
             var (attackInfos, error) = GetAttackInfos(figLoc);
             var squareMoves = new List<MoveInfo>();
             foreach (var point in squarePoints) {

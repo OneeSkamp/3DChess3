@@ -19,7 +19,7 @@ namespace math {
     public static class MathEngine {
         public static StrLineNormal FormStrLine(Vector2Int p1, Vector2Int p2) {
             var dir = p2 - p1;
-            return new StrLineNormal { point = p1, normal = new Vector2Int(dir.y, dir.x)};
+            return new StrLineNormal { point = p1, normal = new Vector2Int(dir.y, -dir.x)};
         }
 
         public static Option<Vector2Int> GetIntersectionPoint(
@@ -35,14 +35,15 @@ namespace math {
             var x2 = l2.point.x;
             var y2 = l2.point.y;
 
-            if (A2*B1 - A1*B2 == 0) {
+            if (A1*B2 - A2*B1 == 0) {
                 return Option<Vector2Int>.None();
             }
 
-            var y = (A1*A2*x2 - A2*A1*x1 + A2*B1*y1 - A1*B2*y2) / (A2*B1 - A1*B2);
-            var x = (A1*x1 + B1*y - B1*y1) / A1;
+            var y = (A1*A2*x2 - A2*A1*x1 - A2*B1*y1 + A1*B2*y2) / (A1*B2 - A2*B1);
+            var x = (A1*x1 - B1*y + B1*y1) / A1;
 
             var result = new Vector2Int(x, y);
+            Debug.Log(result);
 
             return Option<Vector2Int>.Some(result);
         }

@@ -49,8 +49,8 @@ namespace chess {
             return new FigMovement { type = type, movement = movement };
         }
 
-        public static FigMovement Square(MoveType type, int side) {
-            var movement = Movement.Square(SquareMovement.Mk(side));
+        public static FigMovement Square(MoveType type, int side, int mod) {
+            var movement = Movement.Square(SquareMovement.Mk(side, new SquareHoles { mod = mod }));
             return new FigMovement { type = type, movement = movement };
         }
     }
@@ -169,51 +169,6 @@ namespace chess {
             }
 
             return figMovements;
-        }
-
-        public static (List<Vector2Int>, ChessErr) GetFigureSquarePoints(
-            FigLoc figLoc,
-            SquareMovement square
-        ) {
-            if (figLoc.board == null) {
-                return (null, ChessErr.BoardIsNull);
-            }
-
-            var figOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
-            if (figOpt.IsNone()) {
-                return (null, ChessErr.NoFigureOnPos);
-            }
-
-            var fig = figOpt.Peel();
-
-            if (fig.type == FigureType.Knight) {
-                var (squareList, err) = BoardEngine.GetSquarePointsWithSkipValue(
-                    figLoc.pos, square,
-                    figLoc.board,
-                    1
-                );
-                if (err != BoardErr.None) {
-                    return (null, ChessErr.SquarePointsErr);
-                }
-
-                return (squareList, ChessErr.None);
-            }
-
-            if (fig.type == FigureType.King) {
-                var (squareList, err) = BoardEngine.GetSquarePointsWithSkipValue(
-                    figLoc.pos,
-                    square,
-                    figLoc.board,
-                    0
-                );
-                if (err != BoardErr.None) {
-                    return (null, ChessErr.SquarePointsErr);
-                }
-
-                return (squareList, ChessErr.None);
-            }
-
-            return (null, ChessErr.NoSquareFig);
         }
 
         public static bool IsPossibleMove(Move move, Option<Fig>[,] board) {
