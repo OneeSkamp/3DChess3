@@ -43,7 +43,6 @@ namespace math {
             var x = (A1*x1 - B1*y + B1*y1) / A1;
 
             var result = new Vector2Int(x, y);
-            Debug.Log(result);
 
             return Option<Vector2Int>.Some(result);
         }

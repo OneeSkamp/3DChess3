@@ -50,7 +50,9 @@ namespace chess {
         }
 
         public static FigMovement Square(MoveType type, int side, int mod) {
-            var movement = Movement.Square(SquareMovement.Mk(side, new SquareHoles { mod = mod }));
+            var movement = Movement.Square(
+                SquareMovement.Mk(side, new SquareHoles { mod = mod })
+            );
             return new FigMovement { type = type, movement = movement };
         }
     }

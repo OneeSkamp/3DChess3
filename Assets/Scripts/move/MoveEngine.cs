@@ -96,7 +96,8 @@ namespace move {
         }
 
         public static (Option<Vector2Int>, MoveErr) GetLinearDefPoint(FigLoc figLoc) {
-            var (linearAttackInfos, attackInfosErr) = GetAttackInfos(figLoc);
+            var (kingPos, kingErr) = FindActiveKing(figLoc);
+            var (linearAttackInfos, attackInfosErr) = GetAttackInfos(figLoc, kingPos);
             if (attackInfosErr != MoveErr.None) {
                 return (Option<Vector2Int>.None(), MoveErr.LinearAttackInfoErr);
             }
@@ -134,8 +135,15 @@ namespace move {
                     var figSegmentInfo = MathEngine.FormStrLine(figLoc.pos, figEnd);
                     var attackSegment = Segment.Mk(attackStart, attackEnd);
                     var figSegment = Segment.Mk(figLoc.pos, figEnd);
-                    var pointOpt = MathEngine.GetIntersectionPoint(attackSegmentInfo, figSegmentInfo);
+                    var pointOpt = MathEngine.GetIntersectionPoint(
+                        attackSegmentInfo,
+                        figSegmentInfo
+                    );
+
                     if (pointOpt.IsSome()) {
+                        if (!BoardEngine.IsOnBoard(pointOpt.Peel(), figLoc.board)) {
+                            continue;
+                        }
                         var pointFigOpt = figLoc.board[pointOpt.Peel().x, pointOpt.Peel().y];
                         var figLocOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
                         if (pointFigOpt.Peel().color == figLocOpt.Peel().color){
@@ -274,21 +282,21 @@ namespace move {
             return (attackInfos, MoveErr.None);
         }
 
-        public static (List<AttackInfo>, MoveErr) GetAttackInfos(FigLoc figLoc) {
+        public static (Vector2Int, MoveErr) FindActiveKing(FigLoc figLoc) {
             if (figLoc.board == null) {
-                return (null, MoveErr.BoardIsNull);
+                return (default(Vector2Int), MoveErr.BoardIsNull);
             }
 
             var figOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
             if (figOpt.IsNone()) {
-                return (null, MoveErr.NoFigureOnPos);
+                return (default(Vector2Int), MoveErr.NoFigureOnPos);
             }
 
             var color = figOpt.Peel().color;
 
             var kingsPosRes = FindKingsPos(figLoc.board);
             if (kingsPosRes.IsErr()) {
-                return (null, kingsPosRes.AsErr());
+                return (default(Vector2Int), kingsPosRes.AsErr());
             }
 
             var kingPos = kingsPosRes.AsOk().black;
@@ -296,7 +304,18 @@ namespace move {
                 kingPos = kingsPosRes.AsOk().white;
             }
 
-            var (potencialAttackInfos, err) = GetPotentialAttackInfos(figLoc, kingPos);
+            return (kingPos, MoveErr.None);
+        }
+
+        public static (List<AttackInfo>, MoveErr) GetAttackInfos(
+            FigLoc figLoc,
+            Vector2Int checkPos
+        ) {
+            if (figLoc.board == null) {
+                return (null, MoveErr.BoardIsNull);
+            }
+
+            var (potencialAttackInfos, err) = GetPotentialAttackInfos(figLoc, checkPos);
             if (err != MoveErr.None) {
                 return (null, MoveErr.PotentialAttackInfosErr);
             }
@@ -365,7 +384,8 @@ namespace move {
             if (err != MoveErr.None) {
                 return (null, MoveErr.PotentialAttackInfosErr);
             }
-            var (linearAttackInfos, error) = GetAttackInfos(figLoc);
+            var (kingPos, kingErr) = FindActiveKing(figLoc);
+            var (linearAttackInfos, error) = GetAttackInfos(figLoc, kingPos);
 
             var realFigMovement = new FigMovement();
             var realFigMovements = new List<FigMovement>();
@@ -461,7 +481,10 @@ namespace move {
                     break;
                 case FigureType.King:
                     figMovements = new List<FigMovement> {
-                        FigMovement.Square(MoveType.Attack, 1, 1)
+                        new FigMovement {
+                            type = MoveType.Attack,
+                            movement = Movement.Square(SquareMovement.Mk(1, null))
+                        }
                     };
                     break;
                 case FigureType.Queen:
@@ -505,7 +528,8 @@ namespace move {
                 return (null, MoveErr.NoFigureOnPos);
             }
 
-            var (attackInfos, attackInfosErr) = GetAttackInfos(figLoc);
+            var (kingPos, kingErr) = FindActiveKing(figLoc);
+            var (attackInfos, attackInfosErr) = GetAttackInfos(figLoc, kingPos);
             if (attackInfosErr != MoveErr.None) {
                 return (null, MoveErr.LinearAttackInfoErr);
             }
@@ -574,10 +598,20 @@ namespace move {
                 figLoc.board
             );
 
-            var (attackInfos, error) = GetAttackInfos(figLoc);
+            var (kingPos, kingErr) = FindActiveKing(figLoc);
+
+            var (attackInfos, error) = GetAttackInfos(figLoc, kingPos);
             var squareMoves = new List<MoveInfo>();
             foreach (var point in squarePoints) {
                 var to = point;
+                var figOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
+                if (figOpt.IsSome()) {
+                    if (figOpt.Peel().type == FigureType.King) {
+                        if (PositionIsUnderAttack(figLoc, to)) {
+                            continue;
+                        }
+                    }
+                }
                 if (IsCheck(figLoc)) {
                     foreach (var attackInfo in attackInfos) {
                         if (attackInfo.attack.figMovement.movement.square.HasValue) {
@@ -617,6 +651,7 @@ namespace move {
                         }
                     }
                 } else {
+
                     var move = Move.Mk(figLoc.pos, to);
                     var moveInfo = new MoveInfo();
 
@@ -634,8 +669,20 @@ namespace move {
             return (squareMoves, MoveErr.None);
         }
 
+        public static bool PositionIsUnderAttack(FigLoc figLoc, Vector2Int pos) {
+            var (attInfos, attackInfosErr) = GetAttackInfos(figLoc, pos);
+            foreach (var att in attInfos) {
+                if (att.defPos.IsNone()){
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public static bool IsCheck(FigLoc figLoc) {
-            var (attackInfos, error) = GetAttackInfos(figLoc);
+            var (kingPos, kingErr) = FindActiveKing(figLoc);
+            var (attackInfos, error) = GetAttackInfos(figLoc, kingPos);
             foreach (var attackInfo in attackInfos) {
                 if (attackInfo.defPos.IsNone()) {
                     return true;

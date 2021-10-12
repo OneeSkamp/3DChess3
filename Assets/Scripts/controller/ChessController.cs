@@ -161,6 +161,9 @@ namespace controller {
                         var firstMove = possMove.move.first.Value;
                         if (move.to == firstMove.to && move.from == firstMove.from) {
                             HandleMove(possMove, map.board);
+                            if (IsCheckMate(moveColor, map.board)) {
+                                Debug.Log("CheckMate");
+                            }
                             break;
                         }
                     }
@@ -206,6 +209,35 @@ namespace controller {
             var newPos = new Vector3(newX, 0.0f, newY);
 
             map.figures[posTo.x, posTo.y].transform.localPosition = newPos;
+        }
+
+        public static bool IsCheckMate(FigColor color, Option<Fig>[,] board) {
+            var allMoves = new List<MoveInfo>();
+            for (int i = 0; i < board.GetLength(0); i++) {
+                for (int j = 0; j < board.GetLength(1); j++) {
+                    var figOpt = board[i, j];
+                    if (figOpt.IsNone()) {
+                        continue;
+                    }
+
+                    var fig = figOpt.Peel();
+                    if (fig.color == color) {
+                        var figLoc = new FigLoc {
+                            pos = new Vector2Int(i, j),
+                            board = board
+                        };
+                        var (possMoves, err) = MoveEngine.GetFigMoves(figLoc);
+
+                        allMoves.AddRange(possMoves);
+                    }
+                }
+            }
+
+            if (allMoves.Count == 0) {
+                return true;
+            }
+
+            return false;
         }
 
         private void HandleMove(MoveInfo moveInfo, Option<Fig>[,] board) {

@@ -25,8 +25,8 @@ namespace board {
 
     public struct SquareMovement {
         public int halfSide;
-        public SquareHoles squareHoles;
-        public static SquareMovement Mk(int halfSide, SquareHoles squareHoles) {
+        public SquareHoles? squareHoles;
+        public static SquareMovement Mk(int halfSide, SquareHoles? squareHoles) {
             return new SquareMovement { halfSide = halfSide, squareHoles = squareHoles };
         }
     }
@@ -136,7 +136,7 @@ namespace board {
             var maxIndex = square.halfSide * 8;
             var points = new List<Vector2Int>();
             for (int i = 0; i < maxIndex; i ++) {
-                if (i % square.squareHoles.mod == 0) {
+                if (square.squareHoles.HasValue && i % square.squareHoles.Value.mod == 0) {
                     continue;
                 }
                 var (point, err) = GetSquarePoint(center, square, i);
