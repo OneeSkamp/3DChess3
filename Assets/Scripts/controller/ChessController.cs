@@ -46,6 +46,7 @@ namespace controller {
         public CellInfo cellInfo;
         public Highlights highlights;
         public FigureResourses figContent;
+        public FigShadow? figShadow;
 
         private List<MoveInfo> possibleMoves = new List<MoveInfo>();
         private Vector2Int selectFigurePos;
@@ -241,11 +242,16 @@ namespace controller {
         }
 
         private void HandleMove(MoveInfo moveInfo, Option<Fig>[,] board) {
+            if (moveInfo.shadow.HasValue) {
+                figShadow = moveInfo.shadow;
+            }
+
             if (moveInfo.sentenced.HasValue) {
                 var sentenced = moveInfo.sentenced.Value;
                 board[sentenced.x, sentenced.y] = Option<Fig>.None();
                 Destroy(map.figures[sentenced.x, sentenced.y]);
             }
+
 
             if (moveInfo.move.first.HasValue) {
                 MoveEngine.MoveFigure(moveInfo.move.first.Value, board);

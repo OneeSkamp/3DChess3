@@ -39,21 +39,22 @@ namespace chess {
     public struct FigMovement {
         public MoveType type;
         public Movement movement;
+        public bool shadow;
 
-        public static FigMovement Mk(MoveType type, Movement movement) {
-            return new FigMovement { type = type, movement = movement };
+        public static FigMovement Mk(MoveType type, Movement movement, bool shadow) {
+            return new FigMovement { type = type, movement = movement, shadow = shadow };
         }
 
-        public static FigMovement Linear(MoveType type, Vector2Int dir, int length) {
+        public static FigMovement Linear(MoveType type, Vector2Int dir, int length, bool shadow) {
             var movement = Movement.Linear(LinearMovement.Mk(length, dir));
-            return new FigMovement { type = type, movement = movement };
+            return new FigMovement { type = type, movement = movement, shadow = shadow };
         }
 
-        public static FigMovement Square(MoveType type, int side, int mod) {
+        public static FigMovement Square(MoveType type, int side, int mod, bool shadow) {
             var movement = Movement.Square(
                 SquareMovement.Mk(side, new SquareHoles { mod = mod })
             );
-            return new FigMovement { type = type, movement = movement };
+            return new FigMovement { type = type, movement = movement, shadow = shadow };
         }
     }
 
@@ -88,8 +89,14 @@ namespace chess {
         }
     }
 
+    public struct FigShadow {
+        public FigureType figType;
+        public Vector2Int pos;
+    }
+
     public struct MoveInfo {
         public DoubleMove move;
+        public FigShadow? shadow;
         public Vector2Int? sentenced;
         public Vector2Int? promote;
     }
@@ -113,64 +120,38 @@ namespace chess {
     }
 
     public static class ChessEngine {
-        public static List<FigMovement> CorrectFigMovementsLength(
+        public static FigMovement GetFigMovement(
             FigLoc figLoc,
-            List<FigMovement> baseFigMovements
+            MoveType moveType,
+            LinearMovement linear,
+            bool shadow
         ) {
-            var figMovements = new List<FigMovement>();
-            foreach (var baseFigMovement in baseFigMovements) {
-                if (baseFigMovement.movement.square.HasValue) {
-                    return baseFigMovements;
+            var (reslength, err) = BoardEngine.GetLenUntilFig(
+                figLoc.pos,
+                linear,
+                figLoc.board,
+                linear.length
+            );
+
+            var lastLinearPoint = BoardEngine.GetLinearPoint(figLoc.pos, linear, reslength);
+            if (moveType == MoveType.Move) {
+                if (figLoc.board[lastLinearPoint.x, lastLinearPoint.y].IsSome()) {
+                    reslength--;
                 }
-
-                if (baseFigMovement.movement.linear.HasValue) {
-                    var figMovement = new FigMovement();
-                    var linear = baseFigMovement.movement.linear.Value;
-                    var length = linear.length;
-
-                    var (reslength, err) = BoardEngine.GetLenUntilFig(
-                        figLoc.pos,
-                        linear,
-                        figLoc.board,
-                        length
-                    );
-
-                    if (reslength == 0) {
-                        continue;
-                    }
-
-                    var lastLinearPoint = BoardEngine.GetLinearPoint(
-                        figLoc.pos,
-                        linear,
-                        reslength
-                    );
-
-                    if (baseFigMovement.type == MoveType.Move) {
-                        if (BoardEngine.IsOnBoard(lastLinearPoint, figLoc.board)) {
-                            if (figLoc.board[lastLinearPoint.x, lastLinearPoint.y].IsSome()) {
-                                reslength--;
-                            }
-                        }
-                    }
-
-                    if (baseFigMovement.type == MoveType.Attack) {
-                        if (BoardEngine.IsOnBoard(lastLinearPoint, figLoc.board)) {
-                            if (figLoc.board[lastLinearPoint.x, lastLinearPoint.y].IsNone()) {
-                                reslength--;
-                            }
-                        }
-                    }
-
-                    figMovement = FigMovement.Mk(
-                        baseFigMovement.type,
-                        Movement.Linear(LinearMovement.Mk(reslength, linear.dir))
-                    );
-
-                    figMovements.Add(figMovement);
+            }
+            if (moveType == MoveType.Attack) {
+                if (figLoc.board[lastLinearPoint.x, lastLinearPoint.y].IsNone()) {
+                    reslength--;
                 }
             }
 
-            return figMovements;
+            var figMovement = FigMovement.Mk(
+                moveType,
+                Movement.Linear(LinearMovement.Mk(reslength, linear.dir)),
+                shadow
+            );
+
+            return figMovement;
         }
 
         public static bool IsPossibleMove(Move move, Option<Fig>[,] board) {
@@ -181,8 +162,6 @@ namespace chess {
                 return false;
             }
 
-            var fig = figOpt.Peel();
-
             if (BoardEngine.IsOnBoard(move.to, board)) {
                 var nextFigOpt = board[move.to.x, move.to.y];
 
@@ -191,7 +170,7 @@ namespace chess {
                 }
 
                 var nextFig = nextFigOpt.Peel();
-                if (fig.color != nextFig.color) {
+                if (figOpt.Peel().color != nextFig.color) {
                     return true;
                 }
             }

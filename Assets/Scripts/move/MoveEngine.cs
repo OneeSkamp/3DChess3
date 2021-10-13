@@ -51,10 +51,7 @@ namespace move {
                 return (new Option<Fig>[1,1], MoveErr.BoardIsNull);
             }
 
-            var size = new Vector2Int(board.GetLength(0), board.GetLength(1));
-
             var boardClone = BoardEngine.CopyBoard(board);
-
             for (int i = 0; i < boardClone.GetLength(0); i++) {
                 for (int j = 0; j < boardClone.GetLength(1); j++) {
                     if (boardClone[i, j].IsSome()) {
@@ -95,7 +92,7 @@ namespace move {
             return Result<KingsPos, MoveErr>.Ok(kingsPos);
         }
 
-        public static (Option<Vector2Int>, MoveErr) GetLinearDefPoint(FigLoc figLoc) {
+        public static (Option<Vector2Int>, MoveErr) GetLinearDefPoint(FigLoc figLoc, AttackInfo attackInfo) {
             var (kingPos, kingErr) = FindActiveKing(figLoc);
             var (linearAttackInfos, attackInfosErr) = GetAttackInfos(figLoc, kingPos);
             if (attackInfosErr != MoveErr.None) {
@@ -107,62 +104,65 @@ namespace move {
                 return (Option<Vector2Int>.None(), MoveErr.FigMovementsErr);
             }
 
-            foreach (var attackInfo in linearAttackInfos) {
-                foreach (var figMovement in figMovements) {
-                    if (attackInfo.attack.figMovement.movement.square.HasValue) {
+            foreach (var figMovement in figMovements) {
+                if (attackInfo.attack.figMovement.movement.square.HasValue) {
+                    continue;
+                }
+
+                if (attackInfo.defPos.IsSome()) {
+                    continue;
+                }
+                var attackLinear = attackInfo.attack.figMovement.movement.linear.Value;
+                var attackStart = attackInfo.attack.start;
+                var attackEnd = BoardEngine.GetLinearPoint(
+                    attackStart,
+                    attackLinear,
+                    attackLinear.length
+                );
+
+                var attackSegmentInfo = MathEngine.FormStrLine(attackStart, attackEnd);
+                var figLinear = figMovement.movement.linear.Value;
+                var figEnd = BoardEngine.GetLinearPoint(
+                    figLoc.pos,
+                    figLinear,
+                    figLinear.length
+                );
+
+                if (figLinear.length == 0) {
+                    continue;
+                }
+
+                var figSegmentInfo = MathEngine.FormStrLine(figLoc.pos, figEnd);
+                var attackSegment = Segment.Mk(attackStart, attackEnd);
+                var figSegment = Segment.Mk(figLoc.pos, figEnd);
+                var pointOpt = MathEngine.GetIntersectionPoint(
+                    attackSegmentInfo,
+                    figSegmentInfo
+                );
+
+                if (pointOpt.IsSome()) {
+                    if (!BoardEngine.IsOnBoard(pointOpt.Peel(), figLoc.board)) {
                         continue;
                     }
-                    var attackLinear = attackInfo.attack.figMovement.movement.linear.Value;
-                    var attackStart = attackInfo.attack.start;
-                    var attackEnd = BoardEngine.GetLinearPoint(
-                        attackStart,
-                        attackLinear,
-                        attackLinear.length
-                    );
-
-                    var attackSegmentInfo = MathEngine.FormStrLine(attackStart, attackEnd);
-                    var figLinear = figMovement.movement.linear.Value;
-                    var figEnd = BoardEngine.GetLinearPoint(
-                        figLoc.pos,
-                        figLinear,
-                        figLinear.length
-                    );
-
-                    if (figLinear.length == 0) {
+                    var pointFigOpt = figLoc.board[pointOpt.Peel().x, pointOpt.Peel().y];
+                    var figLocOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
+                    if (pointFigOpt.Peel().color == figLocOpt.Peel().color){
                         continue;
                     }
 
-                    var figSegmentInfo = MathEngine.FormStrLine(figLoc.pos, figEnd);
-                    var attackSegment = Segment.Mk(attackStart, attackEnd);
-                    var figSegment = Segment.Mk(figLoc.pos, figEnd);
-                    var pointOpt = MathEngine.GetIntersectionPoint(
-                        attackSegmentInfo,
-                        figSegmentInfo
-                    );
-
-                    if (pointOpt.IsSome()) {
-                        if (!BoardEngine.IsOnBoard(pointOpt.Peel(), figLoc.board)) {
-                            continue;
-                        }
-                        var pointFigOpt = figLoc.board[pointOpt.Peel().x, pointOpt.Peel().y];
-                        var figLocOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
-                        if (pointFigOpt.Peel().color == figLocOpt.Peel().color){
-                            continue;
-                        }
-
-                        var point = pointOpt.Peel();
-                        if (MathEngine.IsPoinOnSegment(point, attackSegment)) {
-                            if (MathEngine.IsPoinOnSegment(point, figSegment)) {
-                                var figOpt = figLoc.board[point.x, point.y];
-                                var fig = figLoc.board[figLoc.pos.x, figLoc.pos.y].Peel();
-                                if (figOpt.IsSome() && figOpt.Peel().color == fig.color) {
-                                    return (Option<Vector2Int>.None(), MoveErr.None);
-                                }
-                                return (pointOpt, MoveErr.None);
+                    var point = pointOpt.Peel();
+                    if (MathEngine.IsPoinOnSegment(point, attackSegment)) {
+                        if (MathEngine.IsPoinOnSegment(point, figSegment)) {
+                            var figOpt = figLoc.board[point.x, point.y];
+                            var fig = figLoc.board[figLoc.pos.x, figLoc.pos.y].Peel();
+                            if (figOpt.IsSome() && figOpt.Peel().color == fig.color) {
+                                return (Option<Vector2Int>.None(), MoveErr.None);
                             }
+                            return (pointOpt, MoveErr.None);
                         }
                     }
                 }
+
             }
 
             return (Option<Vector2Int>.None(), MoveErr.None);
@@ -412,12 +412,14 @@ namespace move {
 
                     var defLinear = figMovement.movement.linear.Value;
                     var attackLinear = lineAttackInfo.attack.figMovement.movement.linear.Value;
+                    var shadow = figMovement.shadow;
                     if (defLinear.dir == -attackLinear.dir || defLinear.dir == attackLinear.dir) {
                         var linear = LinearMovement.Mk(defLinear.length, defLinear.dir);
 
                         realFigMovement = FigMovement.Mk(
                             figMovement.type,
-                            Movement.Linear(linear)
+                            Movement.Linear(linear),
+                            shadow
                         );
                         realFigMovements.Add(realFigMovement);
                     }
@@ -450,65 +452,74 @@ namespace move {
                         length = 2;
                     }
 
-                    if (fig.color == FigColor.White) {
-                        figMovements = new List<FigMovement> {
-                            FigMovement.Linear(MoveType.Move, new Vector2Int(-1, 0), length),
-                            FigMovement.Linear(MoveType.Attack, new Vector2Int(-1, 1), 1),
-                            FigMovement.Linear(MoveType.Attack, new Vector2Int(-1, -1), 1)
-                        };
-                    }
+                    for (int i = -1; i <= 1; i++) {
+                        var pos = new Vector2Int(1, i);
+                        if (fig.color == FigColor.White) {
+                            pos *= -1;
+                        }
 
-                    if (fig.color == FigColor.Black) {
-                        figMovements = new List<FigMovement> {
-                            FigMovement.Linear(MoveType.Move, new Vector2Int(1, 0), length),
-                            FigMovement.Linear(MoveType.Attack, new Vector2Int(1, 1), 1),
-                            FigMovement.Linear(MoveType.Attack, new Vector2Int(1, -1), 1)
-                        };
+                        var type = MoveType.Attack;
+                        var len = 1;
+                        if (i == 0) {
+                            type = MoveType.Move;
+                            len = length;
+                        }
+
+                        var linearMovement = LinearMovement.Mk(len, pos);
+                        figMovements.Add(
+                            ChessEngine.GetFigMovement(figLoc, type, linearMovement, true)
+                        );
                     }
                     break;
                 case FigureType.Bishop:
                     cond = (int i, int j) => i == 0 || j == 0;
-                    figMovements = CreateFigMovements(cond, figLoc.board);
+                    figMovements = CreateFigMovements(figLoc, cond);
                     break;
                 case FigureType.Rook:
                     cond = (int i, int j) => i == j || -i == j || i == -j;
-                    figMovements = CreateFigMovements(cond, figLoc.board);
+                    figMovements = CreateFigMovements(figLoc, cond);
                     break;
                 case FigureType.Knight:
-                    figMovements = new List<FigMovement> {
-                        FigMovement.Square(MoveType.Attack, 2, 2)
-                    };
+                    figMovements.Add(FigMovement.Square(MoveType.Attack, 2, 2, false));
                     break;
                 case FigureType.King:
-                    figMovements = new List<FigMovement> {
-                        new FigMovement {
-                            type = MoveType.Attack,
-                            movement = Movement.Square(SquareMovement.Mk(1, null))
-                        }
-                    };
+                    figMovements.Add(
+                            new FigMovement {
+                                type = MoveType.Attack,
+                                movement = Movement.Square(SquareMovement.Mk(1, null))
+                            }
+                        );
                     break;
                 case FigureType.Queen:
                     cond = (int i, int j) => i == 0 && j == 0;
-                    figMovements = CreateFigMovements(cond, figLoc.board);
+                    figMovements = CreateFigMovements(figLoc, cond);
                     break;
             }
-            figMovements = ChessEngine.CorrectFigMovementsLength(figLoc, figMovements);
 
             return (figMovements, MoveErr.None);
         }
 
         public static List<FigMovement> CreateFigMovements(
-            Func<int, int, bool> condition,
-            Option<Fig>[,] board
+            FigLoc figLoc,
+            Func<int, int, bool> condition
         ) {
             var figMovements = new List<FigMovement>();
             for (int i = -1; i <= 1; i++) {
                 for (int j = -1; j <= 1; j++) {
                     if (condition(i, j)) continue;
-                    var maxLength = Mathf.Max(board.GetLength(0), board.GetLength(1));
+                    var maxLength = Mathf.Max(
+                        figLoc.board.GetLength(0),
+                        figLoc.board.GetLength(1)
+                    );
+
                     var dir = new Vector2Int(i, j);
-                    figMovements.Add(FigMovement.Linear(MoveType.Move, dir, maxLength));
-                    figMovements.Add(FigMovement.Linear(MoveType.Attack, dir, maxLength));
+                    var linear = LinearMovement.Mk(maxLength, dir);
+                    figMovements.Add(
+                        ChessEngine.GetFigMovement(figLoc, MoveType.Move, linear, false)
+                    );
+                    figMovements.Add(
+                        ChessEngine.GetFigMovement(figLoc, MoveType.Attack, linear, false)
+                    );
                 }
             }
 
@@ -542,7 +553,7 @@ namespace move {
                     if (attackInfo.defPos.IsNone()) {
                         var attack = attackInfo.attack.start;
                         if (attackInfo.attack.figMovement.movement.square.HasValue
-                        && attack == to) {
+                            && attack == to) {
                             moveInfo.move = DoubleMove.Mk(Move.Mk(figLoc.pos, attack), null);
                             if (figLoc.board[attack.x, attack.y].IsSome()) {
                                 moveInfo.sentenced = attack;
@@ -551,7 +562,7 @@ namespace move {
                             return (linearMoves, MoveErr.None);
                         }
 
-                        var (def, err) = GetLinearDefPoint(figLoc);
+                        var (def, err) = GetLinearDefPoint(figLoc, attackInfo);
                         if (def.IsSome()) {
                             moveInfo.move = DoubleMove.Mk(Move.Mk(figLoc.pos, def.Peel()), null);
                             if (figLoc.board[def.Peel().x, def.Peel().y].IsSome()) {
@@ -569,6 +580,19 @@ namespace move {
 
                 if (!BoardEngine.IsOnBoard(to, figLoc.board)) {
                     break;
+                }
+
+                var fig = figOpt.Peel();
+                if (fig.type == FigureType.Pawn && fig.counter == 0) {
+                    var num = 1;
+                    if (fig.color == FigColor.Black) {
+                        num = -1;
+                    }
+
+                    moveInfo.shadow = new FigShadow {
+                        figType = FigureType.Pawn,
+                        pos = new Vector2Int(to.x + num, to.y)
+                    };
                 }
 
                 if (figLoc.board[to.x, to.y].IsSome()) {
