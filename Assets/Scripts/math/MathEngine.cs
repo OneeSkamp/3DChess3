@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using option;
 using UnityEngine;
 
@@ -19,7 +20,7 @@ namespace math {
     public static class MathEngine {
         public static StrLineNormal FormStrLine(Vector2Int p1, Vector2Int p2) {
             var dir = p2 - p1;
-            return new StrLineNormal { point = p1, normal = new Vector2Int(dir.y, -dir.x)};
+            return new StrLineNormal { point = p1, normal = new Vector2Int(dir.y, -dir.x) };
         }
 
         public static Option<Vector2Int> GetIntersectionPoint(
@@ -53,6 +54,46 @@ namespace math {
             } else {
                 return (v1, v2);
             }
+        }
+
+        public static List<Vector2Int> GetSquareIntersectionPoints(
+            StrLineNormal l1,
+            int halfSide,
+            Vector2Int center
+        ) {
+            var p1 = new Vector2Int(center.x - halfSide, center.y - halfSide);
+            var p2 = new Vector2Int(center.x - halfSide, center.y + halfSide);
+            var p3 = new Vector2Int(center.x + halfSide, center.y + halfSide);
+            var p4 = new Vector2Int(center.x + halfSide, center.y - halfSide);
+
+            var sides = new List<StrLineNormal> {
+                FormStrLine(p1, p2),
+                FormStrLine(p2, p3),
+                FormStrLine(p3, p4),
+                FormStrLine(p4, p1)
+            };
+
+            var intersectionPoints = new List<Vector2Int>();
+            foreach (var side in sides) {
+                if (side.normal.x == 0 && l1.normal.y == 0
+                    || side.normal.y == 0 && l1.normal.x == 0) {
+                    continue;
+                }
+
+                var intersectionPoint = GetIntersectionPoint(l1, side);
+                var segment = Segment.Mk(
+                    side.point,
+                    new Vector2Int(side.point.x - side.normal.y, side.point.y + side.normal.x)
+                );
+
+                if (intersectionPoint.IsSome()) {
+                    if (IsPoinOnSegment(intersectionPoint.Peel(), segment)) {
+                        intersectionPoints.Add(intersectionPoint.Peel());
+                    }
+                }
+            }
+
+            return intersectionPoints;
         }
 
         public static bool IsPoinOnSegment(Vector2Int point, Segment segment) {

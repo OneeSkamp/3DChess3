@@ -92,14 +92,18 @@ namespace move {
             return Result<KingsPos, MoveErr>.Ok(kingsPos);
         }
 
-        public static (Option<Vector2Int>, MoveErr) GetLinearDefPoint(FigLoc figLoc, AttackInfo attackInfo) {
+        public static (Option<Vector2Int>, MoveErr) GetLinearDefPoint(
+            FigLoc figLoc,
+            AttackInfo attackInfo,
+            FigShadow? lastShadow
+        ) {
             var (kingPos, kingErr) = FindActiveKing(figLoc);
-            var (linearAttackInfos, attackInfosErr) = GetAttackInfos(figLoc, kingPos);
+            var (linearAttackInfos, attackInfosErr) = GetAttackInfos(figLoc, kingPos, lastShadow);
             if (attackInfosErr != MoveErr.None) {
                 return (Option<Vector2Int>.None(), MoveErr.LinearAttackInfoErr);
             }
 
-            var (figMovements, figMovementsErr) = GetPossibleFigMovements(figLoc);
+            var (figMovements, figMovementsErr) = GetPossibleFigMovements(figLoc, lastShadow);
             if (attackInfosErr != MoveErr.None) {
                 return (Option<Vector2Int>.None(), MoveErr.FigMovementsErr);
             }
@@ -170,7 +174,8 @@ namespace move {
 
         public static (List<AttackInfo>, MoveErr) GetPotentialAttackInfos(
             FigLoc figLoc,
-            Vector2Int checkPos
+            Vector2Int checkPos,
+            FigShadow? lastShadow
         ) {
             if (figLoc.board == null) {
                 return (null, MoveErr.BoardIsNull);
@@ -192,7 +197,10 @@ namespace move {
             );
 
             var queenCloneLoc = FigLoc.Mk(checkPos, boardClone);
-            var (queenMovements, queenMovementsErr) = GetPotentialFigMovements(queenCloneLoc);
+            var (queenMovements, queenMovementsErr) = GetPotentialFigMovements(
+                queenCloneLoc,
+                lastShadow
+            );
             if (queenMovementsErr != MoveErr.None) {
                 return (null, MoveErr.FigMovesErr);
             }
@@ -201,7 +209,10 @@ namespace move {
                 Fig.CreateFig(color, FigureType.Knight)
             );
 
-            var (knightMovements, knightMovementsErr) = GetPotentialFigMovements(queenCloneLoc);
+            var (knightMovements, knightMovementsErr) = GetPotentialFigMovements(
+                queenCloneLoc,
+                lastShadow
+            );
             if (knightMovementsErr != MoveErr.None) {
                 return (null, MoveErr.FigMovesErr);
             }
@@ -252,7 +263,10 @@ namespace move {
                     var attackFigOpt = boardClone[last.x, last.y];
 
                     var figCloneLoc = FigLoc.Mk(last, boardClone);
-                    var (figMovements, lineErr) = GetPotentialFigMovements(figCloneLoc);
+                    var (figMovements, lineErr) = GetPotentialFigMovements(
+                        figCloneLoc,
+                        lastShadow
+                    );
                     if (lineErr != MoveErr.None) {
                         return (null, MoveErr.FigMovesErr);
                     }
@@ -309,13 +323,19 @@ namespace move {
 
         public static (List<AttackInfo>, MoveErr) GetAttackInfos(
             FigLoc figLoc,
-            Vector2Int checkPos
+            Vector2Int checkPos,
+            FigShadow? lastShadow
         ) {
             if (figLoc.board == null) {
                 return (null, MoveErr.BoardIsNull);
             }
 
-            var (potencialAttackInfos, err) = GetPotentialAttackInfos(figLoc, checkPos);
+            var (potencialAttackInfos, err) = GetPotentialAttackInfos(
+                figLoc,
+                checkPos,
+                lastShadow
+            );
+
             if (err != MoveErr.None) {
                 return (null, MoveErr.PotentialAttackInfosErr);
             }
@@ -370,7 +390,10 @@ namespace move {
             return (attackInfos, MoveErr.None);
         }
 
-        public static (List<FigMovement>, MoveErr) GetPossibleFigMovements(FigLoc figLoc) {
+        public static (List<FigMovement>, MoveErr) GetPossibleFigMovements(
+            FigLoc figLoc,
+            FigShadow? lastShadow
+        ) {
             if (figLoc.board == null) {
                 return (null, MoveErr.BoardIsNull);
             }
@@ -380,12 +403,12 @@ namespace move {
                 return (null, MoveErr.NoFigureOnPos);
             }
 
-            var (potencialFigMovements, err) = GetPotentialFigMovements(figLoc);
+            var (potencialFigMovements, err) = GetPotentialFigMovements(figLoc, lastShadow);
             if (err != MoveErr.None) {
                 return (null, MoveErr.PotentialAttackInfosErr);
             }
             var (kingPos, kingErr) = FindActiveKing(figLoc);
-            var (linearAttackInfos, error) = GetAttackInfos(figLoc, kingPos);
+            var (linearAttackInfos, error) = GetAttackInfos(figLoc, kingPos, lastShadow);
 
             var realFigMovement = new FigMovement();
             var realFigMovements = new List<FigMovement>();
@@ -432,7 +455,10 @@ namespace move {
             return (potencialFigMovements, MoveErr.None);
         }
 
-        public static (List<FigMovement>, MoveErr) GetPotentialFigMovements(FigLoc figLoc) {
+        public static (List<FigMovement>, MoveErr) GetPotentialFigMovements(
+            FigLoc figLoc,
+            FigShadow? lastShadow
+        ) {
             if (figLoc.board == null) {
                 return (null, MoveErr.BoardIsNull);
             }
@@ -448,7 +474,9 @@ namespace move {
             switch (fig.type) {
                 case FigureType.Pawn:
                     var length = 1;
+                    int? shadow = null;
                     if (fig.counter == 0) {
+                        shadow = 1;
                         length = 2;
                     }
 
@@ -467,20 +495,26 @@ namespace move {
 
                         var linearMovement = LinearMovement.Mk(len, pos);
                         figMovements.Add(
-                            ChessEngine.GetFigMovement(figLoc, type, linearMovement, true)
+                            ChessEngine.GetFigMovement(
+                                figLoc,
+                                type,
+                                linearMovement,
+                                shadow,
+                                lastShadow
+                            )
                         );
                     }
                     break;
                 case FigureType.Bishop:
                     cond = (int i, int j) => i == 0 || j == 0;
-                    figMovements = CreateFigMovements(figLoc, cond);
+                    figMovements = CreateFigMovements(figLoc, cond, lastShadow);
                     break;
                 case FigureType.Rook:
                     cond = (int i, int j) => i == j || -i == j || i == -j;
-                    figMovements = CreateFigMovements(figLoc, cond);
+                    figMovements = CreateFigMovements(figLoc, cond, lastShadow);
                     break;
                 case FigureType.Knight:
-                    figMovements.Add(FigMovement.Square(MoveType.Attack, 2, 2, false));
+                    figMovements.Add(FigMovement.Square(MoveType.Attack, 2, 2, null));
                     break;
                 case FigureType.King:
                     figMovements.Add(
@@ -492,7 +526,7 @@ namespace move {
                     break;
                 case FigureType.Queen:
                     cond = (int i, int j) => i == 0 && j == 0;
-                    figMovements = CreateFigMovements(figLoc, cond);
+                    figMovements = CreateFigMovements(figLoc, cond, lastShadow);
                     break;
             }
 
@@ -501,7 +535,8 @@ namespace move {
 
         public static List<FigMovement> CreateFigMovements(
             FigLoc figLoc,
-            Func<int, int, bool> condition
+            Func<int, int, bool> condition,
+            FigShadow? lastShadow
         ) {
             var figMovements = new List<FigMovement>();
             for (int i = -1; i <= 1; i++) {
@@ -515,10 +550,22 @@ namespace move {
                     var dir = new Vector2Int(i, j);
                     var linear = LinearMovement.Mk(maxLength, dir);
                     figMovements.Add(
-                        ChessEngine.GetFigMovement(figLoc, MoveType.Move, linear, false)
+                        ChessEngine.GetFigMovement(
+                            figLoc,
+                            MoveType.Move,
+                            linear,
+                            null,
+                            lastShadow
+                        )
                     );
                     figMovements.Add(
-                        ChessEngine.GetFigMovement(figLoc, MoveType.Attack, linear, false)
+                        ChessEngine.GetFigMovement(
+                            figLoc,
+                            MoveType.Attack,
+                            linear,
+                            null,
+                            lastShadow
+                        )
                     );
                 }
             }
@@ -528,7 +575,9 @@ namespace move {
 
         public static (List<MoveInfo>, MoveErr) GetLinearMoves(
             FigLoc figLoc,
-            LinearMovement linear
+            LinearMovement linear,
+            int? shadow,
+            FigShadow? lastShadow
         ) {
             if (figLoc.board == null) {
                 return (null, MoveErr.BoardIsNull);
@@ -540,7 +589,7 @@ namespace move {
             }
 
             var (kingPos, kingErr) = FindActiveKing(figLoc);
-            var (attackInfos, attackInfosErr) = GetAttackInfos(figLoc, kingPos);
+            var (attackInfos, attackInfosErr) = GetAttackInfos(figLoc, kingPos, lastShadow);
             if (attackInfosErr != MoveErr.None) {
                 return (null, MoveErr.LinearAttackInfoErr);
             }
@@ -562,7 +611,7 @@ namespace move {
                             return (linearMoves, MoveErr.None);
                         }
 
-                        var (def, err) = GetLinearDefPoint(figLoc, attackInfo);
+                        var (def, err) = GetLinearDefPoint(figLoc, attackInfo, lastShadow);
                         if (def.IsSome()) {
                             moveInfo.move = DoubleMove.Mk(Move.Mk(figLoc.pos, def.Peel()), null);
                             if (figLoc.board[def.Peel().x, def.Peel().y].IsSome()) {
@@ -582,17 +631,16 @@ namespace move {
                     break;
                 }
 
-                var fig = figOpt.Peel();
-                if (fig.type == FigureType.Pawn && fig.counter == 0) {
-                    var num = 1;
-                    if (fig.color == FigColor.Black) {
-                        num = -1;
-                    }
-
+                if (shadow.HasValue) {
                     moveInfo.shadow = new FigShadow {
-                        figType = FigureType.Pawn,
-                        pos = new Vector2Int(to.x + num, to.y)
+                        figType = figOpt.Peel().type,
+                        shadowPos = figLoc.pos + shadow.Value * linear.dir,
+                        figPos = to
                     };
+                }
+
+                if (lastShadow.HasValue && to == lastShadow.Value.shadowPos) {
+                    moveInfo.sentenced = lastShadow.Value.figPos;
                 }
 
                 if (figLoc.board[to.x, to.y].IsSome()) {
@@ -610,7 +658,8 @@ namespace move {
 
         public static (List<MoveInfo>, MoveErr) GetSquareMoves(
             FigLoc figLoc,
-            SquareMovement square
+            SquareMovement square,
+            FigShadow? lastShadow
         ) {
             if (figLoc.board == null) {
                 return (null, MoveErr.BoardIsNull);
@@ -624,19 +673,19 @@ namespace move {
 
             var (kingPos, kingErr) = FindActiveKing(figLoc);
 
-            var (attackInfos, error) = GetAttackInfos(figLoc, kingPos);
+            var (attackInfos, error) = GetAttackInfos(figLoc, kingPos, lastShadow);
             var squareMoves = new List<MoveInfo>();
             foreach (var point in squarePoints) {
                 var to = point;
                 var figOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
                 if (figOpt.IsSome()) {
                     if (figOpt.Peel().type == FigureType.King) {
-                        if (PositionIsUnderAttack(figLoc, to)) {
+                        if (PositionIsUnderAttack(figLoc, to, lastShadow)) {
                             continue;
                         }
                     }
                 }
-                if (IsCheck(figLoc)) {
+                if (IsCheck(figLoc, lastShadow)) {
                     foreach (var attackInfo in attackInfos) {
                         if (attackInfo.attack.figMovement.movement.square.HasValue) {
                             if (to != attackInfo.attack.start) {
@@ -693,8 +742,12 @@ namespace move {
             return (squareMoves, MoveErr.None);
         }
 
-        public static bool PositionIsUnderAttack(FigLoc figLoc, Vector2Int pos) {
-            var (attInfos, attackInfosErr) = GetAttackInfos(figLoc, pos);
+        public static bool PositionIsUnderAttack(
+            FigLoc figLoc,
+            Vector2Int pos,
+            FigShadow? lastShadow
+        ) {
+            var (attInfos, attackInfosErr) = GetAttackInfos(figLoc, pos, lastShadow);
             foreach (var att in attInfos) {
                 if (att.defPos.IsNone()){
                     return true;
@@ -704,9 +757,9 @@ namespace move {
             return false;
         }
 
-        public static bool IsCheck(FigLoc figLoc) {
+        public static bool IsCheck(FigLoc figLoc, FigShadow? lastShadow) {
             var (kingPos, kingErr) = FindActiveKing(figLoc);
-            var (attackInfos, error) = GetAttackInfos(figLoc, kingPos);
+            var (attackInfos, error) = GetAttackInfos(figLoc, kingPos, lastShadow);
             foreach (var attackInfo in attackInfos) {
                 if (attackInfo.defPos.IsNone()) {
                     return true;
@@ -716,7 +769,10 @@ namespace move {
             return false;
         }
 
-        public static (List<MoveInfo>, MoveErr) GetFigMoves(FigLoc figLoc) {
+        public static (List<MoveInfo>, MoveErr) GetFigMoves(
+            FigLoc figLoc,
+            FigShadow? lastShadow
+        ) {
             if (figLoc.board == null) {
                 return (null, MoveErr.BoardIsNull);
             }
@@ -727,7 +783,7 @@ namespace move {
             }
 
             var figMoves = new List<MoveInfo>();
-            var (figMovements, err) = GetPossibleFigMovements(figLoc);
+            var (figMovements, err) = GetPossibleFigMovements(figLoc, lastShadow);
             if (err != MoveErr.None) {
                 return (null, MoveErr.FigMovementsErr);
             }
@@ -736,7 +792,13 @@ namespace move {
                 var fixedMovement = FixedMovement.Mk(figLoc.pos, figMovement);
                 if (figMovement.movement.linear.HasValue) {
                     var linear = figMovement.movement.linear.Value;
-                    var (linearMovesRes, error) = GetLinearMoves(figLoc, linear);
+                    var shadow = figMovement.shadow;
+                    var (linearMovesRes, error) = GetLinearMoves(
+                        figLoc,
+                        linear,
+                        shadow,
+                        lastShadow
+                    );
                     if (error != MoveErr.None) {
                         return (null, MoveErr.LinearMovesErr);
                     }
@@ -745,7 +807,7 @@ namespace move {
                     figMoves.AddRange(linearMoves);
                 } else if (figMovement.movement.square.HasValue) {
                     var square = figMovement.movement.square.Value;
-                    var (squareMovesRes, error) = GetSquareMoves(figLoc, square);
+                    var (squareMovesRes, error) = GetSquareMoves(figLoc, square, lastShadow);
                     if (error != MoveErr.None) {
                         return (null, MoveErr.SquareMovesErr);
                     }
@@ -768,6 +830,13 @@ namespace move {
             var figure = board[move.to.x, move.to.y].Peel();
             figure.counter++;
             board[move.to.x, move.to.y] = Option<Fig>.Some(figure);
+
+            /////////
+            var l1 = MathEngine.FormStrLine(new Vector2Int(7, 2), new Vector2Int(2, 7));
+            var list = MathEngine.GetSquareIntersectionPoints(l1, 2, new Vector2Int(4, 4));
+            foreach (var a in list) {
+                Debug.Log(a);
+            }
         }
     }
 }

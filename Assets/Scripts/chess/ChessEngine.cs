@@ -39,18 +39,18 @@ namespace chess {
     public struct FigMovement {
         public MoveType type;
         public Movement movement;
-        public bool shadow;
+        public int? shadow;
 
-        public static FigMovement Mk(MoveType type, Movement movement, bool shadow) {
+        public static FigMovement Mk(MoveType type, Movement movement, int? shadow) {
             return new FigMovement { type = type, movement = movement, shadow = shadow };
         }
 
-        public static FigMovement Linear(MoveType type, Vector2Int dir, int length, bool shadow) {
+        public static FigMovement Linear(MoveType type, Vector2Int dir, int length, int? shadow) {
             var movement = Movement.Linear(LinearMovement.Mk(length, dir));
             return new FigMovement { type = type, movement = movement, shadow = shadow };
         }
 
-        public static FigMovement Square(MoveType type, int side, int mod, bool shadow) {
+        public static FigMovement Square(MoveType type, int side, int mod, int? shadow) {
             var movement = Movement.Square(
                 SquareMovement.Mk(side, new SquareHoles { mod = mod })
             );
@@ -91,7 +91,8 @@ namespace chess {
 
     public struct FigShadow {
         public FigureType figType;
-        public Vector2Int pos;
+        public Vector2Int shadowPos;
+        public Vector2Int figPos;
     }
 
     public struct MoveInfo {
@@ -124,8 +125,11 @@ namespace chess {
             FigLoc figLoc,
             MoveType moveType,
             LinearMovement linear,
-            bool shadow
+            int? shadow,
+            FigShadow? lastShadow
         ) {
+            var figOpt = figLoc.board[figLoc.pos.x, figLoc.pos.y];
+            var fig = figOpt.Peel();
             var (reslength, err) = BoardEngine.GetLenUntilFig(
                 figLoc.pos,
                 linear,
@@ -141,6 +145,10 @@ namespace chess {
             }
             if (moveType == MoveType.Attack) {
                 if (figLoc.board[lastLinearPoint.x, lastLinearPoint.y].IsNone()) {
+                    if (lastShadow.HasValue && lastShadow.Value.shadowPos == lastLinearPoint 
+                        && fig.type == lastShadow.Value.figType) {
+                        reslength++;
+                    }
                     reslength--;
                 }
             }

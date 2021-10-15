@@ -46,7 +46,7 @@ namespace controller {
         public CellInfo cellInfo;
         public Highlights highlights;
         public FigureResourses figContent;
-        public FigShadow? figShadow;
+        public FigShadow? lastShadow;
 
         private List<MoveInfo> possibleMoves = new List<MoveInfo>();
         private Vector2Int selectFigurePos;
@@ -147,7 +147,8 @@ namespace controller {
                     selectFigurePos = pos;
 
                     possibleMoves = MoveEngine.GetFigMoves(
-                        new FigLoc {pos = pos, board = map.board}
+                        new FigLoc { pos = pos, board = map.board },
+                        lastShadow
                     ).Item1;
 
                     CreatePossibleHighlights(possibleMoves);
@@ -212,7 +213,7 @@ namespace controller {
             map.figures[posTo.x, posTo.y].transform.localPosition = newPos;
         }
 
-        public static bool IsCheckMate(FigColor color, Option<Fig>[,] board) {
+        public bool IsCheckMate(FigColor color, Option<Fig>[,] board) {
             var allMoves = new List<MoveInfo>();
             for (int i = 0; i < board.GetLength(0); i++) {
                 for (int j = 0; j < board.GetLength(1); j++) {
@@ -227,7 +228,7 @@ namespace controller {
                             pos = new Vector2Int(i, j),
                             board = board
                         };
-                        var (possMoves, err) = MoveEngine.GetFigMoves(figLoc);
+                        var (possMoves, err) = MoveEngine.GetFigMoves(figLoc, lastShadow);
 
                         allMoves.AddRange(possMoves);
                     }
@@ -243,7 +244,7 @@ namespace controller {
 
         private void HandleMove(MoveInfo moveInfo, Option<Fig>[,] board) {
             if (moveInfo.shadow.HasValue) {
-                figShadow = moveInfo.shadow;
+                lastShadow = moveInfo.shadow.Value;
             }
 
             if (moveInfo.sentenced.HasValue) {
